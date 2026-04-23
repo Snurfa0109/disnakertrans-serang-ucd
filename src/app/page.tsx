@@ -42,7 +42,7 @@ export default function Home() {
             <div className="relative w-full lg:w-5/12 max-w-sm mx-auto lg:max-w-none">
               <div className="bg-[#FDE68A] absolute inset-0 -ml-4 -mt-4 rounded-xl min-h-full aspect-[3/4]"></div>
               <div className="relative z-10 bg-white rounded-xl overflow-hidden shadow-xl aspect-[3/4]">
-                 <img src="https://images.unsplash.com/photo-1542385151-efd9000785a0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Sambutan Kepala Dinas" className="w-full h-full object-cover object-top grayscale-[20%]" />
+                 <img src="/images/kepala-dinas.png" alt="Sambutan Kepala Dinas" className="w-full h-full object-cover object-top" />
                  <div className="absolute bottom-4 right-4 bg-[#1E3A8A] text-[#FBBF24] font-bold text-2xl w-14 h-14 flex items-center justify-center rounded-lg shadow-lg">
                    99
                  </div>
@@ -56,8 +56,8 @@ export default function Home() {
                 "Selamat datang di portal resmi Disnakertrans Kabupaten Serang. Kami berkomitmen untuk terus berinovasi dalam memberikan layanan terbaik bagi seluruh pencari kerja dan pemberi kerja, demi mewujudkan Kabupaten Serang yang lebih sejahtera melalui sektor ketenagakerjaan yang inklusif."
               </p>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">H. Muchamad Zubaidi, S.Sos., M.Si.</h3>
-                <p className="text-gray-600">Kepala Dinas Nakertrans Kab. Serang</p>
+                <h3 className="text-xl font-bold text-gray-900">Diana Ardhianty Utami, SH., MM.</h3>
+                <p className="text-gray-600">Kepala Dinas Tenaga Kerja dan Transmigrasi Kab. Serang</p>
               </div>
             </div>
           </div>

@@ -39,16 +39,16 @@ export default function Header() {
                 <div className="flex items-center justify-between">
                     {/* LEFT: Logo & Text */}
                     <Link href="/" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 bg-[#1E3A8A] rounded-lg flex items-center justify-center shrink-0">
-                            <span className="font-bold text-white text-base tracking-wider">DK</span>
+                        <div className="w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center shrink-0">
+                            <img src="/images/logokabserang.png" alt="Logo Kabupaten Serang" className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
                         </div>
+                        <div className="w-0.5 h-10 bg-gray-300 mx-1"></div>
                         <div className="flex flex-col">
-                            <span className="font-bold text-[#1E3A8A] leading-none text-lg">
-                                Disnakertrans
+                            <span className="font-extrabold text-[#1E3A8A] text-xs lg:text-[15px] tracking-tight leading-[1.1]">
+                                Dinas Tenaga Kerja <br className="hidden sm:block" />
+                                & Transmigrasi
                             </span>
-                            <span className="text-[10px] text-gray-500 font-medium mt-0.5">
-                                Kab. Serang
-                            </span>
+                            <span className="text-gray-500 text-[9px] lg:text-[11px] tracking-wide mt-0.5">Pemerintah Kabupaten Serang</span>
                         </div>
                     </Link>
 
