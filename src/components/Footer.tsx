@@ -1,5 +1,4 @@
-import { MapPin, Phone, Mail, Globe } from "lucide-react";
-import Link from "next/link";
+import { MapPin, Phone, Mail } from "lucide-react";
 
 export default function Footer() {
     return (
@@ -44,10 +43,10 @@ export default function Footer() {
                     <div>
                         <h4 className="text-[15px] font-bold mb-6 text-[#1E3A8A]">Tautan Cepat</h4>
                         <ul className="space-y-4 text-sm text-gray-600">
-                            <li><Link href="#" className="hover:text-[#1E3A8A] transition-colors">Hubungi Kami</Link></li>
-                            <li><Link href="#" className="hover:text-[#1E3A8A] transition-colors">Media Sosial</Link></li>
-                            <li><Link href="#" className="hover:text-[#1E3A8A] transition-colors">Alamat Kantor</Link></li>
-                            <li><Link href="#" className="hover:text-[#1E3A8A] transition-colors">Peta Lokasi</Link></li>
+                            <li><a href="mailto:disnakertrans@serangkab.go.id" className="hover:text-[#1E3A8A] transition-colors">Hubungi Kami</a></li>
+                            <li><a href="https://www.instagram.com/disnakertrans.kabserang" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E3A8A] transition-colors">Media Sosial</a></li>
+                            <li><a href="https://maps.app.goo.gl/wTa7unGsbCJjCZdb8" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E3A8A] transition-colors">Alamat Kantor</a></li>
+                            <li><a href="https://maps.app.goo.gl/wTa7unGsbCJjCZdb8" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E3A8A] transition-colors">Peta Lokasi</a></li>
                         </ul>
                     </div>
 
