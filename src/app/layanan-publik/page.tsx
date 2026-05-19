@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Building2, Briefcase, FileText, ExternalLink, CheckCircle2, Smartphone, Download } from "lucide-react";
+import { ArrowRight, Building2, Briefcase, FileText, ExternalLink, CheckCircle2 } from "lucide-react";
 
 export const metadata = {
     title: "Layanan Publik | Disnakertrans Serang"
@@ -9,8 +9,8 @@ export const metadata = {
 async function getLayananData() {
     return {
         karirData: {
-            lowongan: "1.2k+",
-            perusahaan: "450+"
+            lowongan: "117.4k+",
+            perusahaan: "33.0k+"
         }
     };
 }
@@ -19,15 +19,15 @@ export default async function LayananPublikPage() {
     const data = await getLayananData();
 
     return (
-        <div className="min-h-screen pb-0 w-full flex flex-col bg-[#F8FAFC]">
+        <div className="min-h-screen pb-0 w-full flex flex-col bg-[#F8FAFC] dark:bg-[#0B1120]">
             {/* Hero Section */}
-            <section className="bg-white pt-32 pb-24 lg:pt-40 lg:pb-32 relative overflow-hidden bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] [background-size:16px_16px]">
+            <section className="bg-white dark:bg-[#111827] pt-32 pb-24 lg:pt-40 lg:pb-32 relative overflow-hidden bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] dark:bg-[radial-gradient(#1E293B_1px,transparent_1px)] [background-size:16px_16px]">
                 <div className="container mx-auto px-4 xl:px-12 relative z-10">
                     <div className="max-w-3xl">
-                        <h1 className="text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight mb-6 leading-[1.15] text-[#0A192F]">
+                        <h1 className="text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight mb-6 leading-[1.15] text-[#0A192F] dark:text-white">
                             Pilar Digital Pelayanan Ketenagakerjaan.
                         </h1>
-                        <p className="text-base md:text-lg text-gray-600 mb-10 max-w-xl leading-relaxed">
+                        <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 mb-10 max-w-xl leading-relaxed">
                             Akses transparan, cepat, dan modern untuk seluruh warga Kabupaten Serang dalam mengelola kebutuhan tenaga kerja dan transmigrasi.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
@@ -41,16 +41,16 @@ export default async function LayananPublikPage() {
                     </div>
                 </div>
                 {/* Fade out bottom of pattern */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#F8FAFC] to-transparent"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#F8FAFC] dark:from-[#0B1120] to-transparent"></div>
             </section>
 
             {/* Layanan Unggulan */}
-            <section id="layanan-unggulan" className="py-20 bg-[#F8FAFC]">
+            <section id="layanan-unggulan" className="py-20 bg-[#F8FAFC] dark:bg-[#0B1120]">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="flex flex-col mb-12">
-                        <span className="text-[#B45309] font-bold text-xs tracking-widest uppercase mb-2">Aksesibilitas Publik</span>
+                        <span className="text-[#B45309] dark:text-[#FBBF24] font-bold text-xs tracking-widest uppercase mb-2">Aksesibilitas Publik</span>
                         <div className="flex items-center gap-6">
-                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">Layanan Unggulan Kami</h2>
+                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">Layanan Unggulan Kami</h2>
                             <div className="h-0.5 bg-gray-300 flex-1 hidden md:block max-w-[100px] mt-2"></div>
                         </div>
                     </div>
@@ -58,7 +58,7 @@ export default async function LayananPublikPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         
                         {/* E-SAKIP (Large Card, cols 1-7) */}
-                        <div className="lg:col-span-7 bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col sm:flex-row group hover:shadow-md transition-shadow">
+                        <div className="lg:col-span-7 bg-white dark:bg-[#1E293B] rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row group hover:shadow-md transition-shadow">
                             <div className="p-8 lg:p-10 flex-1 flex flex-col justify-between">
                                 <div>
                                     <div className="flex items-center gap-4 mb-4">
@@ -66,11 +66,11 @@ export default async function LayananPublikPage() {
                                             <Building2 className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-extrabold text-gray-900">E-SAKIP</h3>
+                                            <h3 className="text-xl font-extrabold text-gray-900 dark:text-white">E-SAKIP</h3>
                                             <p className="text-[10px] text-[#B45309] uppercase font-bold tracking-wider">Akuntabilitas Kinerja Instansi</p>
                                         </div>
                                     </div>
-                                    <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6">
                                         Sistem Akuntabilitas Kinerja Instansi Pemerintah (E-SAKIP) untuk memantau kinerja dan memastikan transparansi serta efisiensi birokrasi di lingkungan Pemerintah Kabupaten Serang.
                                     </p>
                                     <ul className="space-y-3 mb-8">
@@ -86,7 +86,7 @@ export default async function LayananPublikPage() {
                                     </ul>
                                 </div>
                                 <a 
-                                    href="https://e-sakip.serangkab.go.id/" 
+                                    href="https://e-sakip.serangkab.go.id/newsakip/" 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="bg-[#FBBF24] hover:bg-[#F59E0B] text-[#78350F] font-bold px-6 py-3 rounded-lg transition-colors w-[180px] text-sm inline-flex items-center gap-2"
@@ -100,12 +100,12 @@ export default async function LayananPublikPage() {
                         </div>
 
                         {/* Kartu Kuning AK-1 (cols 8-12) */}
-                        <div className="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-gray-100 p-8 lg:p-10 flex flex-col hover:shadow-md transition-shadow">
+                        <div className="lg:col-span-5 bg-white dark:bg-[#1E293B] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 lg:p-10 flex flex-col hover:shadow-md transition-shadow">
                             <div className="w-12 h-12 bg-[#FEF3C7] rounded-xl flex items-center justify-center text-[#92400E] mb-6">
                                 <Briefcase className="w-6 h-6" />
                             </div>
-                            <h3 className="text-xl font-extrabold text-gray-900 mb-3">Kartu Kuning AK-1 Online</h3>
-                            <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                            <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-3">Kartu Kuning AK-1 Online</h3>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6">
                                 Pendaftaran Kartu AK-1 (Kartu Kuning) secara online melalui aplikasi Serang Bahagia. Tidak perlu datang ke kantor!
                             </p>
                             
@@ -143,13 +143,13 @@ export default async function LayananPublikPage() {
                         </div>
 
                         {/* OSS RBA (cols 1-5) */}
-                        <div className="lg:col-span-5 bg-white rounded-2xl shadow-sm border-y border-r border-[#E2E8F0] border-l-4 border-l-[#B45309] p-8 hover:shadow-md transition-shadow flex flex-col justify-between">
+                        <div className="lg:col-span-5 bg-white dark:bg-[#1E293B] rounded-2xl shadow-sm border-y border-r border-[#E2E8F0] dark:border-gray-700 border-l-4 border-l-[#B45309] p-8 hover:shadow-md transition-shadow flex flex-col justify-between">
                             <div>
                                 <div className="flex justify-between items-start mb-4">
-                                    <h3 className="text-xl font-extrabold text-gray-900">OSS RBA</h3>
+                                    <h3 className="text-xl font-extrabold text-gray-900 dark:text-white">OSS RBA</h3>
                                     <FileText className="w-5 h-5 text-gray-400" />
                                 </div>
-                                <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6">
                                     Online Single Submission (OSS) Berbasis Risiko. Platform perizinan berusaha nasional yang mempermudah pelaku usaha dalam pengajuan izin usaha secara online.
                                 </p>
                                 <ul className="space-y-2 mb-6">
@@ -224,110 +224,42 @@ export default async function LayananPublikPage() {
                 </div>
             </section>
 
-            {/* Tutorial AK-1 Online */}
-            <section id="tutorial-ak1" className="py-20 bg-white border-t border-gray-100">
-                <div className="container mx-auto px-4 xl:px-12">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="text-center mb-12">
-                            <span className="text-[#B45309] font-bold text-xs tracking-widest uppercase mb-2 inline-block">Panduan Lengkap</span>
-                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Cara Buat Kartu AK-1 Secara Online</h2>
-                            <p className="text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                                Cukup instal aplikasi <strong>Serang Bahagia</strong> atau kunjungi website untuk membuat Kartu AK-1 tanpa perlu datang ke kantor.
+            {/* Tutorial AK-1 CTA */}
+            <section id="tutorial-ak1" className="py-20 bg-white dark:bg-[#111827] border-t border-gray-100 dark:border-gray-800">
+                <div className="container mx-auto px-4 xl:px-12 max-w-4xl">
+                    <div className="bg-gradient-to-r from-[#0A192F] to-[#1E3A8A] rounded-2xl p-8 lg:p-12 flex flex-col md:flex-row items-center gap-8">
+                        <div className="flex-1 text-white">
+                            <span className="text-[#FBBF24] font-bold text-xs tracking-widest uppercase mb-3 inline-block">Panduan Lengkap</span>
+                            <h2 className="text-2xl lg:text-3xl font-bold mb-3">Cara Buat Kartu AK-1 Secara Online</h2>
+                            <p className="text-white/70 text-sm leading-relaxed mb-6">
+                                Panduan langkah demi langkah untuk membuat Kartu Kuning AK-1 secara online melalui aplikasi Serang Bahagia. Tidak perlu datang ke kantor!
                             </p>
-                        </div>
-
-                        {/* Tutorial Steps */}
-                        <div className="space-y-6">
-                            {/* Step 1 */}
-                            <div className="flex gap-6 items-start group">
-                                <div className="w-12 h-12 bg-[#0A192F] text-[#FBBF24] rounded-xl flex items-center justify-center font-extrabold text-lg shrink-0 shadow-md group-hover:scale-110 transition-transform">
-                                    1
-                                </div>
-                                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
-                                    <h3 className="font-bold text-gray-900 mb-2">Buat Akun atau Registrasi</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed mb-3">
-                                        Kunjungi <a href="https://bahagia.serangkab.go.id/home" target="_blank" rel="noopener noreferrer" className="text-[#0A192F] font-bold hover:underline">bahagia.serangkab.go.id</a> atau download aplikasi <strong>Serang Bahagia</strong> di Google Play Store. Buat akun dengan memasukkan email yang aktif dan daftar.
-                                    </p>
-                                    <div className="flex items-center gap-3">
-                                        <a href="https://bahagia.serangkab.go.id/home" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#0A192F] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-black transition-colors">
-                                            <Smartphone className="w-3.5 h-3.5" /> Buka Website
-                                        </a>
-                                        <span className="text-xs text-gray-400">atau download di Play Store</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Step 2 */}
-                            <div className="flex gap-6 items-start group">
-                                <div className="w-12 h-12 bg-[#0A192F] text-[#FBBF24] rounded-xl flex items-center justify-center font-extrabold text-lg shrink-0 shadow-md group-hover:scale-110 transition-transform">
-                                    2
-                                </div>
-                                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
-                                    <h3 className="font-bold text-gray-900 mb-2">Pilih Menu Kartu AK.1</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">
-                                        Setelah login, pilih menu <strong>"Kartu AK.1"</strong> pada bagian layanan tenaga kerja. Menu ini tersedia di halaman utama aplikasi.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Step 3 */}
-                            <div className="flex gap-6 items-start group">
-                                <div className="w-12 h-12 bg-[#0A192F] text-[#FBBF24] rounded-xl flex items-center justify-center font-extrabold text-lg shrink-0 shadow-md group-hover:scale-110 transition-transform">
-                                    3
-                                </div>
-                                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
-                                    <h3 className="font-bold text-gray-900 mb-2">Isi dan Unggah Data dengan Lengkap</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">
-                                        Lengkapi formulir dengan data diri sesuai KTP, unggah dokumen persyaratan (KTP, ijazah terakhir, pas foto), kemudian klik <strong>Kirim</strong>.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Step 4 */}
-                            <div className="flex gap-6 items-start group">
-                                <div className="w-12 h-12 bg-[#0A192F] text-[#FBBF24] rounded-xl flex items-center justify-center font-extrabold text-lg shrink-0 shadow-md group-hover:scale-110 transition-transform">
-                                    4
-                                </div>
-                                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
-                                    <h3 className="font-bold text-gray-900 mb-2">Verifikasi oleh Petugas</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">
-                                        Petugas Dinas Tenaga Kerja akan memverifikasi data dan dokumen Anda. Kartu AK-1 akan ditandatangani secara <strong>elektronik</strong> oleh petugas.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Step 5 */}
-                            <div className="flex gap-6 items-start group">
-                                <div className="w-12 h-12 bg-[#FBBF24] text-[#0A192F] rounded-xl flex items-center justify-center font-extrabold text-lg shrink-0 shadow-md group-hover:scale-110 transition-transform">
-                                    5
-                                </div>
-                                <div className="bg-[#FFFBEB] rounded-xl p-6 border border-amber-100 flex-1 group-hover:shadow-md transition-shadow">
-                                    <h3 className="font-bold text-gray-900 mb-2">Kartu AK-1 Selesai! 🎉</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">
-                                        Penerbitan Kartu AK-1 akan dikirim melalui <strong>notifikasi akun Serang Bahagia</strong>. Anda dapat mengunduh file PDF kartu AK-1 <strong>kapan dan dimana saja</strong>.
-                                    </p>
-                                    <div className="mt-3 flex items-center gap-2">
-                                        <Download className="w-4 h-4 text-amber-600" />
-                                        <span className="text-xs text-amber-700 font-bold">Format: PDF (dapat diunduh langsung)</span>
-                                    </div>
-                                </div>
+                            <div className="flex flex-wrap gap-3">
+                                <Link
+                                    href="/layanan-publik/tutorial-ak1"
+                                    className="inline-flex items-center gap-2 bg-[#FBBF24] hover:bg-[#F59E0B] text-[#78350F] font-bold px-6 py-3 rounded-lg transition-colors text-sm shadow-lg"
+                                >
+                                    Lihat Tutorial Lengkap <ArrowRight className="w-4 h-4" />
+                                </Link>
+                                <a
+                                    href="https://bahagia.serangkab.go.id/home"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-bold px-6 py-3 rounded-lg hover:bg-white/20 transition-colors text-sm"
+                                >
+                                    Langsung Daftar <ExternalLink className="w-4 h-4" />
+                                </a>
                             </div>
                         </div>
-
-                        {/* CTA Box */}
-                        <div className="mt-12 bg-[#0A192F] rounded-2xl p-8 lg:p-10 text-center">
-                            <h3 className="text-white font-bold text-xl mb-3">Siap Membuat Kartu AK-1?</h3>
-                            <p className="text-white/70 text-sm mb-6 max-w-md mx-auto">
-                                Proses pembuatan kartu AK-1 online hanya membutuhkan waktu beberapa menit. Mulai sekarang!
-                            </p>
-                            <a 
-                                href="https://bahagia.serangkab.go.id/home" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 bg-[#FBBF24] hover:bg-[#F59E0B] text-[#78350F] font-bold px-8 py-3.5 rounded-lg transition-colors text-sm shadow-lg"
-                            >
-                                Buka Serang Bahagia <ExternalLink className="w-4 h-4" />
-                            </a>
+                        <div className="flex flex-col gap-3 shrink-0">
+                            {["Registrasi Akun", "Pilih Menu AK.1", "Isi & Unggah Data", "Verifikasi Petugas", "Unduh Kartu AK-1"].map((step, i) => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${i === 4 ? 'bg-[#FBBF24] text-[#0A192F]' : 'bg-white/10 text-white/80'}`}>
+                                        {i + 1}
+                                    </div>
+                                    <span className={`text-xs font-medium ${i === 4 ? 'text-[#FBBF24]' : 'text-white/60'}`}>{step}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

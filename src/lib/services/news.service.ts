@@ -19,6 +19,7 @@ export interface NewsItem {
   category: string | null;
   source_url: string | null;
   source_name: string | null;
+  link_url: string | null;
   date: string;
   created_at: string | null;
   updated_at: string | null;
@@ -58,16 +59,15 @@ export function getNewsList(params: NewsPaginationParams = {}) {
     queryParams.push(searchTerm, searchTerm);
   }
 
-  const countRow = db.prepare(
-    `SELECT COUNT(*) as total FROM news${whereClause}`
-  ).get(...queryParams.map((_, i) => queryParams[i])) as { total: number } | undefined;
-  
-  // Rebuild params for the actual query
+  const countStmt = db.prepare(`SELECT COUNT(*) as total FROM news${whereClause}`);
+  const countRow = (queryParams.length > 0 ? countStmt.get(...queryParams) : countStmt.get()) as { total: number } | undefined;
   const total = countRow?.total || 0;
 
-  const items = db.prepare(
+  const listStmt = db.prepare(
     `SELECT * FROM news${whereClause} ORDER BY date DESC LIMIT ? OFFSET ?`
-  ).all(...[...queryParams, perPage, offset]) as NewsItem[];
+  );
+  const listParams = [...queryParams, perPage, offset];
+  const items = listStmt.all(...listParams) as NewsItem[];
 
   const result = { items, total };
   cache.set(cacheKey, result, 120); // Cache for 2 minutes
@@ -140,6 +140,7 @@ export function createNews(data: {
   date: string;
   slug?: string;
   source_url?: string;
+  link_url?: string;
 }): number {
   const slug = data.slug || generateSlugFromTitle(data.title);
   const summary = data.content
@@ -147,8 +148,8 @@ export function createNews(data: {
     : data.description;
 
   const stmt = db.prepare(`
-    INSERT INTO news (title, slug, description, summary, content, thumbnail, category, source_url, source_name, date, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Manual Entry', ?, datetime('now'), datetime('now'))
+    INSERT INTO news (title, slug, description, summary, content, thumbnail, category, source_url, source_name, link_url, date, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Manual Entry', ?, ?, datetime('now'), datetime('now'))
   `);
 
   const info = stmt.run(
@@ -160,6 +161,7 @@ export function createNews(data: {
     data.thumbnail || '',
     data.category || 'Umum',
     data.source_url || null,
+    data.link_url || null,
     data.date
   );
 
@@ -179,6 +181,7 @@ export function updateNews(id: number, data: Partial<{
   thumbnail: string;
   category: string;
   date: string;
+  link_url: string;
 }>): boolean {
   const fields: string[] = [];
   const values: (string | number)[] = [];
@@ -189,6 +192,7 @@ export function updateNews(id: number, data: Partial<{
   if (data.thumbnail !== undefined) { fields.push('thumbnail = ?'); values.push(data.thumbnail); }
   if (data.category !== undefined) { fields.push('category = ?'); values.push(data.category); }
   if (data.date !== undefined) { fields.push('date = ?'); values.push(data.date); }
+  if (data.link_url !== undefined) { fields.push('link_url = ?'); values.push(data.link_url); }
 
   if (fields.length === 0) return false;
 

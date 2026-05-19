@@ -151,7 +151,7 @@ async function scrapeArticleDetail(url: string): Promise<{
   // The content is typically in the main content area after the title
   let content = '';
 
-  // Try common content selectors
+  // Try common content selectors (including broader ones for various CMS themes)
   const contentSelectors = [
     '.article-content',
     '.news-content',
@@ -160,32 +160,67 @@ async function scrapeArticleDetail(url: string): Promise<{
     '.content-body',
     'article .content',
     '.card-body',
+    '.detail-content',
+    '.post-body',
+    '.berita-content',
+    '.single-content',
+    '.page-content',
+    'article',
+    '.col-md-8',
+    '.col-lg-8',
   ];
 
   for (const selector of contentSelectors) {
     const el = $(selector);
     if (el.length > 0) {
-      content = el.html() || '';
-      break;
-    }
-  }
-
-  // Fallback: try to extract text content from the main area
-  if (!content) {
-    // Look for the largest text block on the page (likely article body)
-    const mainContent = $('main, .container, .content, .row').first();
-    if (mainContent.length) {
-      // Find paragraphs that are likely article content
+      // Extract text from paragraphs within the container
       const paragraphs: string[] = [];
-      mainContent.find('p').each((_, el) => {
-        const text = $(el).text().trim();
-        if (text.length > 30) {
-          paragraphs.push($(el).html() || text);
+      el.find('p').each((_, p) => {
+        const text = $(p).text().trim();
+        if (text.length > 20) {
+          paragraphs.push(text);
         }
       });
       if (paragraphs.length > 0) {
-        content = paragraphs.join('\n');
+        content = paragraphs.join('\n\n');
+        break;
       }
+      // If no paragraphs, try the raw text
+      const rawText = el.text().trim();
+      if (rawText.length > 100) {
+        content = rawText;
+        break;
+      }
+    }
+  }
+
+  // Fallback: collect ALL meaningful paragraphs from the page body
+  if (!content || content.length < 50) {
+    const paragraphs: string[] = [];
+    $('p').each((_, el) => {
+      const text = $(el).text().trim();
+      // Filter out nav items, footers, very short texts, and boilerplate
+      if (
+        text.length > 20 &&
+        !text.includes('©') &&
+        !text.includes('Copyright') &&
+        !text.includes('Powered by') &&
+        !text.includes('All rights reserved')
+      ) {
+        paragraphs.push(text);
+      }
+    });
+    if (paragraphs.length > 0) {
+      content = paragraphs.join('\n\n');
+    }
+  }
+
+  // Final fallback: extract from the body, skipping header/nav/footer
+  if (!content || content.length < 50) {
+    $('header, nav, footer, script, style, .navbar, .sidebar, .footer').remove();
+    const bodyText = $('body').text().trim().replace(/\s+/g, ' ');
+    if (bodyText.length > 100) {
+      content = bodyText.substring(0, 5000);
     }
   }
 
@@ -238,7 +273,18 @@ async function scrapeArticleDetail(url: string): Promise<{
     category = categoryLinks.first().text().trim().replace(/\(all\)/i, '').trim() || 'Umum';
   }
 
-  return { content, thumbnail, date, category };
+  // Extract title from the detail page (more accurate than listing page)
+  let title = '';
+  const titleSelectors = ['h1', 'article h2', '.article-title', '.post-title', '.entry-title'];
+  for (const sel of titleSelectors) {
+    const titleEl = $(sel).first();
+    if (titleEl.length && titleEl.text().trim().length > 5) {
+      title = titleEl.text().trim();
+      break;
+    }
+  }
+
+  return { content, thumbnail, date, category, title };
 }
 
 /**
@@ -311,9 +357,10 @@ export async function scrapeNews(maxPages = 2): Promise<{
           const detail = await scrapeArticleDetail(article.source_url);
 
           // Build the full article object
+          const articleTitle = detail.title || article.title;
           const fullArticle: ScrapedArticle = {
-            title: article.title,
-            slug: generateSlug(article.title),
+            title: articleTitle,
+            slug: generateSlug(articleTitle),
             description: generateSummary(
               detail.content.replace(/<[^>]*>/g, ''),
               160

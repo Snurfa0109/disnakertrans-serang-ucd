@@ -1,104 +1,158 @@
-import { MapPin, Phone, Mail } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { MapPin, Phone, Mail, ExternalLink, Users, Eye } from "lucide-react";
 
 export default function Footer() {
+    const [stats, setStats] = useState({ total: 0, today: 0 });
+
+    useEffect(() => {
+        // Only fetch stats (tracking is handled by VisitorTracker)
+        fetch("/api/visitors")
+            .then((res) => res.json())
+            .then((data) => setStats(data))
+            .catch(() => {});
+    }, []);
+
     return (
-        <footer className="bg-[#F8FAFC] text-gray-700 mt-auto flex flex-col pt-16 pb-8 border-t border-gray-200">
-            <div className="container mx-auto px-4 xl:px-12 flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-                    {/* Brand Col */}
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 shrink-0">
+        <footer className="bg-[#071B3A] text-white mt-auto">
+            {/* Main Footer Content */}
+            <div className="container mx-auto px-4 xl:px-12 pt-14 pb-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
+
+                    {/* Column 1: Brand */}
+                    <div className="space-y-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 shrink-0">
                                 <img src="/images/logokabserang.png" alt="Logo Kab Serang" className="w-full h-full object-contain" />
                             </div>
-                            <div className="w-1 h-12 bg-[#1E3A8A]/20 rounded-full mx-1"></div>
+                            <div className="w-px h-9 bg-white/15 mx-0.5"></div>
                             <div className="flex flex-col">
-                                <span className="text-[#1E3A8A] font-extrabold text-[15px] lg:text-[17px] tracking-tight leading-[1.1]">
+                                <span className="text-white font-extrabold text-[13px] tracking-tight leading-[1.15]">
                                     Dinas Tenaga Kerja <br />
-                                    & Transmigrasi
+                                    &amp; Transmigrasi
                                 </span>
-                                <span className="text-gray-700 text-[9px] lg:text-[11px] font-medium tracking-wide mt-1">Pemerintah Kabupaten Serang</span>
+                                <span className="text-white/40 text-[10px] font-medium tracking-wide mt-0.5">Pemerintah Kabupaten Serang</span>
                             </div>
                         </div>
-                        <p className="text-gray-600 text-sm leading-relaxed max-w-sm">
-                            Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang. Melayani dengan integritas dan inovasi untuk masyarakat Serang.
+                        <p className="text-white/40 text-[13px] leading-relaxed max-w-[260px]">
+                            Melayani dengan integritas untuk kesejahteraan masyarakat Kabupaten Serang.
                         </p>
-                        <div className="flex items-center gap-3 border-t border-gray-100 pt-6">
-                            <a href="https://www.facebook.com/DisnakertransKab.Srg/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#1E3A8A] text-white flex items-center justify-center hover:bg-blue-700 transition-colors shadow-sm cursor-pointer hover:-translate-y-0.5">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        {/* Social Icons */}
+                        <div className="flex items-center gap-2">
+                            <a href="https://www.facebook.com/DisnakertransKab.Srg/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-white/[0.07] text-white/50 flex items-center justify-center hover:bg-[#FBBF24]/15 hover:text-[#FBBF24] transition-all" aria-label="Facebook">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                                     <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                                 </svg>
                             </a>
-                            <a href="https://www.instagram.com/disnakertrans.kabserang?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center hover:opacity-90 transition-opacity shadow-sm cursor-pointer hover:-translate-y-0.5">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <a href="https://www.instagram.com/disnakertrans.kabserang?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-white/[0.07] text-white/50 flex items-center justify-center hover:bg-[#FBBF24]/15 hover:text-[#FBBF24] transition-all" aria-label="Instagram">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
                                 </svg>
                             </a>
+                            <a href="https://www.threads.com/@disnakertrans.kabserang" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-white/[0.07] text-white/50 flex items-center justify-center hover:bg-[#FBBF24]/15 hover:text-[#FBBF24] transition-all" aria-label="Threads">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.59 12c.025 3.086.718 5.496 2.057 7.164 1.432 1.781 3.632 2.698 6.542 2.717 2.227-.017 4.08-.625 5.51-1.807 1.573-1.3 2.394-3.045 2.439-5.183.026-1.177-.24-2.126-.79-2.823-.524-.665-1.27-1.058-2.22-1.169a7.5 7.5 0 0 1-.093 1.596c-.259 1.4-.837 2.542-1.717 3.395-.896.869-2.02 1.353-3.34 1.44-1.07.07-2.09-.18-2.95-.721-.91-.573-1.54-1.42-1.82-2.453-.32-1.17-.18-2.378.39-3.39.55-.977 1.44-1.69 2.58-2.06.92-.3 1.91-.4 2.92-.3.06-.53.08-1.07.06-1.61l2.12.03c.03.72 0 1.43-.1 2.12 1.16.28 2.1.86 2.77 1.73.78.98 1.18 2.275 1.15 3.85-.05 2.63-1.1 4.82-3.12 6.49-1.81 1.5-4.08 2.27-6.74 2.29zm-.49-7.94c.86-.05 1.57-.36 2.13-.93.58-.58.98-1.39 1.18-2.42.12-.65.15-1.3.09-1.93-.7-.08-1.41-.04-2.13.13-.8.24-1.41.67-1.76 1.28-.35.62-.44 1.33-.26 2 .17.63.55 1.11 1.08 1.39.33.19.71.34 1.15.42.15.03.31.05.47.06z"/>
+                                </svg>
+                            </a>
                         </div>
                     </div>
 
-                    {/* Tautan Cepat */}
+                    {/* Column 2: Contact */}
                     <div>
-                        <h4 className="text-[15px] font-bold mb-6 text-[#1E3A8A]">Tautan Cepat</h4>
-                        <ul className="space-y-4 text-sm text-gray-600">
-                            <li><a href="mailto:disnakertrans@serangkab.go.id" className="hover:text-[#1E3A8A] transition-colors">Hubungi Kami</a></li>
-                            <li><a href="https://www.instagram.com/disnakertrans.kabserang" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E3A8A] transition-colors">Media Sosial</a></li>
-                            <li><a href="https://maps.app.goo.gl/wTa7unGsbCJjCZdb8" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E3A8A] transition-colors">Alamat Kantor</a></li>
-                            <li><a href="https://maps.app.goo.gl/wTa7unGsbCJjCZdb8" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E3A8A] transition-colors">Peta Lokasi</a></li>
-                        </ul>
-                    </div>
-
-                    {/* Kontak Kami */}
-                    <div>
-                        <h4 className="text-[15px] font-bold mb-6 text-[#1E3A8A]">Kontak Kami</h4>
-                        <ul className="space-y-5 text-sm text-gray-600">
+                        <h4 className="text-[10px] font-bold mb-6 text-[#FBBF24]/70 tracking-[0.2em] uppercase">Hubungi Kami</h4>
+                        <ul className="space-y-4">
                             <li className="flex items-start gap-3">
-                                <MapPin className="w-5 h-5 text-[#1E3A8A] shrink-0 mt-0.5" />
-                                <a href="https://maps.app.goo.gl/wTa7unGsbCJjCZdb8" target="_blank" rel="noopener noreferrer" className="leading-relaxed hover:text-[#1E3A8A] hover:underline transition-colors">
-                                    Jl. Kawasan Puspemkab Serang No.B1, Kaserangan, Kec. Ciruas, Kabupaten Serang, Banten
+                                <div className="w-7 h-7 rounded-md bg-[#FBBF24]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                    <MapPin className="w-3.5 h-3.5 text-[#FBBF24]" />
+                                </div>
+                                <span className="text-white/50 text-[13px] leading-relaxed">Jl. Kawasan Puspemkab Serang No.B1, Kaserangan, Kec. Ciruas, Kab. Serang</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <div className="w-7 h-7 rounded-md bg-[#FBBF24]/10 flex items-center justify-center shrink-0">
+                                    <Phone className="w-3.5 h-3.5 text-[#FBBF24]" />
+                                </div>
+                                <span className="text-white/50 text-[13px]">(0254) 200234</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <div className="w-7 h-7 rounded-md bg-[#FBBF24]/10 flex items-center justify-center shrink-0">
+                                    <Mail className="w-3.5 h-3.5 text-[#FBBF24]" />
+                                </div>
+                                <a href="mailto:disnakertrans@serangkab.go.id" className="text-white/50 text-[13px] hover:text-white transition-colors">
+                                    disnakertrans@serangkab.go.id
                                 </a>
                             </li>
-                            <li className="flex items-center gap-3">
-                                <Phone className="w-5 h-5 text-[#1E3A8A] shrink-0" />
-                                <span>(0254) 200234</span>
-                            </li>
-                            <li className="flex items-center gap-3">
-                                <Mail className="w-5 h-5 text-[#1E3A8A] shrink-0" />
-                                <span className="truncate">disnakertrans@serangkab.go.id</span>
-                            </li>
                         </ul>
                     </div>
 
-                    {/* Lokasi Kantor */}
+                    {/* Column 3: Location */}
                     <div>
-                        <h4 className="text-[15px] font-bold mb-6 text-[#1E3A8A]">Lokasi Kantor</h4>
-                        <a href="https://maps.app.goo.gl/wTa7unGsbCJjCZdb8" target="_blank" rel="noopener noreferrer" className="block w-full h-32 rounded-lg overflow-hidden relative shadow-sm border border-gray-200 group">
-                            <iframe
-                                src="https://maps.google.com/maps?q=V752%2BQ7%20Kaserangan%2C%20Kabupaten%20Serang%2C%20Banten&t=&z=15&ie=UTF8&iwloc=&output=embed"
-                                className="w-full h-full pointer-events-none"
-                                style={{ border: 0 }}
-                                allowFullScreen={false}
-                                loading="lazy"
-                                referrerPolicy="no-referrer-when-downgrade"
-                            ></iframe>
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                <span className="bg-white text-[#1E3A8A] text-xs font-bold px-3 py-1.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0">
-                                    Buka di Google Maps
-                                </span>
-                            </div>
+                        <h4 className="text-[10px] font-bold mb-6 text-[#FBBF24]/70 tracking-[0.2em] uppercase">Lokasi Kantor</h4>
+                        <p className="text-white/50 text-[13px] leading-relaxed mb-5">
+                            Kawasan Pusat Pemerintahan Kabupaten Serang, Provinsi Banten.
+                        </p>
+                        <a
+                            href="https://maps.app.goo.gl/wTa7unGsbCJjCZdb8"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-white/[0.07] hover:bg-[#FBBF24]/15 text-white/60 hover:text-[#FBBF24] text-xs font-semibold px-4 py-2.5 rounded-lg transition-all border border-white/[0.07] hover:border-[#FBBF24]/20"
+                        >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Lihat di Google Maps
                         </a>
                     </div>
+
+                    {/* Column 4: Visitor Stats */}
+                    <div>
+                        <h4 className="text-[10px] font-bold mb-6 text-[#FBBF24]/70 tracking-[0.2em] uppercase">Statistik Pengunjung</h4>
+                        <div className="bg-white/[0.04] rounded-xl border border-white/[0.08] p-5 space-y-4">
+                            {/* Total Visitors */}
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-lg bg-[#FBBF24]/10 flex items-center justify-center shrink-0">
+                                    <Users className="w-4 h-4 text-[#FBBF24]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] text-white/35 font-medium tracking-wider uppercase">Total Kunjungan</p>
+                                    <p className="text-xl font-extrabold text-[#FBBF24] tracking-tight leading-tight">
+                                        {stats.total.toLocaleString('id-ID')}
+                                    </p>
+                                </div>
+                            </div>
+                            {/* Divider */}
+                            <div className="h-px bg-white/[0.06]"></div>
+                            {/* Today Visitors */}
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                                    <Eye className="w-4 h-4 text-white/40" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] text-white/35 font-medium tracking-wider uppercase">Kunjungan Hari Ini</p>
+                                    <p className="text-xl font-extrabold text-white/80 tracking-tight leading-tight">
+                                        {stats.today.toLocaleString('id-ID')}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            {/* Copyright Strip */}
-            <div className="mt-16 pt-8 border-t border-gray-200">
-                <div className="container mx-auto px-4 xl:px-12 text-center">
-                    <p className="text-xs text-gray-500">
-                        © 2024 Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang. All Rights Reserved.
+            {/* Copyright Bar */}
+            <div className="border-t border-white/[0.06]">
+                <div className="container mx-auto px-4 xl:px-12 py-5 flex flex-col sm:flex-row items-center justify-between gap-2">
+                    <p className="text-[11px] text-white/25">
+                        © {new Date().getFullYear()} Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang. Hak Cipta Dilindungi.
                     </p>
+                    <a
+                        href="/admin/login"
+                        className="text-[10px] text-white/10 hover:text-white/25 transition-colors"
+                        title="Panel Administrator"
+                    >
+                        Admin
+                    </a>
                 </div>
             </div>
         </footer>

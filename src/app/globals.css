@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #1E3A8A;
   --color-primary-hover: #172554;
@@ -10,13 +12,20 @@
 
 @layer base {
   :root {
-    --background: #EFF6FF;
+    --background: #F8FAFC;
     --foreground: #0F172A;
   }
 
   .dark {
-    --background: #020617;
-    --foreground: #F8FAFC;
+    --background: #0B1120;
+    --foreground: #F1F5F9;
+  }
+
+  /* Force light mode for admin dashboard — overrides .dark */
+  .force-light,
+  .force-light * {
+    --background: #F8FAFC !important;
+    --foreground: #0F172A !important;
   }
 
   body {

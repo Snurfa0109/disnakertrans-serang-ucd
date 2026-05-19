@@ -7,9 +7,9 @@ export const metadata = {
 async function getProfilData() {
     return {
         visi: [
-            "Mewujudkan Keadilan, Ketenagakerjaan, dan Transmigrasi yang Sejahtera.",
-            "Tumbuhnya kesempatan kerja yang merata.",
+            "Terwujudnya Kondisi Tenaga Kerja Dan Transmigrasi Yang Sejahtera."
         ],
+    
         misi: [
             { id: 1, title: "Meningkatkan kualitas SDM ketenagakerjaan", desc: "Meningkatkan kualitas sumber daya manusia di bidang ketenagakerjaan secara menyeluruh dan berkelanjutan.", icon: GraduationCap },
             { id: 2, title: "Pelatihan dan Sertifikasi", desc: "Meningkatkan kualitas tenaga kerja melalui pelatihan dan sertifikasi yang terstandar secara nasional.", icon: CheckCircle2 },
@@ -53,7 +53,7 @@ export default async function ProfilPage() {
     const data = await getProfilData();
 
     return (
-        <div className="min-h-screen pb-0 w-full flex flex-col bg-white">
+        <div className="min-h-screen pb-0 w-full flex flex-col bg-white dark:bg-[#0B1120]">
             {/* Hero Section */}
             <section className="relative pt-32 pb-24 lg:pt-40 lg:pb-32 bg-[#0A192F] overflow-hidden">
                 <div className="absolute inset-0 z-0">
@@ -69,14 +69,41 @@ export default async function ProfilPage() {
                             Mandiri
                         </h1>
                         <p className="text-base md:text-lg text-white/80 max-w-xl leading-relaxed">
-                            Profil lengkap Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang sebagai penggerak ekonomi daerah.
+                           Mengenal visi, misi, struktur organisasi, dan peran Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang sebagai penggerak ekonomi daerah.
                         </p>
                     </div>
                 </div>
             </section>
 
+            {/* Sambutan Kepala Dinas */}
+            <section className="py-20 bg-white dark:bg-[#111827]">
+                <div className="container mx-auto px-4 xl:px-12">
+                    <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+                        {/* Image Side */}
+                        <div className="relative w-full lg:w-5/12 max-w-sm mx-auto lg:max-w-none">
+                            <div className="bg-[#FDE68A] absolute inset-0 -ml-4 -mt-4 rounded-xl min-h-full aspect-[3/4]"></div>
+                            <div className="relative z-10 bg-white rounded-xl overflow-hidden shadow-xl aspect-[3/4]">
+                                <img src="/images/kepala-dinas.png" alt="Kepala Dinas Tenaga Kerja dan Transmigrasi" className="w-full h-full object-cover object-top" />
+                            </div>
+                        </div>
+                        {/* Text Side */}
+                        <div className="w-full lg:w-7/12">
+                            <div className="w-10 h-1 bg-[#FBBF24] mb-6 rounded-full"></div>
+                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6">Sambutan Kepala Dinas</h2>
+                            <p className="text-gray-600 dark:text-gray-300 text-lg italic mb-8 leading-relaxed">
+                                &ldquo;Selamat datang di portal resmi Disnakertrans Kabupaten Serang. Kami berkomitmen untuk terus berinovasi dalam memberikan layanan terbaik bagi seluruh pencari kerja dan pemberi kerja, demi mewujudkan Kabupaten Serang yang lebih sejahtera melalui sektor ketenagakerjaan yang inklusif.&rdquo;
+                            </p>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Diana Ardhianty Utami, SH., MM.</h3>
+                                <p className="text-gray-600 dark:text-gray-400">Kepala Dinas Tenaga Kerja dan Transmigrasi Kab. Serang</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Visi & Misi Section */}
-            <section className="py-20 bg-[#F8FAFC]">
+            <section className="py-20 bg-[#F8FAFC] dark:bg-[#0B1120]">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
                         
@@ -84,16 +111,16 @@ export default async function ProfilPage() {
                         <div className="w-full lg:w-5/12">
                             <div className="flex items-center gap-4 mb-8">
                                 <div className="w-12 h-0.5 bg-[#B45309]"></div>
-                                <span className="text-[#B45309] font-bold text-xs tracking-widest uppercase">Strategi & Arah</span>
+                                <span className="text-[#B45309] dark:text-[#FBBF24] font-bold text-xs tracking-widest uppercase">Strategi & Arah</span>
                             </div>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-8">Visi Instansi</h2>
+                            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Visi Instansi</h2>
                             
-                            <div className="relative bg-white p-8 lg:p-10 shadow-sm border-y border-r border-[#E2E8F0] border-l-4 border-l-[#B45309]">
+                            <div className="relative bg-white dark:bg-[#1E293B] p-8 lg:p-10 shadow-sm border-y border-r border-[#E2E8F0] dark:border-gray-700 border-l-4 border-l-[#B45309]">
                                 <ul className="space-y-3">
                                     {data.visi.map((v, i) => (
                                         <li key={i} className="flex items-start gap-3">
                                             <span className="mt-1.5 w-2 h-2 rounded-full bg-[#B45309] shrink-0"></span>
-                                            <p className="text-lg lg:text-xl font-medium text-gray-800 leading-relaxed italic">
+                                            <p className="text-lg lg:text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed italic">
                                                 "{v}"
                                             </p>
                                         </li>
@@ -104,16 +131,16 @@ export default async function ProfilPage() {
 
                         {/* Misi */}
                         <div className="w-full lg:w-7/12">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-8 lg:mt-[52px]">Misi Utama</h2>
+                            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 lg:mt-[52px]">Misi Utama</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {data.misi.map((m) => (
-                                    <div key={m.id} className="bg-gray-50/80 hover:bg-white p-5 rounded-xl border border-gray-100 flex items-start gap-4 transition-colors shadow-sm">
+                                    <div key={m.id} className="bg-gray-50/80 dark:bg-[#0F172A] hover:bg-white dark:hover:bg-[#1E293B] p-5 rounded-xl border border-gray-100 dark:border-gray-700 flex items-start gap-4 transition-colors shadow-sm">
                                         <div className="w-10 h-10 bg-[#0A192F] text-[#FBBF24] rounded-lg flex items-center justify-center shrink-0">
                                             <m.icon className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <h3 className="text-sm font-bold text-gray-900 mb-1">{m.title}</h3>
-                                            <p className="text-gray-500 leading-relaxed text-xs">{m.desc}</p>
+                                            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">{m.title}</h3>
+                                            <p className="text-gray-500 dark:text-gray-400 leading-relaxed text-xs">{m.desc}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -188,23 +215,23 @@ export default async function ProfilPage() {
             </section>
 
             {/* Struktur Bidang */}
-            <section className="py-20 bg-[#F8FAFC]">
+            <section className="py-20 bg-[#F8FAFC] dark:bg-[#0B1120]">
                 <div className="container mx-auto px-4 xl:px-12 text-center">
-                    <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Struktur Bidang</h2>
-                    <p className="text-gray-600 mb-12 max-w-2xl mx-auto">
+                    <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">Struktur Bidang</h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
                         Unit kerja fungsional yang menangani spesifikasi urusan ketenagakerjaan berdasarkan Perbup Kab. Serang No. 93 Tahun 2022.
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
                         {data.bidang.map(b => (
-                            <div key={b.id} className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 group hover:shadow-md transition-shadow">
+                            <div key={b.id} className="bg-white dark:bg-[#1E293B] p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 group hover:shadow-md transition-shadow">
                                 <div className="mb-6 text-[#92400E]">
                                     <b.icon className="w-8 h-8" strokeWidth={1.5} />
                                 </div>
-                                <h3 className="text-base font-bold text-gray-900 mb-3 group-hover:text-[#0A192F] transition-colors">
+                                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-3 group-hover:text-[#0A192F] dark:group-hover:text-[#93C5FD] transition-colors">
                                     {b.title}
                                 </h3>
-                                <p className="text-sm text-gray-600 leading-relaxed">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                                     {b.desc}
                                 </p>
                             </div>
@@ -214,18 +241,15 @@ export default async function ProfilPage() {
             </section>
 
             {/* Struktur Organisasi */}
-            <section className="py-20 bg-white border-t border-gray-100">
+            <section className="py-20 bg-white dark:bg-[#111827] border-t border-gray-100 dark:border-gray-800">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
                         <div className="max-w-xl">
-                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Struktur Organisasi dan Tata Kerja</h2>
-                            <p className="text-gray-600 leading-relaxed">
+                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">Struktur Organisasi dan Tata Kerja</h2>
+                            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                                 Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang
                             </p>
                         </div>
-                        <button className="bg-[#FBBF24] hover:bg-[#F59E0B] text-[#78350F] font-bold px-6 py-3.5 rounded-lg flex items-center justify-center gap-2 transition-colors w-full md:w-auto text-sm shrink-0 shadow-sm">
-                            <Download className="w-4 h-4" /> UNDUH PDF
-                        </button>
                     </div>
 
                     <div className="bg-[#F8FAFC] rounded-2xl p-8 lg:p-12 border border-gray-100 overflow-x-auto">

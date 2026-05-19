@@ -146,7 +146,7 @@ export default function Chatbot() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
+                        className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
                         style={{ height: "520px" }}
                     >
                         {/* Header */}
@@ -170,7 +170,7 @@ export default function Chatbot() {
                         </div>
 
                         {/* Messages */}
-                        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50/80">
+                        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50/80 dark:bg-[#0F172A]">
                             {messages.map((msg) => (
                                 <motion.div
                                     key={msg.id}
@@ -191,7 +191,7 @@ export default function Chatbot() {
                                     </div>
                                     <div className={`max-w-[75%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
                                         msg.role === "bot"
-                                            ? "bg-white text-gray-800 shadow-sm border border-gray-100 rounded-tl-md"
+                                            ? "bg-white dark:bg-[#1E293B] text-gray-800 dark:text-gray-200 shadow-sm border border-gray-100 dark:border-gray-700 rounded-tl-md"
                                             : "bg-[#0A192F] text-white rounded-tr-md"
                                     }`}>
                                         {msg.text}
@@ -208,7 +208,7 @@ export default function Chatbot() {
                                     <div className="w-7 h-7 rounded-full bg-[#0A192F] text-[#FBBF24] flex items-center justify-center shrink-0 mt-1">
                                         <Bot className="w-3.5 h-3.5" />
                                     </div>
-                                    <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-md shadow-sm border border-gray-100">
+                                    <div className="bg-white dark:bg-[#1E293B] px-4 py-3 rounded-2xl rounded-tl-md shadow-sm border border-gray-100 dark:border-gray-700">
                                         <div className="flex gap-1">
                                             <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                                             <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -222,14 +222,14 @@ export default function Chatbot() {
 
                         {/* Quick Replies */}
                         {messages.length <= 2 && (
-                            <div className="px-4 py-2 border-t border-gray-100 bg-white shrink-0">
+                            <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1E293B] shrink-0">
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">Pertanyaan populer:</p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {quickReplies.map((qr, i) => (
                                         <button
                                             key={i}
                                             onClick={() => sendMessage(qr)}
-                                            className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-[#0A192F] hover:text-white text-gray-700 rounded-full font-medium transition-colors"
+                                            className="text-[11px] px-3 py-1.5 bg-gray-100 dark:bg-[#0F172A] hover:bg-[#0A192F] hover:text-white text-gray-700 dark:text-gray-300 rounded-full font-medium transition-colors"
                                         >
                                             {qr}
                                         </button>
@@ -239,14 +239,14 @@ export default function Chatbot() {
                         )}
 
                         {/* Input */}
-                        <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-gray-100 bg-white flex items-center gap-2 shrink-0">
+                        <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1E293B] flex items-center gap-2 shrink-0">
                             <input
                                 ref={inputRef}
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Ketik pertanyaan Anda..."
-                                className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#0A192F]/20 transition-all"
+                                className="flex-1 bg-gray-100 dark:bg-[#0F172A] rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#0A192F]/20 transition-all dark:text-white dark:placeholder:text-gray-500"
                             />
                             <button
                                 type="submit"

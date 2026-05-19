@@ -1,75 +1,35 @@
 import Link from "next/link";
-import { ArrowRight, Download, BarChart2, Briefcase, Users, FileCheck, CheckCircle2, FileText, CalendarDays } from "lucide-react";
+import db from "@/lib/db";
+import { ArrowRight, Briefcase, Users, FileCheck, FileText, CalendarDays, MapPin } from "lucide-react";
+import KecamatanMap from "@/components/KecamatanMap";
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
     title: "Informasi Publik | Disnakertrans Serang"
 };
 
-// Simulated mock fetch functions
-async function getWarta() {
-    return {
-        utama: {
-            title: "Perluasan Lapangan Kerja Melalui Program Inkubasi Bisnis Mandiri 2024",
-            desc: "Pemerintah Kabupaten Serang meluncurkan inisiatif baru untuk menekan angka pengangguran melalui pemberdayaan UMKM...",
-            date: "20 Okt 2023",
-            author: "Admin Disnaker",
-            tag: "UTAMA",
-            image: "https://images.unsplash.com/photo-1556761175-5973dc0f32d7?auto=format&fit=crop&q=80&w=800"
-        },
-        sekunder: [
-            {
-                id: 1,
-                tag: "STATISTIK",
-                title: "Tren Penurunan Angka Pengangguran Terbuka di Kabupaten Serang",
-                desc: "Data terbaru menunjukkan penurunan signifikam sebesar 2.4% dalam periode semester pertama.",
-                image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=600"
-            }
-        ],
-        tersier: [
-            { id: 1, tag: "PELATIHAN", title: "Pendaftaran Pelatihan Vokasi Batch IV Dibuka", desc: "Tersedia kuota untuk pelatihan pengelasan, otomotif, dan desain grafis." },
-            { id: 2, tag: "INTERNAL", title: "Rapat Koordinasi Lintas Sektoral Penempatan Tenaga Kerja", desc: "Sinergi antara pemerintah dan sektor industri untuk penyerapan tenaga lokal." }
-        ]
-    };
-}
-
-async function getStats() {
-    return [
-        { id: 1, label: "Pencari Kerja Terdaftar", value: "12,402", icon: Briefcase },
-        { id: 2, label: "Peserta Pelatihan (2023)", value: "3,150", icon: GraduationCapIcon },
-        { id: 3, label: "Perusahaan Terverifikasi", value: "892", icon: FileCheck },
-        { id: 4, label: "Indeks Kepuasan Masyarakat", value: "92%", icon: Users },
-    ];
-}
-
-async function getJadwal() {
-    return [
-        { id: 1, date: "12", month: "NOV", title: "Teknik Las SMAW 3G", info: "BLK Kab. Serang • 08:00 - Selesai", color: "bg-green-500" },
-        { id: 2, date: "15", month: "NOV", title: "Digital Marketing & SEO", info: "Online Webinar • 13:00 - 15:00", color: "bg-[#B45309]" },
-        { id: 3, date: "20", month: "NOV", title: "Manajemen Administrasi Perkantoran", info: "Gedung Disnaker • 09:00 - 12:00", color: "bg-[#0A192F]" },
-    ];
-}
-
-async function getDownloads() {
-    return [
-        { id: 1, title: "Laporan Tahunan 2023", desc: "Ringkasan eksekutif capaian kinerja dan penggunaan anggaran tahun 2023.", size: "4.2 MB", ext: "PDF", iconColor: "text-red-500 bg-red-50" },
-        { id: 2, title: "Formulir Kartu Kuning (AK-1)", desc: "Blangko isian resmi untuk pendaftaran pencari kerja di wilayah Kab. Serang.", size: "1.1 MB", ext: "DOCX", iconColor: "text-blue-500 bg-blue-50" },
-        { id: 3, title: "Data Perusahaan Aktif 2024", desc: "Dataset perusahaan yang telah melaporkan WLKP secara rutin di Kabupaten Serang.", size: "2.8 MB", ext: "XLSX", iconColor: "text-green-500 bg-green-50" },
-    ];
-}
-
 function GraduationCapIcon(props: any) {
-    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21.42 10.922a2 2 0 0 1-.019 3.018l-8.5 8.5a2 2 0 0 1-2.802 0l-8.5-8.5a2 2 0 0 1-.019-3.018l8.5-8.5a2 2 0 0 1 2.803 0l8.5 8.5z" /><path d="M12 2v20" /><path d="m4.929 4.929 14.142 14.142" /><path d="m4.929 19.071 14.142-14.142" /></svg> // simple placeholder
+    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
 }
 
+export default function InformasiPublikPage() {
+    const allNews = db.prepare('SELECT * FROM news ORDER BY date DESC LIMIT 10').all() as any[];
+    const utama = allNews[0] || null;
+    const sekunder = allNews[1] || null;
+    const tersier = allNews.slice(2, 4);
 
-export default async function InformasiPublikPage() {
-    const warta = await getWarta();
-    const stats = await getStats();
-    const jadwal = await getJadwal();
-    const downloads = await getDownloads();
+    const allStats = db.prepare('SELECT * FROM statistik ORDER BY sort_order ASC').all() as any[];
+    const allJadwal = db.prepare('SELECT * FROM jadwal_pelatihan WHERE is_active = 1 ORDER BY date ASC').all() as any[];
+
+    const formatDate = (dateStr: string) => {
+        try {
+            return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch { return dateStr; }
+    };
 
     return (
-        <div className="min-h-screen pb-0 w-full flex flex-col bg-[#F8FAFC]">
+        <div className="min-h-screen pb-0 w-full flex flex-col bg-[#F8FAFC] dark:bg-[#0B1120]">
             {/* Hero Section */}
             <section className="bg-[#0A192F] pt-32 pb-24 lg:pt-40 lg:pb-32 text-white">
                 <div className="container mx-auto px-4 xl:px-12">
@@ -78,7 +38,7 @@ export default async function InformasiPublikPage() {
                             Transparansi Informasi
                         </div>
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-                            Gerbang Informasi <br className="hidden md:block"/>
+                            Gerbang Informasi <br className="hidden md:block" />
                             <span className="text-[#FBBF24]">Ketenagakerjaan</span> Serang.
                         </h1>
                         <p className="text-base md:text-xl text-white/80 max-w-2xl leading-relaxed">
@@ -89,148 +49,257 @@ export default async function InformasiPublikPage() {
             </section>
 
             {/* Warta Ketenagakerjaan */}
-            <section className="py-20 bg-[#F8FAFC]">
+            <section className="py-20 bg-[#F8FAFC] dark:bg-[#0B1120]">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="flex flex-col sm:flex-row justify-between items-end mb-10 gap-4">
                         <div>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-2">Warta Ketenagakerjaan</h2>
-                            <p className="text-gray-600">Update terkini kebijakan, event, dan capaian kinerja Disnakertrans.</p>
+                            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Warta Ketenagakerjaan</h2>
+                            <p className="text-gray-600 dark:text-gray-400">Update terkini kebijakan, event, dan capaian kinerja Disnakertrans.</p>
                         </div>
-                        <Link href="/berita" className="text-[#0A192F] font-bold text-sm flex items-center gap-2 hover:underline">
+                        <Link href="/berita" className="text-[#0A192F] dark:text-[#93C5FD] font-bold text-sm flex items-center gap-2 hover:underline">
                             Lihat Semua Berita <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
 
-                    <div className="flex flex-col lg:flex-row gap-6">
-                        {/* Warta Utama */}
-                        <div className="w-full lg:w-7/12 relative rounded-2xl overflow-hidden group shadow-sm bg-white cursor-pointer h-[400px] lg:h-[500px]">
-                            <img src={warta.utama.image} alt={warta.utama.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0A192F] via-[#0A192F]/60 to-transparent"></div>
-                            
-                            <div className="absolute bottom-0 left-0 right-0 p-8 lg:p-10 flex flex-col items-start text-white">
-                                <span className="bg-[#FBBF24] text-[#0A192F] text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider mb-4">
-                                    {warta.utama.tag}
-                                </span>
-                                <h3 className="text-2xl lg:text-3xl font-bold mb-3 leading-snug group-hover:text-[#FBBF24] transition-colors">{warta.utama.title}</h3>
-                                <p className="text-white/80 line-clamp-2 mb-6 hidden md:block text-sm lg:text-base">{warta.utama.desc}</p>
-                                <div className="flex items-center gap-4 text-xs font-medium text-white/70">
-                                    <span className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" /> {warta.utama.date}</span>
-                                    <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {warta.utama.author}</span>
-                                </div>
-                            </div>
+                    {allNews.length === 0 ? (
+                        <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-16 text-center shadow-sm border border-gray-100 dark:border-gray-700">
+                            <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Belum ada berita</h3>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">Berita akan muncul setelah data diambil dari sumber atau ditambahkan oleh admin.</p>
                         </div>
-
-                        {/* Warta Kanan */}
-                        <div className="w-full lg:w-5/12 flex flex-col gap-6">
-                            {/* Card with Image */}
-                            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-6 hover:shadow-md transition-shadow cursor-pointer flex-1">
-                                <div className="w-full sm:w-1/3 rounded-xl overflow-hidden bg-gray-100 shrink-0 h-32 sm:h-auto">
-                                    <img src={warta.sekunder[0].image} alt="Chart" className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex flex-col justify-center">
-                                    <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">{warta.sekunder[0].tag}</span>
-                                    <h4 className="text-base font-bold text-gray-900 mb-2 leading-snug">{warta.sekunder[0].title}</h4>
-                                    <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">{warta.sekunder[0].desc}</p>
-                                </div>
-                            </div>
-
-                            {/* Dua Card Kecil Bawah */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-1">
-                                {warta.tersier.map(item => (
-                                    <div key={item.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer flex flex-col">
-                                        <span className="text-[10px] uppercase font-bold text-[#B45309] tracking-wider mb-3">{item.tag}</span>
-                                        <h4 className="text-sm font-bold text-gray-900 mb-2 leading-snug">{item.title}</h4>
-                                        <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">{item.desc}</p>
+                    ) : (
+                        <div className="flex flex-col lg:flex-row gap-6">
+                            {utama && (
+                                <Link href={`/berita/${utama.id}`} className="w-full lg:w-7/12 relative rounded-2xl overflow-hidden group shadow-sm bg-gray-200 dark:bg-gray-800 cursor-pointer h-[400px] lg:h-[500px]">
+                                    {utama.thumbnail ? (
+                                        <img src={utama.thumbnail} alt={utama.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                    ) : (
+                                        <div className="absolute inset-0 bg-gradient-to-br from-[#1E3A8A] to-[#0A192F] flex items-center justify-center">
+                                            <FileText className="w-20 h-20 text-white/20" />
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A192F] via-[#0A192F]/60 to-transparent"></div>
+                                    <div className="absolute bottom-0 left-0 right-0 p-8 lg:p-10 flex flex-col items-start text-white overflow-hidden">
+                                        <span className="bg-[#FBBF24] text-[#0A192F] text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider mb-4 shrink-0">
+                                            {utama.category || 'BERITA'}
+                                        </span>
+                                        <h3 className="text-2xl lg:text-3xl font-bold mb-4 leading-snug group-hover:text-[#FBBF24] transition-colors line-clamp-3 w-full">{utama.title}</h3>
+                                        <div className="flex items-center gap-4 text-xs font-medium text-white/70 shrink-0">
+                                            <span className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" /> {formatDate(utama.date)}</span>
+                                            <span>{utama.source_name || 'Disnakertrans'}</span>
+                                        </div>
                                     </div>
-                                ))}
+                                </Link>
+                            )}
+                            <div className="w-full lg:w-5/12 flex flex-col gap-6">
+                                {sekunder && (
+                                    <Link href={`/berita/${sekunder.id}`} className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-6 hover:shadow-md transition-shadow cursor-pointer flex-1">
+                                        <div className="w-full sm:w-1/3 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 h-32 sm:h-auto">
+                                            {sekunder.thumbnail ? (
+                                                <img src={sekunder.thumbnail} alt={sekunder.title} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center"><FileText className="w-8 h-8 text-gray-300 dark:text-gray-500" /></div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col justify-center">
+                                            <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider mb-2">{sekunder.category || 'BERITA'}</span>
+                                            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-2 leading-snug line-clamp-3">{sekunder.title}</h4>
+                                        </div>
+                                    </Link>
+                                )}
+                                {tersier.length > 0 && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-1">
+                                        {tersier.map((item: any) => (
+                                            <Link href={`/berita/${item.id}`} key={item.id} className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer flex flex-col">
+                                                <span className="text-[10px] uppercase font-bold text-[#B45309] dark:text-[#FBBF24] tracking-wider mb-3">{item.category || 'BERITA'}</span>
+                                                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 leading-snug line-clamp-3">{item.title}</h4>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </section>
 
-            {/* Statistik & Kinerja + Jadwal */}
-            <section className="py-20 bg-[#F1F5F9]">
-                <div className="container mx-auto px-4 xl:px-12 flex flex-col lg:flex-row gap-8 lg:gap-12">
-                    {/* Statistik Kiri */}
-                    <div className="w-full lg:w-7/12">
-                        <div className="mb-8">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-2">Statistik & Kinerja</h2>
-                            <p className="text-gray-600 text-sm">Transparansi data operasional dan capaian target Dinas Tenaga Kerja dan Transmigrasi secara periodik.</p>
+            {/* Info Cepat Ketenagakerjaan + Jadwal Pelatihan */}
+            <section className="py-20 bg-[#0A192F]">
+                <div className="container mx-auto px-4 xl:px-12">
+                    <div className="mb-10">
+                        <h2 className="text-3xl font-bold text-white mb-2">Info Cepat Ketenagakerjaan</h2>
+                        <p className="text-white/60 text-sm">Data dan indikator ketenagakerjaan terbaru di Kabupaten Serang.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                        {/* UMK Card */}
+                        {(() => {
+                            const umk = allStats.find((s: any) => s.key === 'umk_serang');
+                            return umk ? (
+                                <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">{umk.label}</p>
+                                    <h3 className="text-2xl lg:text-[26px] font-extrabold text-[#0A192F] dark:text-white mb-1.5">{umk.value}</h3>
+                                    <p className="text-[11px] text-green-600 dark:text-green-400 font-semibold flex items-center gap-1 mb-2">
+                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                                        {umk.description}
+                                    </p>
+                                    <p className="text-[8px] text-gray-400 mb-3">Sumber: Kep. Gubernur Banten No. 703/Kep.871-Huk/2025</p>
+                                    <a href="https://www.llg-bwi.org/file_publish/Keputusan%20Gubernur%20(Kepgub%20-%20SK%20gub)%20Banten%20Nomor%20703%20Tahun%202025%20tentang%20Penetapan%20Upah%20Minimum%20Kabupaten%20Kota%20di%20Provinsi%20Banten%20Tahun%202026.pdf" target="_blank" rel="noopener noreferrer"
+                                        className="mt-auto inline-flex items-center justify-center gap-1.5 text-[#1E3A8A] dark:text-[#93C5FD] text-xs font-bold border border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors w-full">
+                                        Lihat Detail
+                                    </a>
+                                </div>
+                            ) : null;
+                        })()}
+
+                        {/* UMP Card */}
+                        {(() => {
+                            const ump = allStats.find((s: any) => s.key === 'ump_banten');
+                            return ump ? (
+                                <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">{ump.label}</p>
+                                    <h3 className="text-2xl lg:text-[26px] font-extrabold text-[#0A192F] dark:text-white mb-1.5">{ump.value}</h3>
+                                    <p className="text-[11px] text-green-600 dark:text-green-400 font-semibold flex items-center gap-1 mb-2">
+                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                                        {ump.description}
+                                    </p>
+                                    <p className="text-[8px] text-gray-400 mb-3">Sumber: Kep. Gubernur Banten No. 561/Kep.871-Huk/2025</p>
+                                    <a href="https://www.llg-bwi.org/file_publish/Keputusan%20Gubernur%20(Kepgub%20-%20SK%20gub)%20Banten%20Nomor%20703%20Tahun%202025%20tentang%20Penetapan%20Upah%20Minimum%20Kabupaten%20Kota%20di%20Provinsi%20Banten%20Tahun%202026.pdf" target="_blank" rel="noopener noreferrer"
+                                        className="mt-auto inline-flex items-center justify-center gap-1.5 text-[#1E3A8A] dark:text-[#93C5FD] text-xs font-bold border border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors w-full">
+                                        Lihat Detail
+                                    </a>
+                                </div>
+                            ) : null;
+                        })()}
+
+                        {/* Trend Chart */}
+                        <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Tren UMK Kabupaten Serang</p>
+                            <div className="flex-1 flex items-center">
+                                <svg viewBox="0 0 240 120" className="w-full" preserveAspectRatio="xMidYMid meet">
+                                    <line x1="30" y1="90" x2="225" y2="90" stroke="#E5E7EB" strokeWidth="0.5" />
+                                    {[20, 43, 67].map(y => (
+                                        <line key={y} x1="30" y1={y} x2="225" y2={y} stroke="#F3F4F6" strokeWidth="0.5" strokeDasharray="2 2" />
+                                    ))}
+                                    <text x="27" y="23" textAnchor="end" fill="#9CA3AF" fontSize="6.5">5.2 jt</text>
+                                    <text x="27" y="46" textAnchor="end" fill="#9CA3AF" fontSize="6.5">4.9 jt</text>
+                                    <text x="27" y="70" textAnchor="end" fill="#9CA3AF" fontSize="6.5">4.6 jt</text>
+                                    <text x="27" y="93" textAnchor="end" fill="#9CA3AF" fontSize="6.5">4.3 jt</text>
+                                    <defs>
+                                        <linearGradient id="umkGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.3" />
+                                            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.03" />
+                                        </linearGradient>
+                                    </defs>
+                                    <polygon points="55,72 105,66 160,38 215,12 215,90 55,90" fill="url(#umkGrad)" />
+                                    <polyline points="55,72 105,66 160,38 215,12" fill="none" stroke="#1E3A8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    {[
+                                        { x: 55, y: 72, v: "4.492 jt", yr: "2023" },
+                                        { x: 105, y: 66, v: "4.560 jt", yr: "2024" },
+                                        { x: 160, y: 38, v: "4.857 jt", yr: "2025" },
+                                        { x: 215, y: 12, v: "5.178 jt", yr: "2026" },
+                                    ].map(p => (
+                                        <g key={p.yr}>
+                                            <circle cx={p.x} cy={p.y} r="3" fill="#1E3A8A" stroke="white" strokeWidth="1.5" />
+                                            <text x={p.x} y={p.y - 7} textAnchor="middle" fill="#1E3A8A" fontSize="6.5" fontWeight="bold">{p.v}</text>
+                                            <text x={p.x} y="103" textAnchor="middle" fill="#9CA3AF" fontSize="7" fontWeight="600">{p.yr}</text>
+                                        </g>
+                                    ))}
+                                </svg>
+                            </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            {stats.map(s => (
-                                <div key={s.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:-translate-y-1 transition-transform">
-                                    <div className="absolute -right-4 -bottom-4 text-gray-100 opacity-50 group-hover:scale-110 transition-transform">
-                                        <s.icon className="w-24 h-24" />
+
+                        {/* Side Stats */}
+                        <div className="flex flex-col gap-3">
+                            {allStats.filter((s: any) => !['umk_serang', 'ump_banten'].includes(s.key)).map((s: any) => (
+                                <div key={s.id} className="bg-white dark:bg-[#1E293B] rounded-xl p-3.5 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-3 flex-1">
+                                    <div className="w-9 h-9 bg-[#EFF6FF] dark:bg-[#1E3A8A]/20 rounded-lg flex items-center justify-center text-[#1E3A8A] dark:text-[#93C5FD] shrink-0">
+                                        {s.key === 'perusahaan_terdaftar' && <Briefcase className="w-4 h-4" />}
+                                        {s.key === 'pencari_kerja' && <Users className="w-4 h-4" />}
+                                        {s.key === 'lowongan_tersedia' && <FileCheck className="w-4 h-4" />}
                                     </div>
-                                    <div className="relative z-10">
-                                        <h3 className="text-4xl font-extrabold text-gray-900 mb-1">{s.value}</h3>
-                                        <p className="text-xs font-semibold text-gray-500">{s.label}</p>
-                                        <div className="mt-4 w-1/3 h-1 bg-[#0A192F] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[9px] font-bold text-gray-500 dark:text-gray-400 truncate">{s.label}</p>
+                                        <div className="flex items-baseline gap-1.5">
+                                            <h4 className="text-lg font-extrabold text-[#0A192F] dark:text-white">{s.value}</h4>
+                                            <span className="text-[9px] text-gray-400">{s.description}</span>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
+                            <p className="text-[9px] text-white/40 mt-0.5">Sumber Data: BPS & Disnakertrans →</p>
                         </div>
                     </div>
 
-                    {/* Jadwal Pelatihan Kanan */}
-                    <div className="w-full lg:w-5/12">
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 h-full border-l-4 border-l-[#B45309] flex flex-col">
-                            <div className="flex justify-between items-center mb-8">
-                                <h3 className="text-xl font-bold text-gray-900">Jadwal Pelatihan Aktif</h3>
-                                <span className="bg-[#0A192F] text-[#FBBF24] text-[10px] px-2 py-1 rounded font-bold">LIVE</span>
+                    {/* Jadwal Pelatihan */}
+                    <div className="mt-12">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 className="text-xl font-bold text-white">Jadwal Pelatihan Aktif</h3>
+                                <p className="text-white/50 text-xs mt-1">Pelatihan dan kegiatan yang akan datang.</p>
                             </div>
+                            <span className="bg-[#FBBF24] text-[#0A192F] text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">Live</span>
+                        </div>
 
-                            <div className="flex-1 space-y-6">
-                                {jadwal.map(j => (
-                                    <div key={j.id} className="flex gap-4 items-start">
-                                        <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 text-center min-w-[56px] shrink-0">
-                                            <p className="text-[10px] font-bold text-gray-500 tracking-widest">{j.month}</p>
-                                            <p className="text-lg font-bold text-gray-900 -mt-1">{j.date}</p>
-                                        </div>
-                                        <div className="pt-1 flex-1">
-                                            <h4 className="text-sm font-bold text-gray-900 mb-1">{j.title}</h4>
-                                            <p className="text-xs text-gray-500 inline-flex items-center gap-1.5"><span className={`w-1.5 h-1.5 rounded-full ${j.color}`}></span>{j.info}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                        {allJadwal.length === 0 ? (
+                            <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+                                <CalendarDays className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                                <p className="text-white/40 text-sm">Belum ada jadwal pelatihan terdaftar.</p>
                             </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {allJadwal.map((j: any) => {
+                                    const d = new Date(j.date);
+                                    const dayNum = d.getDate();
+                                    const monthStr = d.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase();
+                                    return (
+                                        <div key={j.id} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors group">
+                                            <div className="flex items-start gap-4">
+                                                <div className="bg-white/10 rounded-lg p-2 text-center min-w-[50px] shrink-0">
+                                                    <p className="text-[9px] font-bold text-white/50 tracking-widest">{monthStr}</p>
+                                                    <p className="text-lg font-bold text-white -mt-0.5">{dayNum}</p>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-sm font-bold text-white mb-1 truncate group-hover:text-[#FBBF24] transition-colors">{j.title}</h4>
+                                                    <p className="text-xs text-white/50 flex items-center gap-1.5">
+                                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${j.color}`} />
+                                                        {j.location}
+                                                    </p>
+                                                    <p className="text-[10px] text-white/30 mt-1">🕐 {j.time_start} - {j.time_end}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
 
-                            <button className="w-full bg-[#0A192F] hover:bg-black text-white font-bold py-3.5 rounded-xl transition-colors text-sm mt-8">
-                                Daftar Pelatihan
-                            </button>
+                        <div className="mt-6 text-center">
+                            <a href="https://www.instagram.com/disnakertrans.kabserang" target="_blank" rel="noopener noreferrer"
+                                className="inline-block bg-[#FBBF24] hover:bg-[#F59E0B] text-[#0A192F] font-bold py-3 px-8 rounded-xl transition-colors text-sm">
+                                Informasi Pelatihan Lainnya
+                            </a>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Download Center */}
-            <section className="py-20 bg-white">
+            {/* Peta Kecamatan */}
+            <section id="peta-kecamatan" className="py-20 bg-white dark:bg-[#111827] border-t border-gray-100 dark:border-gray-800">
                 <div className="container mx-auto px-4 xl:px-12">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-3">Download Center</h2>
-                        <p className="text-gray-600">Unduh regulasi, formulir, dan dokumen publik secara resmi.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-                        {downloads.map(dl => (
-                            <div key={dl.id} className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col group">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 shrink-0 ${dl.iconColor}`}>
-                                    <FileText className="w-6 h-6" />
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-4">
+                        <div>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-[#FEF3C7] dark:bg-[#92400E]/20 rounded-xl flex items-center justify-center text-[#92400E] dark:text-[#FBBF24]">
+                                    <MapPin className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-2">{dl.title}</h3>
-                                <p className="text-sm text-gray-600 line-clamp-2 flex-1 mb-8">{dl.desc}</p>
-                                
-                                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                                    <span className="text-[10px] font-bold text-gray-500">{dl.size} • {dl.ext}</span>
-                                    <button className="text-[#0A192F] font-bold text-sm flex items-center gap-1.5 group-hover:text-amber-600 transition-colors">
-                                        Download <Download className="w-3.5 h-3.5" />
-                                    </button>
-                                </div>
+                                <span className="text-[#B45309] dark:text-[#FBBF24] font-bold text-xs tracking-widest uppercase">Wilayah Administrasi</span>
                             </div>
-                        ))}
+                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2">Peta Kecamatan Kabupaten Serang</h2>
+                            <p className="text-gray-600 dark:text-gray-400 max-w-xl">Jelajahi 29 kecamatan dan 326 desa/kelurahan di Kabupaten Serang secara interaktif.</p>
+                        </div>
                     </div>
+                    <KecamatanMap />
                 </div>
             </section>
         </div>
