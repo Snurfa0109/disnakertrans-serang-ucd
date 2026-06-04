@@ -1,33 +1,27 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { getSession } from '@/lib/auth';
 import { successResponse, errorResponse } from '@/lib/utils';
 
 /**
  * GET /api/auth/check
- * 
- * Verify if admin session is valid.
+ * Verifies current session and returns user info including role.
  */
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('admin_token')?.value;
+  const session = await getSession();
 
-  if (!token) {
+  if (!session) {
     return NextResponse.json(errorResponse('Not authenticated'), { status: 401 });
   }
 
-  try {
-    const decoded = Buffer.from(token, 'base64').toString('utf-8');
-    const [username] = decoded.split(':');
-    const ADMIN_USER = process.env.ADMIN_USERNAME || 'admin';
-
-    if (username !== ADMIN_USER) {
-      return NextResponse.json(errorResponse('Invalid session'), { status: 401 });
-    }
-
-    return NextResponse.json(
-      successResponse({ authenticated: true, user: { username, role: 'admin' } })
-    );
-  } catch {
-    return NextResponse.json(errorResponse('Invalid session'), { status: 401 });
-  }
+  return NextResponse.json(
+    successResponse({
+      authenticated: true,
+      user: {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+      },
+    })
+  );
 }

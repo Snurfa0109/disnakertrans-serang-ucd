@@ -1,47 +1,55 @@
 import { NextResponse } from 'next/server';
+import { getAdminUserByEmail, createSession, verifyPassword } from '@/lib/services/auth.service';
+import { logAction } from '@/lib/services/audit.service';
 import { successResponse, errorResponse } from '@/lib/utils';
+import { getClientIP } from '@/lib/auth';
 
 /**
  * POST /api/auth/login
- * 
- * Simple admin authentication.
- * In production, use proper hashing (bcrypt) and JWT tokens.
+ * Authenticates admin user with email + password (bcrypt).
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { username, password } = body;
+    const { email, password } = body;
 
-    if (!username || !password) {
-      return NextResponse.json(
-        errorResponse('Username dan password harus diisi'),
-        { status: 400 }
-      );
+    if (!email || !password) {
+      return NextResponse.json(errorResponse('Email dan password harus diisi'), { status: 400 });
     }
 
-    // Admin credentials — in production, store hashed in DB
-    const ADMIN_USER = process.env.ADMIN_USERNAME || 'admin';
-    const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'disnaker2024';
+    const user = getAdminUserByEmail(email.toLowerCase().trim());
 
-    if (username !== ADMIN_USER || password !== ADMIN_PASS) {
-      return NextResponse.json(
-        errorResponse('Username atau password salah'),
-        { status: 401 }
-      );
+    if (!user || !user.is_active) {
+      return NextResponse.json(errorResponse('Email atau password salah'), { status: 401 });
     }
 
-    // Generate a simple session token
-    const token = Buffer.from(`${ADMIN_USER}:${Date.now()}`).toString('base64');
+    const passwordValid = verifyPassword(password, user.password_hash);
+    if (!passwordValid) {
+      return NextResponse.json(errorResponse('Email atau password salah'), { status: 401 });
+    }
+
+    const ip = getClientIP(request);
+    const token = createSession(user.id, ip);
+
+    // Log login action
+    logAction({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: 'login',
+      module: 'auth',
+      targetDescription: `Login dari IP ${ip}`,
+      ipAddress: ip,
+    });
 
     const response = NextResponse.json(
       successResponse({
         message: 'Login berhasil',
-        user: { username: ADMIN_USER, role: 'admin' },
+        user: { id: user.id, name: user.name, email: user.email, role: user.role },
       })
     );
 
-    // Set cookie
-    response.cookies.set('admin_token', token, {
+    response.cookies.set('admin_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

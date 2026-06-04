@@ -141,6 +141,7 @@ async function scrapeArticleDetail(url: string): Promise<{
   thumbnail: string;
   date: string;
   category: string;
+  title: string;
 }> {
   console.log(`[Scraper] Fetching article detail: ${url}`);
 

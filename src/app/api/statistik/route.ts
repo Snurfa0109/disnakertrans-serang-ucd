@@ -11,6 +11,18 @@ export async function GET() {
   }
 }
 
+export async function POST(request: Request) {
+  try {
+    const { label, value, description } = await request.json();
+    const insert = db.prepare('INSERT INTO statistik (label, value, description) VALUES (?, ?, ?)');
+    insert.run(label, value, description || '');
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[API] POST /api/statistik error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to create' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
@@ -34,5 +46,21 @@ export async function PUT(request: Request) {
   } catch (error) {
     console.error('[API] PUT /api/statistik error:', error);
     return NextResponse.json({ success: false, error: 'Failed to update' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
+    }
+    const stmt = db.prepare('DELETE FROM statistik WHERE id = ?');
+    stmt.run(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[API] DELETE /api/statistik error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to delete' }, { status: 500 });
   }
 }

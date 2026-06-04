@@ -21,17 +21,20 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const perPage = parseInt(searchParams.get('perPage') || '10', 10);
 
-    // Validate status if provided
-    if (status && !['pending', 'processed'].includes(status)) {
+    const validStatuses = ['pending', 'processed', 'Baru', 'Diproses', 'Menunggu Tindak Lanjut', 'Selesai', 'Ditolak'];
+    if (status && !validStatuses.includes(status)) {
       return NextResponse.json(
-        errorResponse('Invalid status. Use "pending" or "processed"'),
+        errorResponse('Invalid status value'),
         { status: 400 }
       );
     }
 
+    const search = searchParams.get('search') as string | null;
+
     const result = getComplaints({
       status: status || undefined,
       type: type || undefined,
+      search: search || undefined,
       page,
       perPage,
     });
