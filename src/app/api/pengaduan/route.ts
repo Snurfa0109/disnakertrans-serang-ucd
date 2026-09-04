@@ -5,6 +5,7 @@ import {
   getComplaints,
 } from '@/lib/services/complaint.service';
 import { successResponse, errorResponse } from '@/lib/utils';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 /**
  * GET /api/pengaduan
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const perPage = parseInt(searchParams.get('perPage') || '10', 10);
 
-    const result = getComplaints({
+    const result = await getComplaints({
       status: status || undefined,
       page,
       perPage,
@@ -46,6 +47,17 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
+    // Rate Limiting: max 5 complaints per 10 minutes per IP
+    const rateLimitResult = checkRateLimit(request, {
+      prefix: 'complaints_submit',
+      limit: 5,
+      windowSeconds: 600,
+    });
+
+    if (!rateLimitResult.success) {
+      return createRateLimitResponse(rateLimitResult.resetSeconds);
+    }
+
     const body = await request.json();
     const { name, email, subject, message, type } = body;
 
@@ -56,7 +68,7 @@ export async function POST(request: Request) {
     const complaintType = type && ['umum', 'hubungan_industrial'].includes(type) ? type : 'umum';
 
     // Save via the service
-    const { id, ticketNumber } = createComplaint({
+    const { id, ticketNumber } = await createComplaint({
       name,
       email,
       subject: subject || '',

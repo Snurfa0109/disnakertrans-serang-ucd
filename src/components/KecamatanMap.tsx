@@ -50,14 +50,13 @@ export default function KecamatanMap() {
             <p className="text-sm text-gray-600 dark:text-gray-400 font-semibold">29 Kecamatan, {totalDesa} Desa</p>
           </div>
 
-          {/* Map Image — zoomed in to crop whitespace around the map */}
-          <div className="relative w-full overflow-hidden rounded-xl" style={{ minHeight: '550px' }}>
+          {/* Map Image */}
+          <div className="relative w-full overflow-hidden rounded-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/peta kecamatan kab serang.svg"
+              src="/images/peta kecamatan kab serang.png"
               alt="Peta Kecamatan Kabupaten Serang"
-              className="w-full h-auto"
-              style={{ transform: 'scale(1.7)', transformOrigin: 'center 40%' }}
+              className="w-full h-auto object-contain"
             />
           </div>
         </div>

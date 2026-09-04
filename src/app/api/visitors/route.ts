@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import sql from '@/lib/db';
 
 function getTodayDate() {
   return new Date().toISOString().split('T')[0];
@@ -20,12 +20,12 @@ function isPublicPage(path: string): boolean {
 export async function GET() {
   try {
     const today = getTodayDate();
-    const totalRow = db.prepare('SELECT COALESCE(SUM(count), 0) as total FROM visitors').get() as any;
-    const todayRow = db.prepare('SELECT COALESCE(count, 0) as count FROM visitors WHERE date = ?').get(today) as any;
+    const [totalRow] = await sql`SELECT COALESCE(SUM(count), 0) AS total FROM visitors`;
+    const [todayRow] = await sql`SELECT COALESCE(count, 0) AS count FROM visitors WHERE date = ${today}`;
 
     return NextResponse.json({
-      total: totalRow?.total || 0,
-      today: todayRow?.count || 0,
+      total: Number(totalRow?.total) || 0,
+      today: Number(todayRow?.count) || 0,
     });
   } catch {
     return NextResponse.json({ total: 0, today: 0 });
@@ -44,13 +44,10 @@ export async function POST(request: NextRequest) {
 
     const pagePath = body.page_path || '/';
 
-    // ─── SERVER-SIDE VALIDATION ────────────────────────
-    // Reject non-public pages (admin, API, static assets)
     if (!isPublicPage(pagePath)) {
       return NextResponse.json({ error: 'Non-trackable path' }, { status: 400 });
     }
 
-    // Require session_id to prevent legacy/malformed requests
     if (!body.session_id) {
       return NextResponse.json({ error: 'Missing session_id' }, { status: 400 });
     }
@@ -58,26 +55,25 @@ export async function POST(request: NextRequest) {
     const today = getTodayDate();
     const sessionId = body.session_id;
 
-    // ─── SESSION DEDUP (server-side) ───────────────────
-    // Check if this session already visited this page today
-    const existing = db.prepare(
-      'SELECT id FROM visitor_logs WHERE visitor_id = ? AND page_path = ? AND created_at >= ? LIMIT 1'
-    ).get(sessionId, pagePath, today + ' 00:00:00') as any;
+    // Check duplicate visit in current session
+    const existing = await sql`
+      SELECT id FROM visitor_logs 
+      WHERE visitor_id = ${sessionId} AND page_path = ${pagePath} AND created_at >= ${today + ' 00:00:00'}
+      LIMIT 1
+    `;
 
-    if (existing) {
-      // Already tracked — skip to prevent inflation
-      const totalRow = db.prepare('SELECT COALESCE(SUM(count), 0) as total FROM visitors').get() as any;
-      const todayRow = db.prepare('SELECT count FROM visitors WHERE date = ?').get(today) as any;
-      return NextResponse.json({ total: totalRow?.total || 0, today: todayRow?.count || 0 });
+    if (existing.length > 0) {
+      const [totalRow] = await sql`SELECT COALESCE(SUM(count), 0) AS total FROM visitors`;
+      const [todayRow] = await sql`SELECT count FROM visitors WHERE date = ${today}`;
+      return NextResponse.json({ total: Number(totalRow?.total) || 0, today: Number(todayRow?.count) || 0 });
     }
 
-    // ─── INCREMENT DAILY COUNTER ───────────────────────
-    db.prepare(`
-      INSERT INTO visitors (date, count) VALUES (?, 1)
-      ON CONFLICT(date) DO UPDATE SET count = count + 1
-    `).run(today);
+    // Increment daily counter
+    await sql`
+      INSERT INTO visitors (date, count) VALUES (${today}, 1)
+      ON CONFLICT (date) DO UPDATE SET count = visitors.count + 1
+    `;
 
-    // ─── LOG DETAILED VISIT ────────────────────────────
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || request.headers.get('x-real-ip')
       || '0.0.0.0';
@@ -86,27 +82,22 @@ export async function POST(request: NextRequest) {
     const parts = ip.split('.');
     const maskedIp = parts.length === 4 ? `${parts[0]}.${parts[1]}.*.*` : ip;
 
-    db.prepare(`
+    await sql`
       INSERT INTO visitor_logs (visitor_id, ip_address, device, browser, os, page_path, referrer, city)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      sessionId,
-      maskedIp,
-      body.device || 'Desktop',
-      body.browser || 'Unknown',
-      body.os || 'Unknown',
-      pagePath,
-      body.referrer || 'Direct',
-      body.city || ''
-    );
+      VALUES (
+        ${sessionId}, ${maskedIp},
+        ${body.device || 'Desktop'}, ${body.browser || 'Unknown'}, ${body.os || 'Unknown'},
+        ${pagePath}, ${body.referrer || 'Direct'}, ${body.city || ''}
+      )
+    `;
 
     // Return current stats
-    const totalRow = db.prepare('SELECT COALESCE(SUM(count), 0) as total FROM visitors').get() as any;
-    const todayRow = db.prepare('SELECT count FROM visitors WHERE date = ?').get(today) as any;
+    const [totalRow] = await sql`SELECT COALESCE(SUM(count), 0) AS total FROM visitors`;
+    const [todayRow] = await sql`SELECT count FROM visitors WHERE date = ${today}`;
 
     return NextResponse.json({
-      total: totalRow?.total || 0,
-      today: todayRow?.count || 0,
+      total: Number(totalRow?.total) || 0,
+      today: Number(todayRow?.count) || 0,
     });
   } catch {
     return NextResponse.json({ total: 0, today: 0 });

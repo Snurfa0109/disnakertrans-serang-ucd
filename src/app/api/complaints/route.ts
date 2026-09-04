@@ -5,6 +5,7 @@ import {
   getComplaints,
 } from '@/lib/services/complaint.service';
 import { successResponse, errorResponse } from '@/lib/utils';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 /**
  * GET /api/complaints
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
 
     const search = searchParams.get('search') as string | null;
 
-    const result = getComplaints({
+    const result = await getComplaints({
       status: status || undefined,
       type: type || undefined,
       search: search || undefined,
@@ -57,11 +58,43 @@ export async function GET(request: Request) {
  * POST /api/complaints
  * 
  * Submit a new complaint. Sends email notifications.
- */
+function simpleHash(str: string): string {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 33) ^ str.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+function verifyVisualCaptcha(input?: string, token?: string): boolean {
+  if (!input || !token) return false;
+  try {
+    const payload = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+    // Valid for 10 minutes
+    if (Date.now() - payload.t > 10 * 60 * 1000) return false;
+    const expectedHash = payload.h;
+    const actualHash = simpleHash(input.trim().toLowerCase());
+    return expectedHash === actualHash;
+  } catch (err) {
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
   try {
+    // Rate Limiting: max 5 complaints per 10 minutes per IP
+    const rateLimitResult = checkRateLimit(request, {
+      prefix: 'complaints_submit',
+      limit: 5,
+      windowSeconds: 600,
+    });
+
+    if (!rateLimitResult.success) {
+      return createRateLimitResponse(rateLimitResult.resetSeconds);
+    }
+
     const body = await request.json();
-    const { name, email, subject, message, type, attachments } = body;
+    const { name, email, subject, message, type, attachments, captchaInput, captchaToken } = body;
 
     // Validation
     if (!name || !name.trim()) {
@@ -77,11 +110,19 @@ export async function POST(request: Request) {
       return NextResponse.json(errorResponse('Isi laporan harus diisi'), { status: 400 });
     }
 
+    // Validate Visual CAPTCHA
+    if (!captchaInput || !captchaToken) {
+      return NextResponse.json(errorResponse('Kode keamanan CAPTCHA wajib diisi'), { status: 400 });
+    }
+    if (!verifyVisualCaptcha(captchaInput, captchaToken)) {
+      return NextResponse.json(errorResponse('Kode keamanan CAPTCHA tidak cocok atau telah kedaluwarsa. Silakan periksa kembali.'), { status: 400 });
+    }
+
     // Validate type if provided
     const complaintType = type && ['umum', 'hubungan_industrial'].includes(type) ? type : 'umum';
 
     // Create complaint in database
-    const { id, ticketNumber } = createComplaint({
+    const { id, ticketNumber } = await createComplaint({
       name: name.trim(),
       email: email.trim(),
       subject: (subject || '').trim(),

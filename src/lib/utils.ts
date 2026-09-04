@@ -99,6 +99,7 @@ export interface ApiResponse<T> {
     page: number;
     perPage: number;
     totalPages: number;
+    [key: string]: any;
   };
   message?: string;
 }
@@ -112,4 +113,25 @@ export function successResponse<T>(
 
 export function errorResponse(message: string): ApiResponse<null> {
   return { status: 'error', data: null, message };
+}
+
+/**
+ * Category-based fallback thumbnail image helper.
+ * Ensures every news card always has a high-quality relevant image.
+ */
+export function getCategoryFallbackImage(category?: string | null): string {
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('lattas') || cat.includes('pelatihan')) {
+    return 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('hi') || cat.includes('jamsostek') || cat.includes('thr')) {
+    return 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('binapenta') || cat.includes('lapor') || cat.includes('lowongan')) {
+    return 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('sekretariat') || cat.includes('korupsi')) {
+    return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80';
+  }
+  return '/images/banner-beranda.png';
 }

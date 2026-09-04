@@ -6,7 +6,7 @@ import { successResponse, errorResponse } from '@/lib/utils';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const result = getTutorials({
+  const result = await getTutorials({
     category: searchParams.get('category') || undefined,
     status: (searchParams.get('status') as any) || undefined,
     page: parseInt(searchParams.get('page') || '1'),
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     const finalSlug = slug?.trim() || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-    const id = createTutorial({
+    const id = await createTutorial({
       title: title.trim(), slug: finalSlug, category,
       thumbnail, steps: steps || [],
       estimated_duration: estimated_duration || '5 menit',
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(successResponse({ id }), { status: 201 });
   } catch (error: any) {
-    if (error?.message?.includes('UNIQUE')) {
+    if (error?.code === '23505') {
       return NextResponse.json(errorResponse('Slug sudah digunakan'), { status: 409 });
     }
     return NextResponse.json(errorResponse('Gagal membuat tutorial'), { status: 500 });

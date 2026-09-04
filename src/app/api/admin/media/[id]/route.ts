@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession, getClientIP } from '@/lib/auth';
-import { getMediaById, deleteMedia } from '@/lib/services/media.service';
+import { deleteMedia } from '@/lib/services/media.service';
 import { logAction } from '@/lib/services/audit.service';
 import { successResponse, errorResponse } from '@/lib/utils';
 import { unlink } from 'fs/promises';
@@ -11,7 +11,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (!session) return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
 
   const { id } = await params;
-  const item = deleteMedia(parseInt(id));
+  const item = await deleteMedia(parseInt(id));
   if (!item) return NextResponse.json(errorResponse('Media tidak ditemukan'), { status: 404 });
 
   // Delete the physical file

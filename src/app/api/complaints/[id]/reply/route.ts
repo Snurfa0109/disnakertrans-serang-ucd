@@ -27,7 +27,7 @@ export async function POST(
     }
 
     // Get the complaint
-    const complaint = getComplaintById(id);
+    const complaint = await getComplaintById(id);
     if (!complaint) {
       return NextResponse.json(errorResponse('Pengaduan tidak ditemukan'), { status: 404 });
     }
@@ -38,7 +38,7 @@ export async function POST(
 
     if (!emailPass) {
       // Still mark as processed even if email isn't configured
-      updateComplaintStatus(id, 'processed');
+      await updateComplaintStatus(id, 'processed');
       return NextResponse.json(
         successResponse({
           message: 'Status diperbarui, tetapi email tidak terkirim (SMTP belum dikonfigurasi)',
@@ -95,7 +95,7 @@ export async function POST(
     });
 
     // Mark as processed
-    updateComplaintStatus(id, 'processed');
+    await updateComplaintStatus(id, 'processed');
 
     console.log(`[Email] Reply sent for ticket ${ticketNumber} to ${complaint.email}`);
 

@@ -1,26 +1,48 @@
 import Link from "next/link";
-import db from "@/lib/db";
+import sql from "@/lib/db";
 import { ArrowRight, Briefcase, Users, FileCheck, FileText, CalendarDays, MapPin } from "lucide-react";
+import { getCategoryFallbackImage } from "@/lib/utils";
 import KecamatanMap from "@/components/KecamatanMap";
+import PeluangSummary from "@/components/PeluangSummary";
+import DokumenPublikSection from "@/components/DokumenPublikSection";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export const metadata = {
-    title: "Informasi Publik | Disnakertrans Serang"
+    title: "Informasi Publik & Warta Terkini | Disnakertrans Serang",
+    description: "Pusat informasi publik, warta terkini, data statistik ketenagakerjaan, serta transparansi kegiatan Pemerintah Kabupaten Serang.",
+    openGraph: {
+        title: "Informasi Publik & Warta Terkini | Disnakertrans Serang",
+        description: "Pusat informasi publik, warta terkini, data statistik ketenagakerjaan, serta transparansi kegiatan Pemerintah Kabupaten Serang.",
+    },
 };
 
 function GraduationCapIcon(props: any) {
     return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
 }
 
-export default function InformasiPublikPage() {
-    const allNews = db.prepare('SELECT * FROM news ORDER BY date DESC LIMIT 10').all() as any[];
+export default async function InformasiPublikPage() {
+    let allNews: any[] = [];
+    let allStats: any[] = [];
+    let allJadwal: any[] = [];
+    let allLowongan: any[] = [];
+    let allEvents: any[] = [];
+    let allDocs: any[] = [];
+
+    try {
+        allNews = await sql`SELECT * FROM news ORDER BY date DESC LIMIT 10` as any[];
+        allStats = await sql`SELECT * FROM statistik ORDER BY sort_order ASC` as any[];
+        allJadwal = await sql`SELECT * FROM jadwal_pelatihan WHERE is_active = TRUE ORDER BY date ASC` as any[];
+        allLowongan = await sql`SELECT * FROM lowongan WHERE is_active = TRUE ORDER BY id DESC LIMIT 40` as any[];
+        allEvents = await sql`SELECT * FROM events WHERE is_active = TRUE ORDER BY id DESC LIMIT 10` as any[];
+        allDocs = await sql`SELECT * FROM dokumen_publik WHERE is_active = TRUE ORDER BY sort_order ASC` as any[];
+    } catch (err) {
+        console.error('[InformasiPublik] DB error:', err);
+    }
+
     const utama = allNews[0] || null;
     const sekunder = allNews[1] || null;
     const tersier = allNews.slice(2, 4);
-
-    const allStats = db.prepare('SELECT * FROM statistik ORDER BY sort_order ASC').all() as any[];
-    const allJadwal = db.prepare('SELECT * FROM jadwal_pelatihan WHERE is_active = 1 ORDER BY date ASC').all() as any[];
 
     const formatDate = (dateStr: string) => {
         try {
@@ -31,8 +53,17 @@ export default function InformasiPublikPage() {
     return (
         <div className="min-h-screen pb-0 w-full flex flex-col bg-[#F8FAFC] dark:bg-[#0B1120]">
             {/* Hero Section */}
-            <section className="bg-[#0A192F] pt-32 pb-24 lg:pt-40 lg:pb-32 text-white">
-                <div className="container mx-auto px-4 xl:px-12">
+            <section className="relative pt-32 pb-24 lg:pt-40 lg:pb-32 bg-[#0A192F] overflow-hidden text-white">
+                <div className="absolute inset-0 z-0">
+                    <img
+                        src="/images/banner-cikoneng.jpg"
+                        alt="Mercusuar Cikoneng Anyer Kabupaten Serang"
+                        className="w-full h-full object-cover opacity-35 mix-blend-luminosity"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/85 to-transparent"></div>
+                </div>
+
+                <div className="container mx-auto px-4 xl:px-12 relative z-10">
                     <div className="max-w-4xl">
                         <div className="inline-flex items-center rounded-full border border-[#FBBF24] px-4 py-1.5 text-xs font-bold text-[#FBBF24] tracking-widest uppercase mb-6">
                             Transparansi Informasi
@@ -71,13 +102,11 @@ export default function InformasiPublikPage() {
                         <div className="flex flex-col lg:flex-row gap-6">
                             {utama && (
                                 <Link href={`/berita/${utama.id}`} className="w-full lg:w-7/12 relative rounded-2xl overflow-hidden group shadow-sm bg-gray-200 dark:bg-gray-800 cursor-pointer h-[400px] lg:h-[500px]">
-                                    {utama.thumbnail ? (
-                                        <img src={utama.thumbnail} alt={utama.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                    ) : (
-                                        <div className="absolute inset-0 bg-gradient-to-br from-[#1E3A8A] to-[#0A192F] flex items-center justify-center">
-                                            <FileText className="w-20 h-20 text-white/20" />
-                                        </div>
-                                    )}
+                                    <img
+                                        src={utama.thumbnail || getCategoryFallbackImage(utama.category)}
+                                        alt={utama.title}
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                    />
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#0A192F] via-[#0A192F]/60 to-transparent"></div>
                                     <div className="absolute bottom-0 left-0 right-0 p-8 lg:p-10 flex flex-col items-start text-white overflow-hidden">
                                         <span className="bg-[#FBBF24] text-[#0A192F] text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider mb-4 shrink-0">
@@ -93,26 +122,33 @@ export default function InformasiPublikPage() {
                             )}
                             <div className="w-full lg:w-5/12 flex flex-col gap-6">
                                 {sekunder && (
-                                    <Link href={`/berita/${sekunder.id}`} className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-6 hover:shadow-md transition-shadow cursor-pointer flex-1">
+                                    <Link href={`/berita/${sekunder.id}`} className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-6 hover:shadow-md transition-shadow cursor-pointer flex-1 group">
                                         <div className="w-full sm:w-1/3 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 h-32 sm:h-auto">
-                                            {sekunder.thumbnail ? (
-                                                <img src={sekunder.thumbnail} alt={sekunder.title} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center"><FileText className="w-8 h-8 text-gray-300 dark:text-gray-500" /></div>
-                                            )}
+                                            <img
+                                                src={sekunder.thumbnail || getCategoryFallbackImage(sekunder.category)}
+                                                alt={sekunder.title}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
                                         </div>
                                         <div className="flex flex-col justify-center">
                                             <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider mb-2">{sekunder.category || 'BERITA'}</span>
-                                            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-2 leading-snug line-clamp-3">{sekunder.title}</h4>
+                                            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-2 leading-snug line-clamp-3 group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] transition-colors">{sekunder.title}</h4>
                                         </div>
                                     </Link>
                                 )}
                                 {tersier.length > 0 && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-1">
                                         {tersier.map((item: any) => (
-                                            <Link href={`/berita/${item.id}`} key={item.id} className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer flex flex-col">
-                                                <span className="text-[10px] uppercase font-bold text-[#B45309] dark:text-[#FBBF24] tracking-wider mb-3">{item.category || 'BERITA'}</span>
-                                                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 leading-snug line-clamp-3">{item.title}</h4>
+                                            <Link href={`/berita/${item.id}`} key={item.id} className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer flex flex-col group overflow-hidden">
+                                                <div className="w-full h-28 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 mb-3 shrink-0">
+                                                    <img
+                                                        src={item.thumbnail || getCategoryFallbackImage(item.category)}
+                                                        alt={item.title}
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    />
+                                                </div>
+                                                <span className="text-[10px] uppercase font-bold text-[#B45309] dark:text-[#FBBF24] tracking-wider mb-2">{item.category || 'BERITA'}</span>
+                                                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 leading-snug line-clamp-2 group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] transition-colors">{item.title}</h4>
                                             </Link>
                                         ))}
                                     </div>
@@ -122,6 +158,9 @@ export default function InformasiPublikPage() {
                     )}
                 </div>
             </section>
+
+            {/* Dokumen & Regulasi Publik Section */}
+            {allDocs.length > 0 && <DokumenPublikSection documents={allDocs} />}
 
             {/* Info Cepat Ketenagakerjaan + Jadwal Pelatihan */}
             <section className="py-20 bg-[#0A192F]">
@@ -220,10 +259,20 @@ export default function InformasiPublikPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[9px] font-bold text-gray-500 dark:text-gray-400 truncate">{s.label}</p>
-                                        <div className="flex items-baseline gap-1.5">
+                                        <div className="flex items-baseline gap-1.5 flex-wrap">
                                             <h4 className="text-lg font-extrabold text-[#0A192F] dark:text-white">{s.value}</h4>
-                                            <span className="text-[9px] text-gray-400">{s.description}</span>
+                                            <span className="text-[9px] text-gray-400 font-medium">{s.description}</span>
                                         </div>
+                                        {s.key === 'pencari_kerja' && (
+                                            <div className="flex items-center gap-1.5 mt-1 text-[9px]">
+                                                <span className="inline-flex items-center gap-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-bold">
+                                                    Laki-laki: 4.307
+                                                </span>
+                                                <span className="inline-flex items-center gap-0.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 px-1.5 py-0.5 rounded font-bold">
+                                                    Perempuan: 5.395
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -231,55 +280,9 @@ export default function InformasiPublikPage() {
                         </div>
                     </div>
 
-                    {/* Jadwal Pelatihan */}
-                    <div className="mt-12">
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h3 className="text-xl font-bold text-white">Jadwal Pelatihan Aktif</h3>
-                                <p className="text-white/50 text-xs mt-1">Pelatihan dan kegiatan yang akan datang.</p>
-                            </div>
-                            <span className="bg-[#FBBF24] text-[#0A192F] text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">Live</span>
-                        </div>
-
-                        {allJadwal.length === 0 ? (
-                            <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
-                                <CalendarDays className="w-10 h-10 text-white/20 mx-auto mb-3" />
-                                <p className="text-white/40 text-sm">Belum ada jadwal pelatihan terdaftar.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {allJadwal.map((j: any) => {
-                                    const d = new Date(j.date);
-                                    const dayNum = d.getDate();
-                                    const monthStr = d.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase();
-                                    return (
-                                        <div key={j.id} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors group">
-                                            <div className="flex items-start gap-4">
-                                                <div className="bg-white/10 rounded-lg p-2 text-center min-w-[50px] shrink-0">
-                                                    <p className="text-[9px] font-bold text-white/50 tracking-widest">{monthStr}</p>
-                                                    <p className="text-lg font-bold text-white -mt-0.5">{dayNum}</p>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="text-sm font-bold text-white mb-1 truncate group-hover:text-[#FBBF24] transition-colors">{j.title}</h4>
-                                                    <p className="text-xs text-white/50 flex items-center gap-1.5">
-                                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${j.color}`} />
-                                                        {j.location}
-                                                    </p>
-                                                    <p className="text-[10px] text-white/30 mt-1">🕐 {j.time_start} - {j.time_end}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        <div className="mt-6 text-center">
-                            <a href="https://www.instagram.com/disnakertrans.kabserang" target="_blank" rel="noopener noreferrer"
-                                className="inline-block bg-[#FBBF24] hover:bg-[#F59E0B] text-[#0A192F] font-bold py-3 px-8 rounded-xl transition-colors text-sm">
-                                Informasi Pelatihan Lainnya
-                            </a>
-                        </div>
+                    {/* Agenda & Peluang Ketenagakerjaan Summary */}
+                    <div className="mt-16 pt-12 border-t border-white/10">
+                        <PeluangSummary pelatihanList={allJadwal} lowonganList={allLowongan} eventList={allEvents} />
                     </div>
                 </div>
             </section>

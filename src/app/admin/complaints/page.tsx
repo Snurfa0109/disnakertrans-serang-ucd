@@ -262,7 +262,7 @@ function AdminComplaintsInner() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-[10px] font-bold text-gray-400">{ticketNum}</span>
+                        <span className="text-[10px] font-mono font-bold bg-[#0A192F] text-[#FBBF24] px-2 py-0.5 rounded">{ticketNum}</span>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusMeta.bg} ${statusMeta.color}`}>{item.status}</span>
                         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.type === "hubungan_industrial" ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"}`}>
                           {item.type === "hubungan_industrial" ? "HI" : "Umum"}

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(10, Math.max(1, parseInt(searchParams.get('limit') || '6', 10)));
 
-    const items = getLatestNews(limit);
+    const items = await getLatestNews(limit);
 
     return NextResponse.json(
       successResponse(items, {

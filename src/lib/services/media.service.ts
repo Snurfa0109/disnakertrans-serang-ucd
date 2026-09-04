@@ -3,7 +3,7 @@
  * Files are stored on disk at /public/uploads/.
  */
 
-import db from '@/lib/db';
+import sql from '@/lib/db';
 
 export interface MediaItem {
   id: number;
@@ -20,13 +20,13 @@ export interface MediaItem {
 
 export const MEDIA_CATEGORIES = ['Umum', 'Berita', 'Sambutan', 'Dokumen', 'Infografis', 'Kegiatan'] as const;
 
-export function listMedia(params: {
+export async function listMedia(params: {
   fileType?: 'image' | 'pdf' | 'document';
   category?: string;
   search?: string;
   page?: number;
   perPage?: number;
-}): { items: MediaItem[]; total: number; page: number; perPage: number } {
+}): Promise<{ items: MediaItem[]; total: number; page: number; perPage: number }> {
   const page = Math.max(1, params.page || 1);
   const perPage = Math.min(100, params.perPage || 24);
   const offset = (page - 1) * perPage;
@@ -34,24 +34,28 @@ export function listMedia(params: {
   const conditions: string[] = [];
   const qp: (string | number)[] = [];
 
-  if (params.fileType) { conditions.push('file_type = ?'); qp.push(params.fileType); }
-  if (params.category) { conditions.push('category = ?'); qp.push(params.category); }
+  if (params.fileType) { conditions.push(`file_type = $${qp.length + 1}`); qp.push(params.fileType); }
+  if (params.category) { conditions.push(`category = $${qp.length + 1}`);  qp.push(params.category); }
   if (params.search) {
-    conditions.push('(original_name LIKE ? OR filename LIKE ?)');
+    conditions.push(`(original_name ILIKE $${qp.length + 1} OR filename ILIKE $${qp.length + 2})`);
     qp.push(`%${params.search}%`, `%${params.search}%`);
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-  const total = (db.prepare(`SELECT COUNT(*) as c FROM media_library ${where}`).get(...qp) as any)?.c || 0;
-  const items = db.prepare(
-    `SELECT * FROM media_library ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`
-  ).all(...qp, perPage, offset) as MediaItem[];
+  const countResult = await sql.unsafe(`SELECT COUNT(*) AS c FROM media_library ${where}`, qp);
+  const total = Number(countResult[0]?.c) || 0;
+
+  const listParams = [...qp, perPage, offset];
+  const items = await sql.unsafe(
+    `SELECT * FROM media_library ${where} ORDER BY created_at DESC LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+    listParams
+  ) as MediaItem[];
 
   return { items, total, page, perPage };
 }
 
-export function saveMedia(data: {
+export async function saveMedia(data: {
   filename: string;
   original_name: string;
   file_type: string;
@@ -60,30 +64,26 @@ export function saveMedia(data: {
   category?: string;
   url: string;
   uploaded_by?: number;
-}): number {
-  const info = db.prepare(`
+}): Promise<number> {
+  const result = await sql`
     INSERT INTO media_library (filename, original_name, file_type, mime_type, size_bytes, category, url, uploaded_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    data.filename,
-    data.original_name,
-    data.file_type,
-    data.mime_type,
-    data.size_bytes,
-    data.category || 'Umum',
-    data.url,
-    data.uploaded_by || null
-  );
-  return Number(info.lastInsertRowid);
+    VALUES (
+      ${data.filename}, ${data.original_name}, ${data.file_type}, ${data.mime_type},
+      ${data.size_bytes}, ${data.category || 'Umum'}, ${data.url}, ${data.uploaded_by || null}
+    )
+    RETURNING id
+  `;
+  return Number(result[0].id);
 }
 
-export function getMediaById(id: number): MediaItem | null {
-  return db.prepare('SELECT * FROM media_library WHERE id = ?').get(id) as MediaItem | null;
+export async function getMediaById(id: number): Promise<MediaItem | null> {
+  const rows = await sql`SELECT * FROM media_library WHERE id = ${id}`;
+  return (rows[0] as MediaItem) || null;
 }
 
-export function deleteMedia(id: number): MediaItem | null {
-  const item = getMediaById(id);
+export async function deleteMedia(id: number): Promise<MediaItem | null> {
+  const item = await getMediaById(id);
   if (!item) return null;
-  db.prepare('DELETE FROM media_library WHERE id = ?').run(id);
+  await sql`DELETE FROM media_library WHERE id = ${id}`;
   return item;
 }

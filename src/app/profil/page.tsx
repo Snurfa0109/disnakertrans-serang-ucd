@@ -1,7 +1,15 @@
 import { Target, CheckCircle2, GraduationCap, Briefcase, FileText, Users, Search, Handshake, Compass, Download, Building2, ClipboardList } from "lucide-react";
+import { getSiteContentByKey } from "@/lib/services/content.service";
+
+export const revalidate = 120;
 
 export const metadata = {
-    title: "Profil Instansi | Disnakertrans Serang"
+    title: "Profil Instansi & Struktur Organisasi",
+    description: "Visi, misi, tugas pokok, fungsi, dan struktur organisasi Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang.",
+    openGraph: {
+        title: "Profil Instansi | Disnakertrans Kab. Serang",
+        description: "Visi, misi, struktur organisasi, dan tugas fungsi Disnakertrans Pemerintah Kabupaten Serang.",
+    },
 };
 
 async function getProfilData() {
@@ -52,13 +60,26 @@ async function getProfilData() {
 export default async function ProfilPage() {
     const data = await getProfilData();
 
+    // Fetch CMS content for dynamic sections
+    const [
+        sambutanNama,
+        sambutanJabatan,
+        sambutanTeks,
+        sambutanFoto,
+    ] = await Promise.all([
+        getSiteContentByKey('sambutan_name'),
+        getSiteContentByKey('sambutan_title'),
+        getSiteContentByKey('sambutan_text'),
+        getSiteContentByKey('sambutan_photo'),
+    ]);
+
     return (
         <div className="min-h-screen pb-0 w-full flex flex-col bg-white dark:bg-[#0B1120]">
             {/* Hero Section */}
             <section className="relative pt-32 pb-24 lg:pt-40 lg:pb-32 bg-[#0A192F] overflow-hidden">
                 <div className="absolute inset-0 z-0">
-                    <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop" alt="Building Background" className="w-full h-full object-cover opacity-30 mix-blend-luminosity" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/80 to-transparent"></div>
+                    <img src="/images/banner-pamarayan.jpg" alt="Bendung Pamarayan Lama Kabupaten Serang" className="w-full h-full object-cover opacity-35 mix-blend-luminosity" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/85 to-transparent"></div>
                 </div>
                 
                 <div className="container mx-auto px-4 xl:px-12 relative z-10">
@@ -83,7 +104,7 @@ export default async function ProfilPage() {
                         <div className="relative w-full lg:w-5/12 max-w-sm mx-auto lg:max-w-none">
                             <div className="bg-[#FDE68A] absolute inset-0 -ml-4 -mt-4 rounded-xl min-h-full aspect-[3/4]"></div>
                             <div className="relative z-10 bg-white rounded-xl overflow-hidden shadow-xl aspect-[3/4]">
-                                <img src="/images/kepala-dinas.png" alt="Kepala Dinas Tenaga Kerja dan Transmigrasi" className="w-full h-full object-cover object-top" />
+                                <img src={sambutanFoto || "/images/kepala-dinas.png"} alt="Kepala Dinas" className="w-full h-full object-cover object-top" />
                             </div>
                         </div>
                         {/* Text Side */}
@@ -91,11 +112,11 @@ export default async function ProfilPage() {
                             <div className="w-10 h-1 bg-[#FBBF24] mb-6 rounded-full"></div>
                             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6">Sambutan Kepala Dinas</h2>
                             <p className="text-gray-600 dark:text-gray-300 text-lg italic mb-8 leading-relaxed">
-                                &ldquo;Selamat datang di portal resmi Disnakertrans Kabupaten Serang. Kami berkomitmen untuk terus berinovasi dalam memberikan layanan terbaik bagi seluruh pencari kerja dan pemberi kerja, demi mewujudkan Kabupaten Serang yang lebih sejahtera melalui sektor ketenagakerjaan yang inklusif.&rdquo;
+                                &ldquo;{sambutanTeks || 'Selamat datang di portal resmi Disnakertrans Kabupaten Serang. Kami berkomitmen untuk terus berinovasi dalam memberikan layanan terbaik bagi seluruh pencari kerja dan pemberi kerja.'}&rdquo;
                             </p>
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Diana Ardhianty Utami, SH., MM.</h3>
-                                <p className="text-gray-600 dark:text-gray-400">Kepala Dinas Tenaga Kerja dan Transmigrasi Kab. Serang</p>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{sambutanNama || 'Kepala Dinas'}</h3>
+                                <p className="text-gray-600 dark:text-gray-400">{sambutanJabatan || 'Kepala Dinas Tenaga Kerja dan Transmigrasi Kab. Serang'}</p>
                             </div>
                         </div>
                     </div>

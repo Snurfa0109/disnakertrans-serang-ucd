@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const data = getAllComplaintsForExport({
+  const data = await getAllComplaintsForExport({
     status: searchParams.get('status') || undefined,
     type: searchParams.get('type') || undefined,
     dateFrom: searchParams.get('dateFrom') || undefined,
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   });
 
   const headers = ['No Tiket', 'Nama', 'Email', 'Subjek', 'Jenis', 'Status', 'Tanggal', 'Pesan'];
-  const rows = data.map(c => [
+  const rows = data.map((c: any) => [
     c.ticket_number || `PKD-${String(c.id).padStart(5, '0')}`,
     `"${c.name.replace(/"/g, '""')}"`,
     c.email,
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     `"${c.message.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
   ]);
 
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const csv = [headers.join(','), ...rows.map((r: any[]) => r.join(','))].join('\n');
 
   logAction({
     actorId: session.user.id, actorName: session.user.name, actorRole: session.user.role,

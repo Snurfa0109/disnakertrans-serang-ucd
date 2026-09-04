@@ -7,7 +7,7 @@ import {
   Newspaper, MessageSquareWarning, BarChart3, RefreshCw, LogOut, Shield,
   Menu, X, ChevronRight, Home, Database, TrendingUp, Users, HelpCircle,
   BookOpen, Layout, Image, FileText, Bot, ClipboardList, Settings,
-  ChevronDown, Building2,
+  ChevronDown, Building2, Briefcase, CalendarDays,
 } from "lucide-react";
 
 type AdminRole = "superadmin" | "website" | "sekretariat" | "lattas" | "binapenta" | "hijamsostek";
@@ -56,6 +56,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: "FAQ", href: "/admin/faq", icon: HelpCircle, roles: ["superadmin", "website", "lattas", "binapenta", "hijamsostek"] },
       { label: "Tutorial Layanan", href: "/admin/tutorials", icon: BookOpen, roles: ["superadmin", "website"] },
       { label: "Konten Website", href: "/admin/content", icon: Layout, roles: ["superadmin", "website"] },
+      { label: "Dokumen Publik", href: "/admin/dokumen", icon: FileText, roles: ["superadmin", "website", "sekretariat"] },
       { label: "Media Manager", href: "/admin/media", icon: Image, roles: ["superadmin", "website", "sekretariat"] },
     ],
   },
@@ -64,7 +65,14 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Pengaduan", href: "/admin/complaints", icon: MessageSquareWarning, roles: ["superadmin", "sekretariat", "hijamsostek"] },
       { label: "Kelola Data", href: "/admin/data", icon: Database, roles: ["superadmin", "lattas", "binapenta"] },
-      { label: "Informasi Publik", href: "/admin/data", icon: FileText, roles: ["superadmin", "sekretariat"] },
+    ],
+  },
+  {
+    title: "Data Publik",
+    items: [
+      { label: "Lowongan Kerja", href: "/admin/lowongan", icon: Briefcase, roles: ["superadmin", "binapenta", "lattas"] },
+      { label: "Jadwal Pelatihan", href: "/admin/pelatihan", icon: BookOpen, roles: ["superadmin", "lattas"] },
+      { label: "Event & Agenda", href: "/admin/events", icon: CalendarDays, roles: ["superadmin", "website", "lattas", "binapenta", "hijamsostek"] },
     ],
   },
   {

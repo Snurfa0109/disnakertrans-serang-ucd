@@ -12,7 +12,7 @@ import { successResponse, errorResponse } from '@/lib/utils';
  */
 export async function GET() {
   try {
-    const stats = getComplaintStats();
+    const stats = await getComplaintStats();
 
     return NextResponse.json(
       successResponse(stats)

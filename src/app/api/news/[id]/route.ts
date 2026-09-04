@@ -19,7 +19,7 @@ export async function GET(
       return NextResponse.json(errorResponse('Invalid news ID'), { status: 400 });
     }
 
-    const item = getNewsById(newsId);
+    const item = await getNewsById(newsId);
 
     if (!item) {
       return NextResponse.json(errorResponse('News not found'), { status: 404 });
@@ -50,13 +50,13 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const updated = updateNews(newsId, body);
+    const updated = await updateNews(newsId, body);
 
     if (!updated) {
       return NextResponse.json(errorResponse('News not found or no changes'), { status: 404 });
     }
 
-    const item = getNewsById(newsId);
+    const item = await getNewsById(newsId);
     return NextResponse.json(successResponse(item));
   } catch (error) {
     console.error('[API] PUT /api/news/:id error:', error);
@@ -81,7 +81,7 @@ export async function DELETE(
       return NextResponse.json(errorResponse('Invalid news ID'), { status: 400 });
     }
 
-    const deleted = deleteNews(newsId);
+    const deleted = await deleteNews(newsId);
 
     if (!deleted) {
       return NextResponse.json(errorResponse('News not found'), { status: 404 });

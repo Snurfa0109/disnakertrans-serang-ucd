@@ -6,7 +6,7 @@ import { successResponse, errorResponse } from '@/lib/utils';
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const item = getTutorialById(parseInt(id));
+  const item = await getTutorialById(parseInt(id));
   if (!item) return NextResponse.json(errorResponse('Tutorial tidak ditemukan'), { status: 404 });
   return NextResponse.json(successResponse(item));
 }
@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const tutId = parseInt(id);
   const body = await request.json();
-  const updated = updateTutorial(tutId, body);
+  const updated = await updateTutorial(tutId, body);
 
   if (!updated) return NextResponse.json(errorResponse('Tutorial tidak ditemukan'), { status: 404 });
 
@@ -36,8 +36,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   const { id } = await params;
   const tutId = parseInt(id);
-  const item = getTutorialById(tutId);
-  const deleted = deleteTutorial(tutId);
+  const item = await getTutorialById(tutId);
+  const deleted = await deleteTutorial(tutId);
 
   if (!deleted) return NextResponse.json(errorResponse('Tutorial tidak ditemukan'), { status: 404 });
 

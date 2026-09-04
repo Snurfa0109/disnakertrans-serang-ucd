@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const result = getAuditLogs({
+  const result = await getAuditLogs({
     actorId: searchParams.get('actorId') ? parseInt(searchParams.get('actorId')!) : undefined,
     action: searchParams.get('action') || undefined,
     module: searchParams.get('module') || undefined,

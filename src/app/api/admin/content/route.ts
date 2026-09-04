@@ -7,7 +7,7 @@ import { successResponse, errorResponse } from '@/lib/utils';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get('section') || undefined;
-  const items = getSiteContent(section);
+  const items = await getSiteContent(section);
   return NextResponse.json(successResponse(items));
 }
 

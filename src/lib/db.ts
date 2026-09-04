@@ -1,388 +1,497 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+/**
+ * Database — MySQL connection via mysql2
+ *
+ * Exports a singleton `sql` tagged-template client.
+ * Also exports `initDb()` to create tables + seed data on first run.
+ */
+
+import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
 
-const dbPath = path.join(process.cwd(), 'sqlite.db');
-const db = new Database(dbPath);
+// ─── CONNECTION POOL ──────────────────────────────────────────────
+const globalForDb = globalThis as unknown as {
+  connPool: mysql.Pool | undefined;
+};
 
-// Enable WAL mode for better concurrent read performance
-db.pragma('journal_mode = WAL');
-db.pragma('busy_timeout = 5000');
+const pool =
+  globalForDb.connPool ??
+  mysql.createPool({
+    host:     process.env.DB_HOST     || 'localhost',
+    port:     Number(process.env.DB_PORT) || 3306,
+    user:     process.env.DB_USER     || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME     || 'disnakertrans',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    multipleStatements: true,
+  });
 
-// ─── MIGRATION HELPER ────────────────────────────────────────
-function addColumnIfNotExists(table: string, column: string, definition: string) {
-  try {
-    const info = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
-    const exists = info.some((col) => col.name === column);
-    if (!exists) {
-      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+if (process.env.NODE_ENV !== 'production') globalForDb.connPool = pool;
+
+/**
+ * Tagged-template SQL helper — mimics postgres.js API.
+ *
+ * Usage:  const rows = await sql`SELECT * FROM news`
+ *         const rows = await sql`SELECT * FROM news WHERE id = ${id}`
+ */
+async function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any[]> {
+  // Build query string: replace ${} with ? placeholders
+  let query = '';
+  const params: any[] = [];
+  strings.forEach((str, i) => {
+    query += str;
+    if (i < values.length) {
+      const val = values[i];
+      // Handle raw SQL fragments
+      if (val && typeof val === 'object' && val.__raw) {
+        query += val.__raw;
+      } else {
+        query += '?';
+        params.push(val);
+      }
     }
-  } catch {
-    // Ignore errors silently
+  });
+
+  const [result] = await pool.execute(query, params);
+
+  // For SELECT → return rows array; for INSERT/UPDATE/DELETE → return result with affectedRows etc.
+  if (Array.isArray(result)) {
+    return result as any[];
   }
+  // Wrap result object as array-like so it's iterable but also has affectedRows
+  const wrapper: any = [];
+  Object.assign(wrapper, result);
+  return wrapper;
 }
 
-// ─── NEWS TABLE ───────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS news (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    content TEXT,
-    thumbnail TEXT,
-    date TEXT NOT NULL
-  )
-`);
-
-// Migrate news table — add new columns to existing table
-addColumnIfNotExists('news', 'slug', "TEXT");
-addColumnIfNotExists('news', 'summary', "TEXT");
-addColumnIfNotExists('news', 'category', "TEXT DEFAULT 'Umum'");
-addColumnIfNotExists('news', 'source_url', "TEXT");
-addColumnIfNotExists('news', 'source_name', "TEXT DEFAULT 'Disnakertrans Kab. Serang'");
-addColumnIfNotExists('news', 'link_url', "TEXT");
-addColumnIfNotExists('news', 'created_at', "TEXT DEFAULT (datetime('now'))");
-addColumnIfNotExists('news', 'updated_at', "TEXT DEFAULT (datetime('now'))");
-
-// Create indexes AFTER migrations ensure columns exist
-db.exec(`CREATE INDEX IF NOT EXISTS idx_news_date ON news(date DESC)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_news_slug ON news(slug)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_news_category ON news(category)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_news_source_url ON news(source_url)`);
-
-// ─── PENGADUAN (COMPLAINTS) TABLE ─────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS pengaduan (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    message TEXT NOT NULL,
-    date TEXT NOT NULL
-  )
-`);
-
-// Migrate pengaduan table — add new columns to existing table
-addColumnIfNotExists('pengaduan', 'subject', "TEXT DEFAULT ''");
-addColumnIfNotExists('pengaduan', 'type', "TEXT DEFAULT 'umum'");
-addColumnIfNotExists('pengaduan', 'status', "TEXT DEFAULT 'Baru'");
-addColumnIfNotExists('pengaduan', 'ticket_number', "TEXT DEFAULT ''");
-addColumnIfNotExists('pengaduan', 'assigned_to', "INTEGER DEFAULT NULL");
-addColumnIfNotExists('pengaduan', 'internal_notes', "TEXT DEFAULT ''");
-addColumnIfNotExists('pengaduan', 'attachments', "TEXT DEFAULT '[]'");
-addColumnIfNotExists('pengaduan', 'is_spam', "INTEGER DEFAULT 0");
-addColumnIfNotExists('pengaduan', 'created_at', "TEXT DEFAULT (datetime('now'))");
-addColumnIfNotExists('pengaduan', 'updated_at', "TEXT DEFAULT (datetime('now'))");
-
-// Create indexes AFTER migrations
-db.exec(`CREATE INDEX IF NOT EXISTS idx_pengaduan_status ON pengaduan(status)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_pengaduan_type ON pengaduan(type)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_pengaduan_date ON pengaduan(date DESC)`);
-
-// ─── JADWAL PELATIHAN TABLE ──────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS jadwal_pelatihan (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    location TEXT NOT NULL,
-    date TEXT NOT NULL,
-    time_start TEXT NOT NULL DEFAULT '08:00',
-    time_end TEXT DEFAULT 'Selesai',
-    color TEXT DEFAULT 'bg-green-500',
-    is_active INTEGER DEFAULT 1,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-  )
-`);
-
-// ─── STATISTIK TABLE ─────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS statistik (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    key TEXT NOT NULL UNIQUE,
-    label TEXT NOT NULL,
-    value TEXT NOT NULL,
-    description TEXT DEFAULT '',
-    sort_order INTEGER DEFAULT 0,
-    updated_at TEXT DEFAULT (datetime('now'))
-  )
-`);
-
-// Seed default statistik data if empty
-const statCount = (db.prepare('SELECT COUNT(*) as c FROM statistik').get() as any)?.c || 0;
-if (statCount === 0) {
-  const seedStats = db.prepare(`INSERT OR IGNORE INTO statistik (key, label, value, description, sort_order) VALUES (?, ?, ?, ?, ?)`);
-  seedStats.run('umk_serang', 'UMK Kabupaten Serang 2026', 'Rp 5.178.521', 'Naik 6,6% dari tahun 2025', 1);
-  seedStats.run('ump_banten', 'UMP Banten 2026', 'Rp 5.067.381', 'Naik 6,5% dari tahun 2025', 2);
-  seedStats.run('perusahaan_terdaftar', 'Perusahaan Terdaftar', '1.892', 'Perusahaan', 3);
-  seedStats.run('pencari_kerja', 'Pencari Kerja Terdaftar', '12.402', 'Orang', 4);
-  seedStats.run('lowongan_tersedia', 'Lowongan Tersedia (2025)', '3.150', 'Lowongan', 5);
+interface SqlTag {
+  (strings: TemplateStringsArray, ...values: any[]): Promise<any>;
+  unsafe(query: string, params?: any[]): Promise<any>;
+  begin(cb: (tx: any) => Promise<any>): Promise<any>;
 }
 
-// ─── VISITOR COUNTER TABLE ────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS visitors (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT NOT NULL,
-    count INTEGER DEFAULT 0,
-    UNIQUE(date)
-  )
-`);
+const sqlTag: SqlTag = Object.assign(sql, {
+  unsafe: async function (query: string, params: any[] = []): Promise<any[]> {
+    let mysqlQuery = query.replace(/\$\d+/g, '?');
+    mysqlQuery = mysqlQuery.replace(/\bILIKE\b/g, 'LIKE');
 
-// ─── VISITOR LOGS TABLE (detailed analytics) ──────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS visitor_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    visitor_id TEXT NOT NULL,
-    ip_address TEXT DEFAULT '',
-    device TEXT DEFAULT 'Desktop',
-    browser TEXT DEFAULT 'Unknown',
-    os TEXT DEFAULT 'Unknown',
-    page_path TEXT NOT NULL DEFAULT '/',
-    referrer TEXT DEFAULT '',
-    city TEXT DEFAULT '',
-    session_duration INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now'))
-  )
-`);
+    const [result] = await pool.execute(mysqlQuery, params);
 
-db.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_date ON visitor_logs(created_at)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_page ON visitor_logs(page_path)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_vid ON visitor_logs(visitor_id)`);
+    if (Array.isArray(result)) {
+      return result as any[];
+    }
+    const wrapper: any = [];
+    Object.assign(wrapper, result);
+    return wrapper;
+  },
+  begin: async function (cb: (tx: any) => Promise<any>): Promise<any> {
+    return cb(sqlTag);
+  }
+});
 
-// ─── ADMIN USERS TABLE ───────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS admin_users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'website',
-    is_active INTEGER DEFAULT 1,
-    last_login TEXT DEFAULT NULL,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-  )
-`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(email)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_admin_users_role ON admin_users(role)`);
+export default sqlTag;
 
-// ─── ADMIN SESSIONS TABLE ─────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS admin_sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    token TEXT NOT NULL UNIQUE,
-    ip_address TEXT DEFAULT '',
-    expires_at TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE
-  )
-`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_admin_sessions_token ON admin_sessions(token)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_admin_sessions_user ON admin_sessions(user_id)`);
+// â”€â”€â”€ INIT (run once at startup via instrumentation.ts) â”€â”€â”€â”€â”€â”€â”€â”€
+export async function initDb(): Promise<void> {
 
-// ─── AUDIT LOGS TABLE ─────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS audit_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    actor_id INTEGER,
-    actor_name TEXT NOT NULL DEFAULT 'System',
-    actor_role TEXT NOT NULL DEFAULT 'system',
-    action TEXT NOT NULL,
-    module TEXT NOT NULL,
-    target_id TEXT DEFAULT NULL,
-    target_description TEXT DEFAULT NULL,
-    ip_address TEXT DEFAULT '',
-    created_at TEXT DEFAULT (datetime('now'))
-  )
-`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_id)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_logs_module ON audit_logs(module)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_logs_date ON audit_logs(created_at DESC)`);
+  // â”€â”€ NEWS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS news (
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      title         TEXT NOT NULL,
+      description   TEXT NOT NULL,
+      content       LONGTEXT,
+      thumbnail     TEXT,
+      date          TEXT NOT NULL,
+      slug          TEXT,
+      summary       TEXT,
+      category      TEXT DEFAULT 'Umum',
+      source_url    TEXT,
+      source_name   TEXT DEFAULT 'Disnakertrans Kab. Serang',
+      link_url      TEXT,
+      created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
 
-// ─── FAQ TABLE ────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS faqs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    question TEXT NOT NULL,
-    answer TEXT NOT NULL,
-    category TEXT NOT NULL DEFAULT 'Umum',
-    status TEXT NOT NULL DEFAULT 'draft',
-    sort_order INTEGER DEFAULT 0,
-    created_by INTEGER DEFAULT NULL,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-  )
-`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_faqs_category ON faqs(category)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_faqs_status ON faqs(status)`);
+  // â”€â”€ PENGADUAN TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS pengaduan (
+      id              INT AUTO_INCREMENT PRIMARY KEY,
+      name            TEXT NOT NULL,
+      email           TEXT NOT NULL,
+      message         TEXT NOT NULL,
+      date            TEXT NOT NULL,
+      subject         TEXT DEFAULT '',
+      type            TEXT DEFAULT 'umum',
+      status          TEXT DEFAULT 'Baru',
+      ticket_number   TEXT DEFAULT '',
+      assigned_to     INTEGER DEFAULT NULL,
+      internal_notes  TEXT DEFAULT '',
+      attachments     TEXT DEFAULT '[]',
+      is_spam         TINYINT(1) DEFAULT 0,
+      created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
 
-// Seed default FAQs if empty
-const faqCount = (db.prepare('SELECT COUNT(*) as c FROM faqs').get() as any)?.c || 0;
-if (faqCount === 0) {
-  const seedFaq = db.prepare(`INSERT INTO faqs (question, answer, category, status, sort_order) VALUES (?, ?, ?, 'published', ?)`);
-  seedFaq.run('Apa itu kartu AK1?', 'Kartu AK1 (Antar Kerja Lokal) adalah kartu tanda pencari kerja yang diterbitkan oleh Dinas Tenaga Kerja. Kartu ini wajib dimiliki sebagai syarat melamar pekerjaan secara resmi.', 'AK1', 1);
-  seedFaq.run('Bagaimana cara membuat kartu AK1?', 'Untuk membuat kartu AK1, Anda perlu: 1) Datang ke kantor Disnakertrans Kab. Serang, 2) Membawa KTP, ijazah terakhir, dan pas foto 3x4, 3) Mengisi formulir permohonan, 4) Kartu akan diterbitkan saat itu juga.', 'AK1', 2);
-  seedFaq.run('Bagaimana cara mengajukan pengaduan hubungan industrial?', 'Pengaduan hubungan industrial dapat diajukan melalui: 1) Portal online di website ini (menu Pengaduan), 2) Datang langsung ke kantor Bidang HI Jamsostek, 3) Melalui email resmi instansi.', 'Pengaduan', 3);
-  seedFaq.run('Apakah ada pelatihan kerja gratis?', 'Ya, Disnakertrans Kab. Serang menyediakan program pelatihan kerja gratis melalui BLK (Balai Latihan Kerja). Jadwal pelatihan dapat dilihat di halaman Informasi Publik.', 'Pelatihan', 4);
-  seedFaq.run('Berapa UMK Kabupaten Serang tahun 2026?', 'UMK Kabupaten Serang tahun 2026 adalah Rp 5.178.521 per bulan, naik 6,6% dari tahun 2025.', 'Umum', 5);
-}
+  // ── JADWAL PELATIHAN TABLE ───────────────────────────────────
+  await sql`
+    CREATE TABLE IF NOT EXISTS jadwal_pelatihan (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      title       TEXT NOT NULL,
+      location    TEXT NOT NULL,
+      date        TEXT NOT NULL,
+      time_start  TEXT NOT NULL DEFAULT '08:00',
+      time_end    TEXT DEFAULT 'Selesai',
+      color       TEXT DEFAULT 'bg-green-500',
+      cover_image TEXT,
+      source_url  TEXT,
+      is_active   TINYINT(1) DEFAULT 1,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
 
-// ─── TUTORIALS TABLE ──────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS tutorials (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    slug TEXT NOT NULL UNIQUE,
-    category TEXT NOT NULL DEFAULT 'Umum',
-    thumbnail TEXT DEFAULT NULL,
-    steps TEXT NOT NULL DEFAULT '[]',
-    estimated_duration TEXT DEFAULT '5 menit',
-    cta_link TEXT DEFAULT NULL,
-    cta_text TEXT DEFAULT 'Mulai Sekarang',
-    status TEXT NOT NULL DEFAULT 'draft',
-    created_by INTEGER DEFAULT NULL,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-  )
-`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_tutorials_slug ON tutorials(slug)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_tutorials_category ON tutorials(category)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_tutorials_status ON tutorials(status)`);
+  try {
+    await sql`ALTER TABLE jadwal_pelatihan ADD COLUMN cover_image TEXT`;
+  } catch {}
+  try {
+    await sql`ALTER TABLE jadwal_pelatihan ADD COLUMN source_url TEXT`;
+  } catch {}
 
-// Seed default tutorials if empty
-const tutorialCount = (db.prepare('SELECT COUNT(*) as c FROM tutorials').get() as any)?.c || 0;
-if (tutorialCount === 0) {
-  const seedTutorial = db.prepare(`INSERT INTO tutorials (title, slug, category, steps, estimated_duration, cta_link, cta_text, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'published')`);
-  const ak1Steps = JSON.stringify([
-    { title: 'Persiapkan Dokumen', content: 'Siapkan KTP asli dan fotokopi, ijazah terakhir (asli dan fotokopi), pas foto ukuran 3x4 (2 lembar), dan surat keterangan dari kelurahan (jika diperlukan).' },
-    { title: 'Datang ke Kantor Disnakertrans', content: 'Kunjungi kantor Disnakertrans Kabupaten Serang di Jl. Kawasan Puspemkab Serang No.B1, Kaserangan, Kec. Ciruas. Buka Senin–Jumat pukul 08.00–15.00 WIB.' },
-    { title: 'Ambil Nomor Antrian', content: 'Setelah sampai, ambil nomor antrian di loket pelayanan AK1 dan tunggu dipanggil oleh petugas.' },
-    { title: 'Isi Formulir Permohonan', content: 'Isi formulir permohonan kartu AK1 dengan data diri yang lengkap dan benar. Pastikan semua kolom terisi.' },
-    { title: 'Serahkan Berkas', content: 'Serahkan formulir beserta dokumen persyaratan kepada petugas. Petugas akan memverifikasi kelengkapan berkas Anda.' },
-    { title: 'Terima Kartu AK1', content: 'Setelah verifikasi selesai, kartu AK1 akan dicetak dan diserahkan kepada Anda saat itu juga. Simpan kartu ini dengan baik.' },
-  ]);
-  seedTutorial.run('Cara Membuat Kartu AK1', 'cara-membuat-kartu-ak1', 'AK1', ak1Steps, '30 menit', '/pengaduan', 'Hubungi Kami');
+  // ── LOWONGAN KERJA TABLE ──────────────────────────────────────
+  await sql`
+    CREATE TABLE IF NOT EXISTS lowongan (
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      title         TEXT NOT NULL,
+      company       TEXT NOT NULL,
+      location      TEXT DEFAULT 'Kabupaten Serang',
+      job_type      TEXT DEFAULT 'Full time',
+      education     TEXT DEFAULT 'SMA/SMK',
+      deadline      TEXT DEFAULT '',
+      salary        TEXT DEFAULT '',
+      category      TEXT DEFAULT 'Dalam Negeri',
+      logo_url      TEXT DEFAULT '',
+      source_url    VARCHAR(255) DEFAULT 'https://karirhub.kemnaker.go.id/lowongan-dalam-negeri/lowongan',
+      is_active     TINYINT(1) DEFAULT 1,
+      created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
 
-  const pengaduanSteps = JSON.stringify([
-    { title: 'Buka Halaman Pengaduan', content: 'Klik menu "Pengaduan" di navigasi utama website atau akses langsung di /pengaduan.' },
-    { title: 'Pilih Jenis Pengaduan', content: 'Pilih jenis pengaduan sesuai permasalahan Anda: Pengaduan Umum atau Pengaduan Hubungan Industrial.' },
-    { title: 'Isi Formulir Pengaduan', content: 'Isi data diri (nama, email) dan tuliskan isi pengaduan dengan jelas dan detail. Sertakan bukti/lampiran jika ada.' },
-    { title: 'Submit Pengaduan', content: 'Klik tombol "Kirim Pengaduan". Sistem akan otomatis menghasilkan nomor tiket pengaduan untuk Anda.' },
-    { title: 'Cek Email Konfirmasi', content: 'Periksa email Anda untuk mendapatkan konfirmasi nomor tiket dan informasi tindak lanjut pengaduan.' },
-    { title: 'Pantau Status Pengaduan', content: 'Pengaduan Anda akan ditindaklanjuti dalam 3×24 jam hari kerja. Balasan akan dikirimkan ke email yang Anda daftarkan.' },
-  ]);
-  seedTutorial.run('Cara Mengajukan Pengaduan', 'cara-mengajukan-pengaduan', 'Pengaduan', pengaduanSteps, '10 menit', '/pengaduan', 'Ajukan Pengaduan');
+  try {
+    await sql`ALTER TABLE lowongan ADD COLUMN category TEXT`;
+  } catch {}
+  try {
+    await sql`ALTER TABLE lowongan ADD COLUMN salary TEXT`;
+  } catch {}
 
-  const lowonganSteps = JSON.stringify([
-    { title: 'Buat Kartu AK1', content: 'Pastikan Anda memiliki kartu AK1 (kartu pencari kerja) sebagai syarat utama melamar kerja secara resmi.' },
-    { title: 'Buka Halaman Informasi Publik', content: 'Akses halaman Informasi Publik di website untuk melihat daftar lowongan kerja yang tersedia.' },
-    { title: 'Cari Lowongan Sesuai Keahlian', content: 'Telusuri daftar lowongan berdasarkan bidang pekerjaan, kualifikasi pendidikan, atau lokasi penempatan.' },
-    { title: 'Persiapkan Berkas Lamaran', content: 'Siapkan CV, surat lamaran, fotokopi ijazah, KTP, kartu AK1, dan pas foto terbaru.' },
-    { title: 'Ajukan Lamaran', content: 'Kirim lamaran ke perusahaan sesuai petunjuk yang tertera di info lowongan, atau melalui Disnakertrans.' },
-  ]);
-  seedTutorial.run('Cara Mencari Lowongan Kerja', 'cara-mencari-lowongan-kerja', 'Lowongan Kerja', lowonganSteps, '15 menit', '/informasi-publik', 'Lihat Lowongan');
-}
+  // ── DOKUMEN PUBLIK TABLE ──────────────────────────────────────
+  await sql`
+    CREATE TABLE IF NOT EXISTS dokumen_publik (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      title       TEXT NOT NULL,
+      category    VARCHAR(100) DEFAULT 'LAPORAN KINERJA',
+      description TEXT DEFAULT '',
+      file_url    TEXT NOT NULL,
+      file_size   VARCHAR(50) DEFAULT 'PDF',
+      date        VARCHAR(50) DEFAULT '2026',
+      sort_order  INTEGER DEFAULT 0,
+      is_active   TINYINT(1) DEFAULT 1,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
 
-// ─── SITE CONTENT TABLE (CMS) ────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS site_content (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    key TEXT NOT NULL UNIQUE,
-    label TEXT NOT NULL,
-    value TEXT NOT NULL DEFAULT '',
-    type TEXT NOT NULL DEFAULT 'text',
-    section TEXT NOT NULL DEFAULT 'general',
-    updated_by INTEGER DEFAULT NULL,
-    updated_at TEXT DEFAULT (datetime('now'))
-  )
-`);
+  // ── EVENTS TABLE ──────────────────────────────────────────────
+  await sql`
+    CREATE TABLE IF NOT EXISTS events (
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      title         TEXT NOT NULL,
+      location      TEXT NOT NULL,
+      date          TEXT NOT NULL,
+      time_start    TEXT DEFAULT '08:00',
+      time_end      TEXT DEFAULT 'Selesai',
+      organizer     TEXT DEFAULT 'Disnakertrans Kab. Serang',
+      link_url      TEXT DEFAULT '',
+      is_active     TINYINT(1) DEFAULT 1,
+      created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
 
-// Seed default site content if empty
-const contentCount = (db.prepare('SELECT COUNT(*) as c FROM site_content').get() as any)?.c || 0;
-if (contentCount === 0) {
-  const seedContent = db.prepare(`INSERT OR IGNORE INTO site_content (key, label, value, type, section) VALUES (?, ?, ?, ?, ?)`);
-  seedContent.run('hero_title', 'Hero Title', 'Layanan Terpadu Disnakertrans Kabupaten Serang', 'text', 'hero');
-  seedContent.run('hero_subtitle', 'Hero Subtitle', 'Melayani dengan profesional dan berintegritas untuk kesejahteraan tenaga kerja dan masyarakat Kabupaten Serang.', 'textarea', 'hero');
-  seedContent.run('hero_cta_text', 'Hero CTA Button Text', 'Lihat Layanan', 'text', 'hero');
-  seedContent.run('hero_cta_link', 'Hero CTA Button Link', '/layanan-publik', 'text', 'hero');
-  seedContent.run('sambutan_name', 'Nama Kepala Dinas', 'H. Hudaya, S.H., M.H.', 'text', 'sambutan');
-  seedContent.run('sambutan_title', 'Jabatan Kepala Dinas', 'Kepala Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang', 'text', 'sambutan');
-  seedContent.run('sambutan_text', 'Teks Sambutan', 'Selamat datang di portal resmi Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang. Kami berkomitmen untuk memberikan pelayanan terbaik kepada seluruh masyarakat Kabupaten Serang dalam bidang ketenagakerjaan dan transmigrasi.', 'textarea', 'sambutan');
-  seedContent.run('sambutan_photo', 'Foto Kepala Dinas', '', 'image', 'sambutan');
-  seedContent.run('profil_description', 'Deskripsi Profil Instansi', 'Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang adalah instansi pemerintah daerah yang bertugas menyelenggarakan urusan pemerintahan di bidang ketenagakerjaan dan transmigrasi.', 'textarea', 'profil');
-  seedContent.run('contact_address', 'Alamat Kantor', 'Jl. Kawasan Puspemkab Serang No.B1, Kaserangan, Kec. Ciruas, Kabupaten Serang, Banten 42182', 'textarea', 'contact');
-  seedContent.run('contact_phone', 'Nomor Telepon', '(0254) 200234', 'text', 'contact');
-  seedContent.run('contact_email', 'Email Instansi', 'disnakertrans@serangkab.go.id', 'text', 'contact');
-  seedContent.run('contact_hours', 'Jam Operasional', 'Senin – Jumat: 08.00 – 15.00 WIB', 'text', 'contact');
-  seedContent.run('social_instagram', 'Instagram', 'https://instagram.com/disnakertrans_serang', 'url', 'social');
-  seedContent.run('social_youtube', 'YouTube', '', 'url', 'social');
-  seedContent.run('social_facebook', 'Facebook', '', 'url', 'social');
-  seedContent.run('social_twitter', 'Twitter/X', '', 'url', 'social');
-  seedContent.run('portal_lapor', 'Link Portal LAPOR!', 'https://lapor.go.id', 'url', 'portals');
-  seedContent.run('portal_sipp', 'Link Portal SIPP', 'https://sipp.naker.go.id', 'url', 'portals');
-  seedContent.run('portal_sisnaker', 'Link Portal SISNAKER', 'https://sisnaker.go.id', 'url', 'portals');
-  seedContent.run('portal_loker', 'Link Portal Loker', 'https://karirhub.kemnaker.go.id', 'url', 'portals');
-}
+  // â”€â”€ STATISTIK TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS statistik (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      \`key\`       VARCHAR(191) NOT NULL UNIQUE,
+      label       TEXT NOT NULL,
+      value       TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      sort_order  INTEGER DEFAULT 0,
+      updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
 
-// ─── MEDIA LIBRARY TABLE ─────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS media_library (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    filename TEXT NOT NULL UNIQUE,
-    original_name TEXT NOT NULL,
-    file_type TEXT NOT NULL DEFAULT 'image',
-    mime_type TEXT DEFAULT '',
-    size_bytes INTEGER DEFAULT 0,
-    category TEXT DEFAULT 'Umum',
-    url TEXT NOT NULL,
-    uploaded_by INTEGER DEFAULT NULL,
-    created_at TEXT DEFAULT (datetime('now'))
-  )
-`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_media_library_type ON media_library(file_type)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_media_library_category ON media_library(category)`);
-
-// ─── CHATBOT LOGS TABLE ───────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS chatbot_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id TEXT NOT NULL,
-    messages TEXT NOT NULL DEFAULT '[]',
-    message_count INTEGER DEFAULT 0,
-    fallback_count INTEGER DEFAULT 0,
-    last_query TEXT DEFAULT '',
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-  )
-`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_chatbot_logs_session ON chatbot_logs(session_id)`);
-db.exec(`CREATE INDEX IF NOT EXISTS idx_chatbot_logs_date ON chatbot_logs(created_at DESC)`);
-
-// ─── SEED ADMIN USERS ─────────────────────────────────────────
-const adminCount = (db.prepare('SELECT COUNT(*) as c FROM admin_users').get() as any)?.c || 0;
-if (adminCount === 0) {
-  const demoAccounts = [
-    { name: 'Super Admin', email: 'superadmin@disnakertrans.go.id', password: 'SuperAdmin123!', role: 'superadmin' },
-    { name: 'Admin Website', email: 'website@disnakertrans.go.id', password: 'Website123!', role: 'website' },
-    { name: 'Admin Sekretariat', email: 'sekretariat@disnakertrans.go.id', password: 'Sekretariat123!', role: 'sekretariat' },
-    { name: 'Admin Lattas', email: 'lattas@disnakertrans.go.id', password: 'Lattas123!', role: 'lattas' },
-    { name: 'Admin Binapenta', email: 'binapenta@disnakertrans.go.id', password: 'Binapenta123!', role: 'binapenta' },
-    { name: 'Admin HI Jamsostek', email: 'hijamsostek@disnakertrans.go.id', password: 'HIJamsostek123!', role: 'hijamsostek' },
-  ];
-
-  const insertAdmin = db.prepare(`
-    INSERT INTO admin_users (name, email, password_hash, role, is_active)
-    VALUES (?, ?, ?, ?, 1)
-  `);
-
-  for (const account of demoAccounts) {
-    const hash = bcrypt.hashSync(account.password, 12);
-    insertAdmin.run(account.name, account.email, hash, account.role);
+  // Seed statistik
+  const statCount = await sql`SELECT COUNT(*) AS c FROM statistik`;
+  if (Number(statCount[0].c) === 0) {
+    await sql`
+      INSERT IGNORE INTO statistik (\`key\`, label, value, description, sort_order) VALUES
+        ('umk_serang',          'UMK Kabupaten Serang 2026', 'Rp 5.178.521', 'Naik 6,6% dari tahun 2025', 1),
+        ('ump_banten',          'UMP Banten 2026',           'Rp 5.067.381', 'Naik 6,5% dari tahun 2025', 2),
+        ('perusahaan_terdaftar','Perusahaan Terdaftar',      '3.047',         'Perusahaan',                 3),
+        ('pencari_kerja',       'Pencari Kerja Terdaftar',   '9.702',        'Orang (L: 4.307 | P: 5.395)', 4),
+        ('lowongan_tersedia',   'Lowongan Tersedia (2025)',  '3.150',         'Lowongan',                   5)
+    `;
   }
 
-  console.log('[DB] Seeded 6 demo admin accounts');
-}
+  // â”€â”€ VISITORS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS visitors (
+      id    INT AUTO_INCREMENT PRIMARY KEY,
+      date  VARCHAR(20) NOT NULL UNIQUE,
+      count INTEGER DEFAULT 0
+    )
+  `;
 
-export default db;
+  // â”€â”€ VISITOR LOGS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS visitor_logs (
+      id               INT AUTO_INCREMENT PRIMARY KEY,
+      visitor_id       TEXT NOT NULL,
+      ip_address       TEXT DEFAULT '',
+      device           TEXT DEFAULT 'Desktop',
+      browser          TEXT DEFAULT 'Unknown',
+      os               TEXT DEFAULT 'Unknown',
+      page_path        TEXT NOT NULL DEFAULT '/',
+      referrer         TEXT DEFAULT '',
+      city             TEXT DEFAULT '',
+      session_duration INTEGER DEFAULT 0,
+      created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  // â”€â”€ ADMIN USERS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      name          TEXT NOT NULL,
+      email         VARCHAR(191) NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role          TEXT NOT NULL DEFAULT 'website',
+      is_active     TINYINT(1) DEFAULT 1,
+      last_login    DATETIME DEFAULT NULL,
+      created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // â”€â”€ ADMIN SESSIONS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS admin_sessions (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      user_id     INTEGER NOT NULL,
+      token       VARCHAR(191) NOT NULL UNIQUE,
+      ip_address  TEXT DEFAULT '',
+      expires_at  DATETIME NOT NULL,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  // â”€â”€ AUDIT LOGS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id                 INT AUTO_INCREMENT PRIMARY KEY,
+      actor_id           INTEGER,
+      actor_name         TEXT NOT NULL DEFAULT 'System',
+      actor_role         TEXT NOT NULL DEFAULT 'system',
+      action             TEXT NOT NULL,
+      module             TEXT NOT NULL,
+      target_id          TEXT DEFAULT NULL,
+      target_description TEXT DEFAULT NULL,
+      ip_address         TEXT DEFAULT '',
+      created_at         DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  // â”€â”€ FAQS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS faqs (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      question    TEXT NOT NULL,
+      answer      TEXT NOT NULL,
+      category    TEXT NOT NULL DEFAULT 'Umum',
+      status      TEXT NOT NULL DEFAULT 'draft',
+      sort_order  INTEGER DEFAULT 0,
+      created_by  INTEGER DEFAULT NULL,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // Seed FAQs
+  const faqCount = await sql`SELECT COUNT(*) AS c FROM faqs`;
+  if (Number(faqCount[0].c) === 0) {
+    await sql`
+      INSERT INTO faqs (question, answer, category, status, sort_order) VALUES
+        ('Apa itu kartu AK1?', 'Kartu AK1 (Antar Kerja Lokal) adalah kartu tanda pencari kerja yang diterbitkan oleh Dinas Tenaga Kerja. Kartu ini wajib dimiliki sebagai syarat melamar pekerjaan secara resmi.', 'AK1', 'published', 1),
+        ('Bagaimana cara membuat kartu AK1?', 'Untuk membuat kartu AK1, Anda perlu: 1) Datang ke kantor Disnakertrans Kab. Serang, 2) Membawa KTP, ijazah terakhir, dan pas foto 3x4, 3) Mengisi formulir permohonan, 4) Kartu akan diterbitkan saat itu juga.', 'AK1', 'published', 2),
+        ('Bagaimana cara mengajukan pengaduan hubungan industrial?', 'Pengaduan hubungan industrial dapat diajukan melalui: 1) Portal online di website ini (menu Pengaduan), 2) Datang langsung ke kantor Bidang HI Jamsostek, 3) Melalui email resmi instansi.', 'Pengaduan', 'published', 3),
+        ('Apakah ada pelatihan kerja gratis?', 'Ya, Disnakertrans Kab. Serang menyediakan program pelatihan kerja gratis melalui BLK (Balai Latihan Kerja). Jadwal pelatihan dapat dilihat di halaman Informasi Publik.', 'Pelatihan', 'published', 4),
+        ('Berapa UMK Kabupaten Serang tahun 2026?', 'UMK Kabupaten Serang tahun 2026 adalah Rp 5.178.521 per bulan, naik 6,6% dari tahun 2025.', 'Umum', 'published', 5)
+    `;
+  }
+
+  // â”€â”€ TUTORIALS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS tutorials (
+      id                 INT AUTO_INCREMENT PRIMARY KEY,
+      title              TEXT NOT NULL,
+      slug               VARCHAR(191) NOT NULL UNIQUE,
+      category           TEXT NOT NULL DEFAULT 'Umum',
+      thumbnail          TEXT DEFAULT NULL,
+      steps              LONGTEXT NOT NULL DEFAULT '[]',
+      estimated_duration TEXT DEFAULT '5 menit',
+      cta_link           TEXT DEFAULT NULL,
+      cta_text           TEXT DEFAULT 'Mulai Sekarang',
+      status             TEXT NOT NULL DEFAULT 'draft',
+      created_by         INTEGER DEFAULT NULL,
+      created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // Seed tutorials
+  const tutorialCount = await sql`SELECT COUNT(*) AS c FROM tutorials`;
+  if (Number(tutorialCount[0].c) === 0) {
+    const ak1Steps = JSON.stringify([
+      { title: 'Persiapkan Dokumen', content: 'Siapkan KTP asli dan fotokopi, ijazah terakhir (asli dan fotokopi), pas foto ukuran 3x4 (2 lembar), dan surat keterangan dari kelurahan (jika diperlukan).' },
+      { title: 'Datang ke Kantor Disnakertrans', content: 'Kunjungi kantor Disnakertrans Kabupaten Serang di Jl. Kawasan Puspemkab Serang No.B1, Kaserangan, Kec. Ciruas. Buka Seninâ€“Jumat pukul 08.00â€“15.00 WIB.' },
+      { title: 'Ambil Nomor Antrian', content: 'Setelah sampai, ambil nomor antrian di loket pelayanan AK1 dan tunggu dipanggil oleh petugas.' },
+      { title: 'Isi Formulir Permohonan', content: 'Isi formulir permohonan kartu AK1 dengan data diri yang lengkap dan benar. Pastikan semua kolom terisi.' },
+      { title: 'Serahkan Berkas', content: 'Serahkan formulir beserta dokumen persyaratan kepada petugas. Petugas akan memverifikasi kelengkapan berkas Anda.' },
+      { title: 'Terima Kartu AK1', content: 'Setelah verifikasi selesai, kartu AK1 akan dicetak dan diserahkan kepada Anda saat itu juga. Simpan kartu ini dengan baik.' },
+    ]);
+    const pengaduanSteps = JSON.stringify([
+      { title: 'Buka Halaman Pengaduan', content: 'Klik menu "Pengaduan" di navigasi utama website atau akses langsung di /pengaduan.' },
+      { title: 'Pilih Jenis Pengaduan', content: 'Pilih jenis pengaduan sesuai permasalahan Anda: Pengaduan Umum atau Pengaduan Hubungan Industrial.' },
+      { title: 'Isi Formulir Pengaduan', content: 'Isi data diri (nama, email) dan tuliskan isi pengaduan dengan jelas dan detail. Sertakan bukti/lampiran jika ada.' },
+      { title: 'Submit Pengaduan', content: 'Klik tombol "Kirim Pengaduan". Sistem akan otomatis menghasilkan nomor tiket pengaduan untuk Anda.' },
+      { title: 'Cek Email Konfirmasi', content: 'Periksa email Anda untuk mendapatkan konfirmasi nomor tiket dan informasi tindak lanjut pengaduan.' },
+      { title: 'Pantau Status Pengaduan', content: 'Pengaduan Anda akan ditindaklanjuti dalam 3Ã—24 jam hari kerja. Balasan akan dikirimkan ke email yang Anda daftarkan.' },
+    ]);
+    const lowonganSteps = JSON.stringify([
+      { title: 'Buat Kartu AK1', content: 'Pastikan Anda memiliki kartu AK1 (kartu pencari kerja) sebagai syarat utama melamar kerja secara resmi.' },
+      { title: 'Buka Halaman Informasi Publik', content: 'Akses halaman Informasi Publik di website untuk melihat daftar lowongan kerja yang tersedia.' },
+      { title: 'Cari Lowongan Sesuai Keahlian', content: 'Telusuri daftar lowongan berdasarkan bidang pekerjaan, kualifikasi pendidikan, atau lokasi penempatan.' },
+      { title: 'Persiapkan Berkas Lamaran', content: 'Siapkan CV, surat lamaran, fotokopi ijazah, KTP, kartu AK1, dan pas foto terbaru.' },
+      { title: 'Ajukan Lamaran', content: 'Kirim lamaran ke perusahaan sesuai petunjuk yang tertera di info lowongan, atau melalui Disnakertrans.' },
+    ]);
+    await sql`
+      INSERT INTO tutorials (title, slug, category, steps, estimated_duration, cta_link, cta_text, status) VALUES
+        ('Cara Membuat Kartu AK1',       'cara-membuat-kartu-ak1',       'AK1',           ${ak1Steps},       '30 menit', '/pengaduan',       'Hubungi Kami',    'published'),
+        ('Cara Mengajukan Pengaduan',    'cara-mengajukan-pengaduan',    'Pengaduan',      ${pengaduanSteps}, '10 menit', '/pengaduan',       'Ajukan Pengaduan','published'),
+        ('Cara Mencari Lowongan Kerja',  'cara-mencari-lowongan-kerja',  'Lowongan Kerja', ${lowonganSteps},  '15 menit', '/informasi-publik','Lihat Lowongan',  'published')
+    `;
+  }
+
+  // â”€â”€ SITE CONTENT TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS site_content (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      \`key\`      VARCHAR(191) NOT NULL UNIQUE,
+      label      TEXT NOT NULL,
+      value      TEXT NOT NULL DEFAULT '',
+      type       TEXT NOT NULL DEFAULT 'text',
+      section    TEXT NOT NULL DEFAULT 'general',
+      updated_by INTEGER DEFAULT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // Seed site content
+  const contentCount = await sql`SELECT COUNT(*) AS c FROM site_content`;
+  if (Number(contentCount[0].c) === 0) {
+    await sql`
+      INSERT IGNORE INTO site_content (\`key\`, label, value, type, section) VALUES
+        ('hero_title',         'Hero Title',              'Layanan Terpadu Disnakertrans Kabupaten Serang',       'text',     'hero'),
+        ('hero_subtitle',      'Hero Subtitle',           'Melayani dengan profesional dan berintegritas untuk kesejahteraan tenaga kerja dan masyarakat Kabupaten Serang.', 'textarea', 'hero'),
+        ('hero_cta_text',      'Hero CTA Button Text',    'Lihat Layanan',                                        'text',     'hero'),
+        ('hero_cta_link',      'Hero CTA Button Link',    '/layanan-publik',                                      'text',     'hero'),
+        ('sambutan_name',      'Nama Kepala Dinas',       'H. Hudaya, S.H., M.H.',                               'text',     'sambutan'),
+        ('sambutan_title',     'Jabatan Kepala Dinas',    'Kepala Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang', 'text', 'sambutan'),
+        ('sambutan_text',      'Teks Sambutan',           'Selamat datang di portal resmi Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang. Kami berkomitmen untuk memberikan pelayanan terbaik kepada seluruh masyarakat Kabupaten Serang dalam bidang ketenagakerjaan dan transmigrasi.', 'textarea', 'sambutan'),
+        ('sambutan_photo',     'Foto Kepala Dinas',       '',                                                     'image',    'sambutan'),
+        ('profil_description', 'Deskripsi Profil Instansi','Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang adalah instansi pemerintah daerah yang bertugas menyelenggarakan urusan pemerintahan di bidang ketenagakerjaan dan transmigrasi.', 'textarea', 'profil'),
+        ('contact_address',    'Alamat Kantor',           'Jl. Kawasan Puspemkab Serang No.B1, Kaserangan, Kec. Ciruas, Kabupaten Serang, Banten 42182', 'textarea', 'contact'),
+        ('contact_phone',      'Nomor Telepon',           '(0254) 200234',                                        'text',     'contact'),
+        ('contact_email',      'Email Instansi',          'disnakertrans@serangkab.go.id',                        'text',     'contact'),
+        ('contact_hours',      'Jam Operasional',         'Senin â€“ Jumat: 08.00 â€“ 15.00 WIB',                    'text',     'contact'),
+        ('social_instagram',   'Instagram',               'https://instagram.com/disnakertrans_serang',           'url',      'social'),
+        ('social_youtube',     'YouTube',                 '',                                                     'url',      'social'),
+        ('social_facebook',    'Facebook',                '',                                                     'url',      'social'),
+        ('social_twitter',     'Twitter/X',               '',                                                     'url',      'social'),
+        ('portal_lapor',       'Link Portal LAPOR!',      'https://lapor.go.id',                                  'url',      'portals'),
+        ('portal_sipp',        'Link Portal SIPP',        'https://sipp.naker.go.id',                             'url',      'portals'),
+        ('portal_sisnaker',    'Link Portal SISNAKER',    'https://sisnaker.go.id',                               'url',      'portals'),
+        ('portal_loker',       'Link Portal Loker',       'https://karirhub.kemnaker.go.id',                      'url',      'portals')
+    `;
+  }
+
+  // â”€â”€ MEDIA LIBRARY TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS media_library (
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      filename      VARCHAR(191) NOT NULL UNIQUE,
+      original_name TEXT NOT NULL,
+      file_type     TEXT NOT NULL DEFAULT 'image',
+      mime_type     TEXT DEFAULT '',
+      size_bytes    INTEGER DEFAULT 0,
+      category      TEXT DEFAULT 'Umum',
+      url           TEXT NOT NULL,
+      uploaded_by   INTEGER DEFAULT NULL,
+      created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  // â”€â”€ CHATBOT LOGS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  await sql`
+    CREATE TABLE IF NOT EXISTS chatbot_logs (
+      id             INT AUTO_INCREMENT PRIMARY KEY,
+      session_id     TEXT NOT NULL,
+      messages       LONGTEXT NOT NULL DEFAULT '[]',
+      message_count  INTEGER DEFAULT 0,
+      fallback_count INTEGER DEFAULT 0,
+      last_query     TEXT DEFAULT '',
+      created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // â”€â”€ SEED ADMIN USERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const adminCount = await sql`SELECT COUNT(*) AS c FROM admin_users`;
+  if (Number(adminCount[0].c) === 0) {
+    const demoAccounts = [
+      { name: 'Super Admin',       email: 'superadmin@disnakertrans.go.id',   password: 'SuperAdmin123!',    role: 'superadmin' },
+      { name: 'Admin Website',     email: 'website@disnakertrans.go.id',      password: 'Website123!',       role: 'website' },
+      { name: 'Admin Sekretariat', email: 'sekretariat@disnakertrans.go.id',  password: 'Sekretariat123!',   role: 'sekretariat' },
+      { name: 'Admin Lattas',      email: 'lattas@disnakertrans.go.id',       password: 'Lattas123!',        role: 'lattas' },
+      { name: 'Admin Binapenta',   email: 'binapenta@disnakertrans.go.id',    password: 'Binapenta123!',     role: 'binapenta' },
+      { name: 'Admin HI Jamsostek',email: 'hijamsostek@disnakertrans.go.id', password: 'HIJamsostek123!',   role: 'hijamsostek' },
+    ];
+
+    for (const account of demoAccounts) {
+      const hash = bcrypt.hashSync(account.password, 12);
+      await sql`
+        INSERT IGNORE INTO admin_users (name, email, password_hash, role, is_active)
+        VALUES (${account.name}, ${account.email}, ${hash}, ${account.role}, 1)
+      `;
+    }
+    console.log('[DB] Seeded 6 demo admin accounts');
+  }
+
+  console.log('[DB] initDb complete');
+}

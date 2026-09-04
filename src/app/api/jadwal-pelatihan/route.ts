@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import sql from '@/lib/db';
+import { getSession } from '@/lib/auth';
 
 export async function GET() {
   try {
-    const items = db.prepare('SELECT * FROM jadwal_pelatihan WHERE is_active = 1 ORDER BY date ASC').all();
+    const items = await sql`SELECT * FROM jadwal_pelatihan WHERE is_active = TRUE ORDER BY date ASC`;
     return NextResponse.json({ success: true, data: items });
   } catch (error) {
     console.error('[API] GET /api/jadwal-pelatihan error:', error);
@@ -12,6 +13,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ success: false, error: 'Unauthorized: Sesi admin diperlukan' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { title, location, date, time_start, time_end, color } = body;
@@ -20,13 +26,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
 
-    const stmt = db.prepare(`
+    const result = await sql`
       INSERT INTO jadwal_pelatihan (title, location, date, time_start, time_end, color, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, 1)
-    `);
-    const info = stmt.run(title, location, date, time_start || '08:00', time_end || 'Selesai', color || 'bg-green-500');
+      VALUES (${title}, ${location}, ${date}, ${time_start || '08:00'}, ${time_end || 'Selesai'}, ${color || 'bg-green-500'}, TRUE)
+      RETURNING id
+    `;
 
-    return NextResponse.json({ success: true, data: { id: info.lastInsertRowid } }, { status: 201 });
+    return NextResponse.json({ success: true, data: { id: result[0].id } }, { status: 201 });
   } catch (error) {
     console.error('[API] POST /api/jadwal-pelatihan error:', error);
     return NextResponse.json({ success: false, error: 'Failed to create' }, { status: 500 });

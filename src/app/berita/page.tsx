@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ArrowRight, FileText, Calendar, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getCategoryFallbackImage } from '@/lib/utils';
 
 const PER_PAGE = 9;
 
@@ -110,13 +111,11 @@ export default function BeritaPage() {
                                 <div className="bg-white dark:bg-[#1E293B] rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all">
                                     <div className="flex flex-col lg:flex-row">
                                         <div className="relative lg:w-7/12 h-64 lg:h-[420px] bg-gray-200 overflow-hidden">
-                                            {featured.thumbnail ? (
-                                                <img src={featured.thumbnail} alt={featured.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                            ) : (
-                                                <div className="w-full h-full bg-gradient-to-br from-[#1E3A8A] to-[#0A192F] flex items-center justify-center">
-                                                    <FileText className="w-20 h-20 text-white/20" />
-                                                </div>
-                                            )}
+                                            <img
+                                                src={featured.thumbnail || getCategoryFallbackImage(featured.category)}
+                                                alt={featured.title}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                            />
                                             <div className="absolute top-5 left-5">
                                                 <span className="bg-[#FBBF24] text-[#0A192F] text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm">
                                                     {featured.category || 'Berita Utama'}
@@ -153,13 +152,11 @@ export default function BeritaPage() {
                                 {gridNews.map((item: NewsItem) => (
                                     <Link href={`/berita/${item.id}`} key={item.id} className="group flex flex-col bg-white dark:bg-[#1E293B] rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all hover:-translate-y-1">
                                         <div className="h-52 bg-gray-200 relative overflow-hidden">
-                                            {item.thumbnail ? (
-                                                <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                            ) : (
-                                                <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                                                    <FileText className="w-12 h-12 text-gray-300" />
-                                                </div>
-                                            )}
+                                            <img
+                                                src={item.thumbnail || getCategoryFallbackImage(item.category)}
+                                                alt={item.title}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
                                             {item.category && (
                                                 <div className="absolute top-4 left-4">
                                                     <span className="bg-white/90 backdrop-blur-sm text-[10px] uppercase font-bold px-3 py-1.5 rounded-full text-[#1E3A8A] shadow-sm">

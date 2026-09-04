@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const perPage = parseInt(searchParams.get('perPage') || '10', 10);
 
-    const result = searchNews(query, page, perPage);
+    const result = await searchNews(query, page, perPage);
 
     return NextResponse.json(
       successResponse(result.items, {

@@ -3,6 +3,7 @@ import { getAdminUserByEmail, createSession, verifyPassword } from '@/lib/servic
 import { logAction } from '@/lib/services/audit.service';
 import { successResponse, errorResponse } from '@/lib/utils';
 import { getClientIP } from '@/lib/auth';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 /**
  * POST /api/auth/login
@@ -10,6 +11,21 @@ import { getClientIP } from '@/lib/auth';
  */
 export async function POST(request: Request) {
   try {
+    // Rate Limiting: max 5 login attempts per 15 minutes per IP
+    const rateLimit = checkRateLimit(request, {
+      prefix: 'admin_login',
+      limit: 5,
+      windowSeconds: 900,
+    });
+
+    if (!rateLimit.success) {
+      const mins = Math.ceil(rateLimit.resetSeconds / 60);
+      return createRateLimitResponse(
+        rateLimit.resetSeconds,
+        `Terlalu banyak percobaan login yang gagal. Akses ditangguhkan sementara selama ${mins} menit demi keamanan.`
+      );
+    }
+
     const body = await request.json();
     const { email, password } = body;
 
@@ -17,7 +33,7 @@ export async function POST(request: Request) {
       return NextResponse.json(errorResponse('Email dan password harus diisi'), { status: 400 });
     }
 
-    const user = getAdminUserByEmail(email.toLowerCase().trim());
+    const user = await getAdminUserByEmail(email.toLowerCase().trim());
 
     if (!user || !user.is_active) {
       return NextResponse.json(errorResponse('Email atau password salah'), { status: 401 });
@@ -29,9 +45,9 @@ export async function POST(request: Request) {
     }
 
     const ip = getClientIP(request);
-    const token = createSession(user.id, ip);
+    const token = await createSession(user.id, ip);
 
-    // Log login action
+    // Log login action (fire and forget)
     logAction({
       actorId: user.id,
       actorName: user.name,

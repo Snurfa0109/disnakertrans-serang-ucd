@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const result = getAdminUsers({
+  const result = await getAdminUsers({
     role: searchParams.get('role') || undefined,
     search: searchParams.get('search') || undefined,
     page: parseInt(searchParams.get('page') || '1'),
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       return NextResponse.json(errorResponse('Password minimal 8 karakter'), { status: 400 });
     }
 
-    const id = createAdminUser({ name: name.trim(), email: email.trim(), password, role });
+    const id = await createAdminUser({ name: name.trim(), email: email.trim(), password, role });
 
     logAction({
       actorId: session.user.id,
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(successResponse({ id, message: 'Admin berhasil dibuat' }), { status: 201 });
   } catch (error: any) {
-    if (error?.message?.includes('UNIQUE')) {
+    if (error?.message?.includes('unique') || error?.code === '23505') {
       return NextResponse.json(errorResponse('Email sudah digunakan'), { status: 409 });
     }
     console.error('[API] POST /api/admin/users error:', error);

@@ -4,12 +4,35 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, CheckCircle2, AlertCircle, Mail, Shield, Clock, ChevronDown, ChevronUp, Paperclip, X, FileImage, FileVideo, FileText } from 'lucide-react';
+import VisualCaptcha from '@/components/VisualCaptcha';
 
-function generateCaptcha() {
-    const a = Math.floor(Math.random() * 10) + 1;
-    const b = Math.floor(Math.random() * 10) + 1;
-    return { question: `${a} + ${b} = ?`, answer: a + b };
-}
+const PENGADUAN_TYPES = [
+  { group: 'Layanan Ketenagakerjaan', items: [
+    { value: 'kartu_kuning_ak1',   label: 'Kartu Kuning (AK-1) & Pencari Kerja' },
+    { value: 'penempatan_kerja',   label: 'Penempatan & Info Lowongan Kerja' },
+    { value: 'pelatihan_kerja',    label: 'Pelatihan & Peningkatan Kompetensi' },
+    { value: 'bpjs',               label: 'BPJS Ketenagakerjaan' },
+  ]},
+  { group: 'Hubungan Industrial', items: [
+    { value: 'hubungan_industrial', label: 'Hubungan Industrial & Sengketa Kerja' },
+    { value: 'pengupahan_umk',      label: 'Pengupahan & UMK (Upah Minimum)' },
+    { value: 'phk',                 label: 'Pemutusan Hubungan Kerja (PHK)' },
+    { value: 'k3',                  label: 'K3 – Keselamatan & Kesehatan Kerja' },
+  ]},
+  { group: 'Pengawasan Ketenagakerjaan', items: [
+    { value: 'pengawasan',          label: 'Pengawasan Ketenagakerjaan' },
+    { value: 'pelanggaran_norma',   label: 'Pelanggaran Norma Kerja' },
+  ]},
+  { group: 'Transmigrasi', items: [
+    { value: 'transmigrasi',        label: 'Program Transmigrasi' },
+    { value: 'bantuan_transmigrasi', label: 'Bantuan & Fasilitas Transmigrasi' },
+  ]},
+  { group: 'Umum & Lainnya', items: [
+    { value: 'layanan_administrasi', label: 'Layanan Administrasi & Birokrasi' },
+    { value: 'saran_masukan',        label: 'Saran & Masukan' },
+    { value: 'umum',                 label: 'Lainnya / Tidak Termasuk di Atas' },
+  ]},
+];
 
 function PengaduanForm() {
     const searchParams = useSearchParams();
@@ -17,24 +40,29 @@ function PengaduanForm() {
 
     const [formData, setFormData] = useState({
         name: '', email: '', subject: '', message: '',
-        type: 'umum' as 'umum' | 'hubungan_industrial',
+        type: '' as string,
     });
     const [attachments, setAttachments] = useState<{ name: string; type: string; data: string }[]>([]);
-    const [captcha, setCaptcha] = useState({ question: '? + ? = ?', answer: 0 });
-    const [captchaInput, setCaptchaInput] = useState('');
+    const [captchaInput, setCaptchaInput] = useState<string>('');
+    const [captchaToken, setCaptchaToken] = useState<string>('');
+    const [resetCaptchaSignal, setResetCaptchaSignal] = useState<number>(0);
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [errorMsg, setErrorMsg] = useState('');
     const [ticketId, setTicketId] = useState<string>('');
     const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-    // Generate captcha only on client to avoid hydration mismatch
-    useEffect(() => {
-        setCaptcha(generateCaptcha());
+    const handleCaptchaVerify = useCallback((val: string, token: string) => {
+        setCaptchaInput(val);
+        setCaptchaToken(token);
     }, []);
 
     useEffect(() => {
-        if (typeParam === 'hubungan_industrial') {
-            setFormData(prev => ({ ...prev, type: 'hubungan_industrial' }));
+        if (typeParam) {
+            // Accept any valid type from URL param
+            const allTypes = PENGADUAN_TYPES.flatMap(g => g.items.map(i => i.value));
+            if (allTypes.includes(typeParam)) {
+                setFormData(prev => ({ ...prev, type: typeParam }));
+            }
         }
     }, [typeParam]);
 
@@ -74,49 +102,65 @@ function PengaduanForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg('');
-        if (parseInt(captchaInput) !== captcha.answer) {
-            setErrorMsg('Jawaban captcha salah. Silakan coba lagi.');
-            setCaptcha(generateCaptcha());
-            setCaptchaInput('');
+
+        if (!captchaInput.trim() || !captchaToken) {
+            setErrorMsg('Silakan masukkan 6 kode keamanan CAPTCHA.');
             return;
         }
+
         setStatus('loading');
         try {
             const res = await fetch('/api/complaints', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name: formData.name, email: formData.email, subject: formData.subject,
-                    message: formData.message, type: formData.type,
+                    name: formData.name,
+                    email: formData.email,
+                    subject: formData.subject,
+                    message: formData.message,
+                    type: formData.type,
                     attachments: attachments.map(a => ({ name: a.name, type: a.type, data: a.data })),
+                    captchaInput: captchaInput.trim(),
+                    captchaToken,
                 }),
             });
-            if (!res.ok) throw new Error('Failed to submit');
+
             const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Gagal mengirim pengaduan');
+            }
+
             setTicketId(data.data?.ticketNumber || `#PKD-${String(data.data?.id).padStart(5, '0')}`);
             setStatus('success');
             setFormData({ name: '', email: '', subject: '', message: '', type: 'umum' });
             setAttachments([]);
             setCaptchaInput('');
-            setCaptcha(generateCaptcha());
-        } catch {
+            setResetCaptchaSignal(prev => prev + 1);
+        } catch (err: any) {
             setStatus('error');
-            setErrorMsg('Gagal mengirim pengaduan. Silakan coba lagi nanti.');
+            setErrorMsg(err.message || 'Gagal mengirim pengaduan. Silakan coba lagi nanti.');
+            setResetCaptchaSignal(prev => prev + 1);
         }
     };
 
     return (
         <div className="min-h-screen pb-0 w-full flex flex-col bg-[#F8FAFC] dark:bg-[#0B1120]">
             {/* Hero Section */}
-            <section className="bg-[#0A192F] pt-32 pb-48 lg:pt-40 lg:pb-56 text-white relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-20 right-20 w-72 h-72 bg-[#FBBF24] rounded-full blur-[120px]" />
-                    <div className="absolute bottom-10 left-10 w-56 h-56 bg-blue-500 rounded-full blur-[100px]" />
+            <section className="relative pt-32 pb-48 lg:pt-40 lg:pb-56 bg-[#0A192F] overflow-hidden text-white">
+                <div className="absolute inset-0 z-0">
+                    <img
+                        src="/images/banner-pengaduan.jpg"
+                        alt="Gerbang Pelindung dan Integritas Pengaduan"
+                        className="w-full h-full object-cover opacity-30 mix-blend-luminosity"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/85 to-transparent"></div>
+                    <div className="absolute top-20 right-20 w-72 h-72 bg-[#FBBF24] rounded-full blur-[140px] opacity-15" />
+                    <div className="absolute bottom-10 left-10 w-56 h-56 bg-blue-500 rounded-full blur-[120px] opacity-15" />
                 </div>
                 <div className="container mx-auto px-4 xl:px-12 relative z-10">
                     <div className="max-w-3xl">
                         <div className="inline-flex items-center rounded-full bg-[#FBBF24] px-4 py-1.5 text-xs font-extrabold text-[#0A192F] tracking-widest uppercase mb-8 shadow-sm">
-                            {formData.type === 'hubungan_industrial' ? 'Pengaduan Hubungan Industrial' : 'Layanan Aspirasi'}
+                            {PENGADUAN_TYPES.flatMap(g => g.items).find(i => i.value === formData.type)?.label || 'Layanan Pengaduan & Aspirasi'}
                         </div>
                         <h1 className="text-4xl md:text-5xl lg:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
                             Sampaikan Pengaduan <br/> Anda dengan Aman
@@ -152,24 +196,78 @@ function PengaduanForm() {
                     </div>
 
                     {status === 'success' ? (
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-12">
-                            <div className="w-20 h-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-green-100">
-                                <CheckCircle2 className="w-10 h-10" />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            transition={{ type: 'spring', duration: 0.5 }}
+                            className="py-6"
+                        >
+                            {/* Success icon with ring animation */}
+                            <div className="flex justify-center mb-6">
+                                <div className="relative">
+                                    <div className="w-24 h-24 rounded-full bg-green-50 flex items-center justify-center ring-8 ring-green-100">
+                                        <CheckCircle2 className="w-12 h-12 text-green-500" />
+                                    </div>
+                                    <motion.div
+                                        animate={{ scale: [1, 1.4, 1] }}
+                                        transition={{ repeat: 2, duration: 0.5 }}
+                                        className="absolute inset-0 rounded-full border-2 border-green-400 opacity-50"
+                                    />
+                                </div>
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-3">Pengaduan Berhasil Dikirim!</h3>
+
+                            <div className="text-center mb-6">
+                                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">Pengaduan Berhasil Dikirim! 🎉</h3>
+                                <p className="text-gray-500 text-sm max-w-sm mx-auto">
+                                    Terima kasih. Pengaduan Anda telah kami terima dan akan diproses dalam <strong>3×24 jam kerja</strong>.
+                                </p>
+                            </div>
+
+                            {/* Ticket number - PROMINENT */}
                             {ticketId && (
-                                <div className="inline-flex items-center bg-gray-100 rounded-full px-5 py-2 mb-4">
-                                    <span className="text-sm text-gray-500 mr-2">Nomor Tiket:</span>
-                                    <span className="font-bold text-[#0A192F]">{ticketId}</span>
+                                <div className="bg-[#0A192F] rounded-2xl p-6 mb-6 max-w-md mx-auto text-center">
+                                    <p className="text-white/50 text-xs uppercase tracking-widest font-bold mb-2">Nomor Tiket Pengaduan Anda</p>
+                                    <p className="text-3xl font-extrabold text-[#FBBF24] tracking-wider mb-3 font-mono">{ticketId}</p>
+                                    <p className="text-white/60 text-xs mb-4">Simpan nomor ini sebagai referensi untuk menanyakan status pengaduan</p>
+                                    <button
+                                        onClick={() => navigator.clipboard.writeText(ticketId)}
+                                        className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        📋 Salin Nomor Tiket
+                                    </button>
                                 </div>
                             )}
-                            <p className="text-gray-600 mb-4 max-w-md mx-auto text-sm leading-relaxed">
-                                Pengaduan Anda telah dikirim dan akan diproses dalam waktu <strong>3×24 jam</strong> hari kerja.
-                            </p>
-                            <button onClick={() => setStatus('idle')} className="bg-[#0A192F] hover:bg-black text-white px-8 py-3 rounded-lg font-bold transition-colors">
-                                Kirim Laporan Lain
-                            </button>
+
+                            {/* Steps info */}
+                            <div className="bg-amber-50 border border-amber-100 rounded-xl p-5 mb-6 max-w-md mx-auto">
+                                <p className="text-amber-800 font-bold text-sm mb-3">📧 Apa yang terjadi selanjutnya?</p>
+                                <ol className="space-y-2">
+                                    {[
+                                        'Email konfirmasi dikirim ke alamat email Anda',
+                                        'Tim kami memverifikasi laporan dalam 1×24 jam',
+                                        'Balasan resmi dikirim dalam maksimal 3×24 jam kerja',
+                                    ].map((step, i) => (
+                                        <li key={i} className="flex items-start gap-2 text-xs text-amber-700">
+                                            <span className="w-5 h-5 rounded-full bg-amber-200 text-amber-800 font-bold flex items-center justify-center shrink-0 mt-0.5 text-[10px]">{i + 1}</span>
+                                            {step}
+                                        </li>
+                                    ))}
+                                </ol>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                                <button
+                                    onClick={() => { setStatus('idle'); setTicketId(''); }}
+                                    className="flex-1 bg-[#0A192F] hover:bg-black text-white px-6 py-3 rounded-xl font-bold transition-colors text-sm"
+                                >
+                                    Kirim Laporan Lain
+                                </button>
+                                <a href="/" className="flex-1 border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-colors text-sm text-center">
+                                    Kembali ke Beranda
+                                </a>
+                            </div>
                         </motion.div>
+
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {(status === 'error' || errorMsg) && (
@@ -179,21 +277,36 @@ function PengaduanForm() {
                                 </div>
                             )}
 
-                            {/* Jenis Pengaduan */}
+                            {/* Jenis Pengaduan - Dropdown */}
                             <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Jenis Pengaduan <span className="text-red-400">*</span></label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {[
-                                        { value: 'umum' as const, label: 'Pengaduan Umum', desc: 'Layanan publik, administrasi, dll' },
-                                        { value: 'hubungan_industrial' as const, label: 'Hubungan Industrial', desc: 'Hak pekerja, sengketa, K3, upah' },
-                                    ].map(opt => (
-                                        <button key={opt.value} type="button" onClick={() => setFormData({ ...formData, type: opt.value })}
-                                            className={`p-3 sm:p-4 rounded-xl border-2 text-left transition-all ${formData.type === opt.value ? 'border-[#1E3A8A] bg-[#EFF6FF] dark:bg-[#1E3A8A]/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'}`}>
-                                            <p className={`text-xs sm:text-sm font-bold ${formData.type === opt.value ? 'text-[#1E3A8A] dark:text-[#93C5FD]' : 'text-gray-900 dark:text-white'}`}>{opt.label}</p>
-                                            <p className="text-[10px] text-gray-500 mt-1 hidden sm:block">{opt.desc}</p>
-                                        </button>
-                                    ))}
+                                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                                    Jenis Pengaduan <span className="text-red-400">*</span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        required
+                                        value={formData.type}
+                                        onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                        className={`w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border rounded-lg px-4 py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white appearance-none pr-10 ${
+                                            formData.type ? 'border-gray-200 dark:border-gray-600 text-gray-900' : 'border-gray-200 dark:border-gray-600 text-gray-400'
+                                        }`}
+                                    >
+                                        <option value="" disabled>-- Pilih kategori pengaduan --</option>
+                                        {PENGADUAN_TYPES.map(group => (
+                                            <optgroup key={group.group} label={`── ${group.group}`}>
+                                                {group.items.map(item => (
+                                                    <option key={item.value} value={item.value}>{item.label}</option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                 </div>
+                                {formData.type && (
+                                    <p className="text-[10px] text-[#1E3A8A] dark:text-[#93C5FD] font-medium flex items-center gap-1">
+                                        ✓ Kategori dipilih: <span className="font-bold">{PENGADUAN_TYPES.flatMap(g => g.items).find(i => i.value === formData.type)?.label}</span>
+                                    </p>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -248,21 +361,16 @@ function PengaduanForm() {
                                 )}
                             </div>
 
-                            {/* Captcha */}
-                            <div className="space-y-2 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                <label className="text-[11px] font-bold text-gray-700 flex items-center gap-2">
-                                    <Shield className="w-3.5 h-3.5 text-[#1E3A8A]" /> Verifikasi Keamanan <span className="text-red-400">*</span>
+                            {/* Visual Security CAPTCHA */}
+                            <div className="space-y-2.5 bg-gray-50 dark:bg-[#0B1120] rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700">
+                                <label className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                    <Shield className="w-4 h-4 text-[#1E3A8A] dark:text-[#93C5FD]" />
+                                    Verifikasi Kode Keamanan <span className="text-red-500">*</span>
                                 </label>
-                                <div className="flex items-center gap-4">
-                                    <div className="bg-[#0A192F] text-[#FBBF24] font-bold px-5 py-2.5 rounded-lg text-lg tracking-wider select-none">
-                                        {captcha.question}
-                                    </div>
-                                    <input type="number" required value={captchaInput} onChange={(e) => setCaptchaInput(e.target.value)}
-                                        className="w-24 bg-white border border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm text-center font-bold"
-                                        placeholder="?" />
-                                    <button type="button" onClick={() => { setCaptcha(generateCaptcha()); setCaptchaInput(''); }}
-                                        className="text-xs text-gray-400 hover:text-[#1E3A8A] font-medium">Ganti soal</button>
-                                </div>
+                                <VisualCaptcha
+                                    onVerify={handleCaptchaVerify}
+                                    resetSignal={resetCaptchaSignal}
+                                />
                             </div>
 
                             <button type="submit" disabled={status === 'loading'}

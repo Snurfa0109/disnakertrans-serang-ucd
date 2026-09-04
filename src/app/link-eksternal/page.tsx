@@ -4,10 +4,11 @@ export const metadata = { title: "Link Eksternal | Disnakertrans" };
 
 export default function LinkEksternalPage() {
     const links = [
-        { title: "E-SAKIP", url: "#", desc: "Sistem Akuntabilitas Kinerja Instansi Pemerintah" },
-        { title: "AK-1 (Kartu Kuning)", url: "#", desc: "Pembuatan Kartu Pencari Kerja secara online" },
-        { title: "OSS RBA", url: "#", desc: "Online Single Submission Risk Based Approach (Perizinan)" },
-        { title: "Karirhub", url: "#", desc: "Portal Lowongan Kerja Nasional dari Kemnaker RI" }
+        { title: "Karir Serang", url: "https://karir.serangkab.go.id/", desc: "Portal Bursa Kerja Daerah Resmi Kabupaten Serang" },
+        { title: "E-SAKIP", url: "https://e-sakip.serangkab.go.id/newsakip/", desc: "Sistem Akuntabilitas Kinerja Instansi Pemerintah" },
+        { title: "AK-1 (Kartu Kuning)", url: "https://bahagia.serangkab.go.id/home", desc: "Pembuatan Kartu Pencari Kerja secara online via Serang Bahagia" },
+        { title: "OSS RBA", url: "https://oss.go.id/id", desc: "Online Single Submission Risk Based Approach (Perizinan)" },
+        { title: "Karirhub Kemnaker", url: "https://karirhub.kemnaker.go.id/", desc: "Portal Lowongan Kerja Nasional dari Kemnaker RI" }
     ];
 
     return (

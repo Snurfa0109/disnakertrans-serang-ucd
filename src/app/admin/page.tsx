@@ -6,7 +6,7 @@ import {
   Newspaper, MessageSquareWarning, Clock, CheckCircle2, TrendingUp,
   Users, HelpCircle, BookOpen, Image, ClipboardList, Bot, Shield,
   AlertCircle, ArrowRight, Calendar, BarChart3, FileText, Activity,
-  Pencil, Trash2, LogIn, LogOut, Upload,
+  Pencil, Trash2, LogIn, LogOut, Upload, Briefcase, CalendarDays, Database,
 } from "lucide-react";
 
 type AdminRole = "superadmin" | "website" | "sekretariat" | "lattas" | "binapenta" | "hijamsostek";
@@ -32,9 +32,13 @@ interface QuickAction { label: string; href: string; icon: React.ComponentType<{
 const QUICK_ACTIONS: QuickAction[] = [
   { label: "Kelola Berita", href: "/admin/news", icon: Newspaper, color: "bg-blue-50 text-blue-600 hover:bg-blue-100", roles: ["superadmin","website","lattas","binapenta","hijamsostek"], desc: "Tambah & edit berita" },
   { label: "Pengaduan Baru", href: "/admin/complaints", icon: MessageSquareWarning, color: "bg-red-50 text-red-600 hover:bg-red-100", roles: ["superadmin","sekretariat","hijamsostek"], desc: "Lihat pengaduan masuk" },
+  { label: "Lowongan Kerja", href: "/admin/lowongan", icon: Briefcase, color: "bg-cyan-50 text-cyan-600 hover:bg-cyan-100", roles: ["superadmin","binapenta","lattas"], desc: "Kelola info lowongan" },
+  { label: "Event & Agenda", href: "/admin/events", icon: CalendarDays, color: "bg-violet-50 text-violet-600 hover:bg-violet-100", roles: ["superadmin","website","lattas","binapenta","hijamsostek"], desc: "Kelola jadwal kegiatan" },
+  { label: "Jadwal Pelatihan", href: "/admin/pelatihan", icon: Database, color: "bg-emerald-50 text-emerald-600 hover:bg-emerald-100", roles: ["superadmin","lattas"], desc: "Kelola jadwal BLK" },
   { label: "Kelola FAQ", href: "/admin/faq", icon: HelpCircle, color: "bg-purple-50 text-purple-600 hover:bg-purple-100", roles: ["superadmin","website","lattas","binapenta","hijamsostek"], desc: "Edit pertanyaan umum" },
   { label: "Tutorial Layanan", href: "/admin/tutorials", icon: BookOpen, color: "bg-green-50 text-green-600 hover:bg-green-100", roles: ["superadmin","website"], desc: "Panduan layanan publik" },
   { label: "Konten Website", href: "/admin/content", icon: FileText, color: "bg-amber-50 text-amber-600 hover:bg-amber-100", roles: ["superadmin","website"], desc: "Edit hero & sambutan" },
+  { label: "Dokumen Publik", href: "/admin/dokumen", icon: FileText, color: "bg-blue-50 text-blue-700 hover:bg-blue-100", roles: ["superadmin","website","sekretariat"], desc: "Upload PDF & regulasi" },
   { label: "Media Manager", href: "/admin/media", icon: Image, color: "bg-pink-50 text-pink-600 hover:bg-pink-100", roles: ["superadmin","website","sekretariat"], desc: "Upload gambar & PDF" },
   { label: "Manage Users", href: "/admin/users", icon: Users, color: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100", roles: ["superadmin"], desc: "Kelola akun admin" },
   { label: "Audit Log", href: "/admin/audit-log", icon: ClipboardList, color: "bg-gray-50 text-gray-600 hover:bg-gray-100", roles: ["superadmin"], desc: "Rekam jejak aktivitas" },

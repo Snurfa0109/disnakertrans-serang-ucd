@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Allow images from the source website
   images: {
     remotePatterns: [
       {
@@ -12,8 +11,43 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Server external packages (needed for better-sqlite3 and node-cron)
-  serverExternalPackages: ['better-sqlite3', 'node-cron'],
+  serverExternalPackages: ['postgres', 'node-cron'],
+
+  // Required: fixes Turbopack detecting wrong lockfile (C:\Users\ACER\package-lock.json)
+  turbopack: {
+    root: process.cwd(),
+  },
+
+  // HTTP Security Headers (OWASP & SPBE Standards)
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

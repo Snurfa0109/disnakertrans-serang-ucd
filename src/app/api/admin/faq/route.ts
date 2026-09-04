@@ -6,7 +6,7 @@ import { successResponse, errorResponse } from '@/lib/utils';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const result = getFaqs({
+  const result = await getFaqs({
     category: searchParams.get('category') || undefined,
     status: (searchParams.get('status') as any) || undefined,
     page: parseInt(searchParams.get('page') || '1'),
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       return NextResponse.json(errorResponse('Pertanyaan, jawaban, dan kategori wajib diisi'), { status: 400 });
     }
 
-    const id = createFaq({ question: question.trim(), answer: answer.trim(), category, status, sort_order, created_by: session.user.id });
+    const id = await createFaq({ question: question.trim(), answer: answer.trim(), category, status, sort_order, created_by: session.user.id });
 
     logAction({
       actorId: session.user.id, actorName: session.user.name, actorRole: session.user.role,

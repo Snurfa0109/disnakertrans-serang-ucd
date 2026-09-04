@@ -2,7 +2,7 @@
  * Content Service — manages site CMS key-value store.
  */
 
-import db from '@/lib/db';
+import sql from '@/lib/db';
 
 export interface ContentItem {
   id: number;
@@ -15,37 +15,34 @@ export interface ContentItem {
   updated_at: string;
 }
 
-export function getSiteContent(section?: string): ContentItem[] {
+export async function getSiteContent(section?: string): Promise<ContentItem[]> {
   if (section) {
-    return db.prepare('SELECT * FROM site_content WHERE section = ? ORDER BY id ASC').all(section) as ContentItem[];
+    return sql`SELECT * FROM site_content WHERE section = ${section} ORDER BY id ASC` as Promise<ContentItem[]>;
   }
-  return db.prepare('SELECT * FROM site_content ORDER BY section ASC, id ASC').all() as ContentItem[];
+  return sql`SELECT * FROM site_content ORDER BY section ASC, id ASC` as Promise<ContentItem[]>;
 }
 
-export function getSiteContentByKey(key: string): string | null {
-  const row = db.prepare('SELECT value FROM site_content WHERE key = ?').get(key) as { value: string } | undefined;
-  return row?.value ?? null;
+export async function getSiteContentByKey(key: string): Promise<string | null> {
+  const rows = await sql`SELECT value FROM site_content WHERE \`key\` = ${key}`;
+  return (rows[0] as { value: string } | undefined)?.value ?? null;
 }
 
-export function setSiteContent(key: string, value: string, updatedBy?: number): boolean {
-  const info = db.prepare(`
-    UPDATE site_content 
-    SET value = ?, updated_by = ?, updated_at = datetime('now')
-    WHERE key = ?
-  `).run(value, updatedBy ?? null, key);
-  return info.changes > 0;
+export async function setSiteContent(key: string, value: string, updatedBy?: number): Promise<boolean> {
+  const result = await sql`
+    UPDATE site_content
+    SET value = ${value}, updated_by = ${updatedBy ?? null}, updated_at = NOW()
+    WHERE \`key\` = ${key}
+  ` as any;
+  return (result?.affectedRows ?? 0) > 0;
 }
 
-export function bulkSetSiteContent(items: { key: string; value: string }[], updatedBy?: number): void {
-  const stmt = db.prepare(`
-    UPDATE site_content 
-    SET value = ?, updated_by = ?, updated_at = datetime('now')
-    WHERE key = ?
-  `);
-  const runMany = db.transaction((rows: { key: string; value: string }[]) => {
-    for (const row of rows) {
-      stmt.run(row.value, updatedBy ?? null, row.key);
-    }
-  });
-  runMany(items);
+export async function bulkSetSiteContent(items: { key: string; value: string }[], updatedBy?: number): Promise<void> {
+  // Run as sequential updates
+  for (const row of items) {
+    await sql`
+      UPDATE site_content
+      SET value = ${row.value}, updated_by = ${updatedBy ?? null}, updated_at = NOW()
+      WHERE \`key\` = ${row.key}
+    `;
+  }
 }

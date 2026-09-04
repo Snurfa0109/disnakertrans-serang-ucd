@@ -4,7 +4,7 @@
  */
 
 import { cookies } from 'next/headers';
-import db from '@/lib/db';
+import sql from '@/lib/db';
 
 export type AdminRole = 'superadmin' | 'website' | 'sekretariat' | 'lattas' | 'binapenta' | 'hijamsostek';
 
@@ -13,7 +13,7 @@ export interface AdminUser {
   name: string;
   email: string;
   role: AdminRole;
-  is_active: number;
+  is_active: boolean;
 }
 
 export interface SessionData {
@@ -21,7 +21,6 @@ export interface SessionData {
   sessionId: number;
 }
 
-// ─── Role Permission Map ──────────────────────────────────────
 export const ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
   superadmin: ['*'], // full access
   website: ['dashboard', 'news', 'faq', 'tutorials', 'content', 'media', 'chatbot', 'analytics'],
@@ -42,20 +41,20 @@ export async function getSession(): Promise<SessionData | null> {
 
     if (!token) return null;
 
-    const row = db.prepare(`
-      SELECT s.id as sessionId, s.expires_at,
+    const rows = await sql`
+      SELECT s.id as "sessionId", s.expires_at,
              u.id, u.name, u.email, u.role, u.is_active
       FROM admin_sessions s
       JOIN admin_users u ON u.id = s.user_id
-      WHERE s.token = ? AND u.is_active = 1
-    `).get(token) as (AdminUser & { sessionId: number; expires_at: string }) | undefined;
+      WHERE s.token = ${token} AND u.is_active = TRUE
+    `;
 
+    const row = rows[0] as (AdminUser & { sessionId: number; expires_at: string }) | undefined;
     if (!row) return null;
 
     // Check expiry
     if (new Date(row.expires_at) < new Date()) {
-      // Clean up expired session
-      db.prepare('DELETE FROM admin_sessions WHERE token = ?').run(token);
+      await sql`DELETE FROM admin_sessions WHERE token = ${token}`;
       return null;
     }
 

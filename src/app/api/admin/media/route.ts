@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const result = listMedia({
+  const result = await listMedia({
     fileType: (searchParams.get('fileType') as any) || undefined,
     category: searchParams.get('category') || undefined,
     search: searchParams.get('search') || undefined,
@@ -48,8 +48,18 @@ export async function POST(request: Request) {
     if (mime.startsWith('image/')) fileType = 'image';
     else if (mime === 'application/pdf') fileType = 'pdf';
 
+    // Validate file extension whitelist
+    const allowedMediaExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
+    const rawExt = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!allowedMediaExtensions.includes(rawExt)) {
+      return NextResponse.json(
+        errorResponse('Format file tidak didukung. Hanya gambar (JPG, PNG, WebP, GIF, SVG) atau dokumen resmi yang diizinkan.'),
+        { status: 400 }
+      );
+    }
+
     // Generate unique filename
-    const ext = file.name.split('.').pop() || 'bin';
+    const ext = rawExt;
     const unique = crypto.randomBytes(12).toString('hex');
     const filename = `${unique}.${ext}`;
 
@@ -60,7 +70,7 @@ export async function POST(request: Request) {
     await writeFile(path.join(uploadDir, filename), buffer);
 
     const url = `/uploads/${filename}`;
-    const id = saveMedia({
+    const id = await saveMedia({
       filename,
       original_name: file.name,
       file_type: fileType,

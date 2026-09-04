@@ -6,7 +6,7 @@ import { successResponse, errorResponse } from '@/lib/utils';
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const item = getFaqById(parseInt(id));
+  const item = await getFaqById(parseInt(id));
   if (!item) return NextResponse.json(errorResponse('FAQ tidak ditemukan'), { status: 404 });
   return NextResponse.json(successResponse(item));
 }
@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const faqId = parseInt(id);
   const body = await request.json();
-  const updated = updateFaq(faqId, body);
+  const updated = await updateFaq(faqId, body);
 
   if (!updated) return NextResponse.json(errorResponse('FAQ tidak ditemukan'), { status: 404 });
 
@@ -36,8 +36,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   const { id } = await params;
   const faqId = parseInt(id);
-  const item = getFaqById(faqId);
-  const deleted = deleteFaq(faqId);
+  const item = await getFaqById(faqId);
+  const deleted = await deleteFaq(faqId);
 
   if (!deleted) return NextResponse.json(errorResponse('FAQ tidak ditemukan'), { status: 404 });
 

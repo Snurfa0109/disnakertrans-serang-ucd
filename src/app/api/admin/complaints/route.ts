@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { getComplaints, updateComplaint, deleteComplaint, getComplaintStats } from '@/lib/services/complaint.service';
+import { getComplaints, updateComplaint, deleteComplaint } from '@/lib/services/complaint.service';
 import { logAction } from '@/lib/services/audit.service';
 import { successResponse, errorResponse } from '@/lib/utils';
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     typeFilter = typeFilter || 'umum';
   }
 
-  const result = getComplaints({
+  const result = await getComplaints({
     status: (searchParams.get('status') as any) || undefined,
     type: (typeFilter as any) || undefined,
     search: searchParams.get('search') || undefined,
@@ -61,7 +61,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(errorResponse('ID diperlukan'), { status: 400 });
     }
 
-    const updated = updateComplaint(Number(id), {
+    const updated = await updateComplaint(Number(id), {
       ...(status !== undefined && { status }),
       ...(assigned_to !== undefined && { assigned_to }),
       ...(internal_notes !== undefined && { internal_notes }),
@@ -104,7 +104,7 @@ export async function DELETE(request: NextRequest) {
   const id = new URL(request.url).searchParams.get('id');
   if (!id) return NextResponse.json(errorResponse('ID diperlukan'), { status: 400 });
 
-  const deleted = deleteComplaint(Number(id));
+  const deleted = await deleteComplaint(Number(id));
   if (!deleted) return NextResponse.json(errorResponse('Tidak ditemukan'), { status: 404 });
 
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || '';

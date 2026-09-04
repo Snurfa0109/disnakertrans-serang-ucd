@@ -24,7 +24,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json(errorResponse('Tidak dapat menonaktifkan akun sendiri'), { status: 400 });
     }
 
-    const updated = updateAdminUser(userId, {
+    const updated = await updateAdminUser(userId, {
       ...(name !== undefined && { name: name.trim() }),
       ...(email !== undefined && { email: email.trim() }),
       ...(password !== undefined && password.length >= 8 && { password }),
@@ -47,7 +47,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json(successResponse({ message: 'Admin berhasil diperbarui' }));
   } catch (error: any) {
-    if (error?.message?.includes('UNIQUE')) {
+    if (error?.code === '23505') {
       return NextResponse.json(errorResponse('Email sudah digunakan'), { status: 409 });
     }
     return NextResponse.json(errorResponse('Gagal memperbarui admin'), { status: 500 });
@@ -68,8 +68,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json(errorResponse('Tidak dapat menghapus akun sendiri'), { status: 400 });
   }
 
-  const user = getAdminUserById(userId);
-  const deleted = deleteAdminUser(userId);
+  const user = await getAdminUserById(userId);
+  const deleted = await deleteAdminUser(userId);
   if (!deleted) return NextResponse.json(errorResponse('Admin tidak ditemukan'), { status: 404 });
 
   logAction({

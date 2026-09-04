@@ -29,7 +29,7 @@ export default function AdminContentPage() {
   useEffect(() => {
     fetch("/api/admin/content")
       .then(r => r.json())
-      .then(d => { setContent(d.data || []); setIsLoading(false); })
+      .then(d => { setContent(Array.isArray(d.data) ? d.data : []); setIsLoading(false); })
       .catch(() => setIsLoading(false));
   }, []);
 

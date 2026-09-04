@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import sql from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     // Date boundaries
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(range));
-    const startStr = startDate.toISOString().split('T')[0];
+    const startIso = startDate.toISOString();
 
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
@@ -26,60 +26,73 @@ export async function GET(request: NextRequest) {
     const monthStr = monthAgo.toISOString().split('T')[0];
 
     // ─── OVERVIEW STATS ──────────────────────────────
-    const totalVisitors = (db.prepare('SELECT COALESCE(SUM(count), 0) as v FROM visitors').get() as any)?.v || 0;
-    const uniqueVisitors = (db.prepare('SELECT COUNT(DISTINCT visitor_id) as v FROM visitor_logs').get() as any)?.v || 0;
-    const todayVisitors = (db.prepare('SELECT COALESCE(count, 0) as v FROM visitors WHERE date = ?').get(today) as any)?.v || 0;
-    const weeklyVisitors = (db.prepare('SELECT COALESCE(SUM(count), 0) as v FROM visitors WHERE date >= ?').get(weekStr) as any)?.v || 0;
-    const monthlyVisitors = (db.prepare('SELECT COALESCE(SUM(count), 0) as v FROM visitors WHERE date >= ?').get(monthStr) as any)?.v || 0;
+    const [totVis] = await sql`SELECT COALESCE(SUM(count), 0) AS v FROM visitors`;
+    const totalVisitors = Number(totVis?.v) || 0;
+
+    const [uniqVis] = await sql`SELECT COUNT(DISTINCT visitor_id) AS v FROM visitor_logs`;
+    const uniqueVisitors = Number(uniqVis?.v) || 0;
+
+    const [todayVis] = await sql`SELECT COALESCE(count, 0) AS v FROM visitors WHERE date = ${today}`;
+    const todayVisitors = Number(todayVis?.v) || 0;
+
+    const [weekVis] = await sql`SELECT COALESCE(SUM(count), 0) AS v FROM visitors WHERE date >= ${weekStr}`;
+    const weeklyVisitors = Number(weekVis?.v) || 0;
+
+    const [monthVis] = await sql`SELECT COALESCE(SUM(count), 0) AS v FROM visitors WHERE date >= ${monthStr}`;
+    const monthlyVisitors = Number(monthVis?.v) || 0;
 
     // Active users (last 5 min)
-    const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
-    const activeUsers = (db.prepare('SELECT COUNT(DISTINCT visitor_id) as v FROM visitor_logs WHERE created_at >= ?').get(fiveMinAgo) as any)?.v || 0;
+    const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+    const [activeRow] = await sql`SELECT COUNT(DISTINCT visitor_id) AS v FROM visitor_logs WHERE created_at >= ${fiveMinAgo}`;
+    const activeUsers = Number(activeRow?.v) || 0;
 
     // ─── DAILY TRAFFIC (last N days) ──────────────────
-    const dailyTraffic = db.prepare(`
-      SELECT date, count FROM visitors 
-      WHERE date >= ? ORDER BY date ASC
-    `).all(startStr) as any[];
+    const dailyTraffic = await sql`
+      SELECT date, count FROM visitors
+      WHERE date >= ${startDate.toISOString().split('T')[0]} ORDER BY date ASC
+    `;
 
     // ─── DEVICE BREAKDOWN ─────────────────────────────
-    const deviceBreakdown = db.prepare(`
-      SELECT device, COUNT(*) as count FROM visitor_logs 
-      WHERE created_at >= ? GROUP BY device ORDER BY count DESC
-    `).all(startStr + ' 00:00:00') as any[];
+    const deviceBreakdown = await sql`
+      SELECT device, COUNT(*) AS count FROM visitor_logs
+      WHERE created_at >= ${startIso} GROUP BY device ORDER BY count DESC
+    `;
 
     // ─── BROWSER BREAKDOWN ────────────────────────────
-    const browserBreakdown = db.prepare(`
-      SELECT browser, COUNT(*) as count FROM visitor_logs 
-      WHERE created_at >= ? GROUP BY browser ORDER BY count DESC
-    `).all(startStr + ' 00:00:00') as any[];
+    const browserBreakdown = await sql`
+      SELECT browser, COUNT(*) AS count FROM visitor_logs
+      WHERE created_at >= ${startIso} GROUP BY browser ORDER BY count DESC
+    `;
 
     // ─── TRAFFIC SOURCE ───────────────────────────────
-    const sourceBreakdown = db.prepare(`
-      SELECT referrer, COUNT(*) as count FROM visitor_logs 
-      WHERE created_at >= ? AND referrer != 'Internal' GROUP BY referrer ORDER BY count DESC
-    `).all(startStr + ' 00:00:00') as any[];
+    const sourceBreakdown = await sql`
+      SELECT referrer, COUNT(*) AS count FROM visitor_logs
+      WHERE created_at >= ${startIso} AND referrer != 'Internal'
+      GROUP BY referrer ORDER BY count DESC
+    `;
 
     // ─── TOP PAGES ────────────────────────────────────
-    const topPages = db.prepare(`
-      SELECT page_path, COUNT(*) as views, COUNT(DISTINCT visitor_id) as unique_visitors
-      FROM visitor_logs WHERE created_at >= ?
+    const topPages = await sql`
+      SELECT page_path, COUNT(*) AS views, COUNT(DISTINCT visitor_id) AS unique_visitors
+      FROM visitor_logs WHERE created_at >= ${startIso}
       GROUP BY page_path ORDER BY views DESC LIMIT 10
-    `).all(startStr + ' 00:00:00') as any[];
+    `;
 
     // ─── VISITOR LOGS (paginated) ─────────────────────
-    const logsTotal = (db.prepare('SELECT COUNT(*) as c FROM visitor_logs WHERE created_at >= ?').get(startStr + ' 00:00:00') as any)?.c || 0;
-    const logs = db.prepare(`
+    const [logsTotalRow] = await sql`SELECT COUNT(*) AS c FROM visitor_logs WHERE created_at >= ${startIso}`;
+    const logsTotal = Number(logsTotalRow?.c) || 0;
+
+    const logs = await sql`
       SELECT id, visitor_id, ip_address, device, browser, os, page_path, referrer, session_duration, created_at
-      FROM visitor_logs WHERE created_at >= ?
-      ORDER BY created_at DESC LIMIT ? OFFSET ?
-    `).all(startStr + ' 00:00:00', limit, offset) as any[];
+      FROM visitor_logs WHERE created_at >= ${startIso}
+      ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}
+    `;
 
     // ─── OS BREAKDOWN ─────────────────────────────────
-    const osBreakdown = db.prepare(`
-      SELECT os, COUNT(*) as count FROM visitor_logs 
-      WHERE created_at >= ? GROUP BY os ORDER BY count DESC
-    `).all(startStr + ' 00:00:00') as any[];
+    const osBreakdown = await sql`
+      SELECT os, COUNT(*) AS count FROM visitor_logs
+      WHERE created_at >= ${startIso} GROUP BY os ORDER BY count DESC
+    `;
 
     return NextResponse.json({
       overview: {

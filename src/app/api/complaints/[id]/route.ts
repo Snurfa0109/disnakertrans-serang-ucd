@@ -2,10 +2,8 @@ import { NextResponse } from 'next/server';
 import {
   getComplaintById,
   updateComplaint,
-  updateComplaintStatus,
   deleteComplaint,
   updateSpamStatus,
-  COMPLAINT_STATUSES,
 } from '@/lib/services/complaint.service';
 import { getSession, getClientIP } from '@/lib/auth';
 import { logAction } from '@/lib/services/audit.service';
@@ -26,7 +24,7 @@ export async function GET(
       return NextResponse.json(errorResponse('Invalid complaint ID'), { status: 400 });
     }
 
-    const item = getComplaintById(complaintId);
+    const item = await getComplaintById(complaintId);
     if (!item) {
       return NextResponse.json(errorResponse('Complaint not found'), { status: 404 });
     }
@@ -41,10 +39,6 @@ export async function GET(
 
 /**
  * PATCH /api/complaints/:id
- * 
- * Update complaint — status, internal_notes, is_spam, assigned_to.
- * Accepts new 5-state status system: Baru|Diproses|Menunggu Tindak Lanjut|Selesai|Ditolak
- * Also accepts legacy: pending|processed
  */
 export async function PATCH(
   request: Request,
@@ -58,7 +52,7 @@ export async function PATCH(
       return NextResponse.json(errorResponse('Invalid complaint ID'), { status: 400 });
     }
 
-    const existing = getComplaintById(complaintId);
+    const existing = await getComplaintById(complaintId);
     if (!existing) {
       return NextResponse.json(errorResponse('Complaint not found'), { status: 404 });
     }
@@ -68,27 +62,23 @@ export async function PATCH(
 
     // Handle spam toggle
     if (is_spam !== undefined) {
-      updateSpamStatus(complaintId, Boolean(is_spam));
+      await updateSpamStatus(complaintId, Boolean(is_spam));
     }
 
     // Handle status update — support both new and legacy values
     if (status) {
-      // Legacy compat: map 'pending' and 'processed' to new values
       let resolvedStatus: string = status;
       if (status === 'pending') resolvedStatus = 'Diproses';
       else if (status === 'processed') resolvedStatus = 'Selesai';
-
-      updateComplaint(complaintId, { status: resolvedStatus });
+      await updateComplaint(complaintId, { status: resolvedStatus });
     }
 
-    // Handle internal notes
     if (internal_notes !== undefined) {
-      updateComplaint(complaintId, { internal_notes });
+      await updateComplaint(complaintId, { internal_notes });
     }
 
-    // Handle assignment
     if (assigned_to !== undefined) {
-      updateComplaint(complaintId, { assigned_to });
+      await updateComplaint(complaintId, { assigned_to });
     }
 
     // Audit log
@@ -110,7 +100,7 @@ export async function PATCH(
       }
     } catch { /* audit fail shouldn't break the API */ }
 
-    const updatedItem = getComplaintById(complaintId);
+    const updatedItem = await getComplaintById(complaintId);
     const ticketNumber = updatedItem?.ticket_number || `PKD-${String(complaintId).padStart(5, '0')}`;
 
     return NextResponse.json(
@@ -136,8 +126,8 @@ export async function DELETE(
       return NextResponse.json(errorResponse('Invalid complaint ID'), { status: 400 });
     }
 
-    const item = getComplaintById(complaintId);
-    const deleted = deleteComplaint(complaintId);
+    const item = await getComplaintById(complaintId);
+    const deleted = await deleteComplaint(complaintId);
     if (!deleted) {
       return NextResponse.json(errorResponse('Complaint not found'), { status: 404 });
     }

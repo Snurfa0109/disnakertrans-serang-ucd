@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import db from '@/lib/db';
+import sql from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/utils';
 
 export async function GET(request: Request) {
@@ -15,54 +15,57 @@ export async function GET(request: Request) {
   const perPage = 10;
   const offset = (page - 1) * perPage;
 
+  const daysAgo = new Date();
+  daysAgo.setDate(daysAgo.getDate() - days);
+  const daysAgoIso = daysAgo.toISOString();
+
   // Overview stats
-  const totalSessions = (db.prepare(`
-    SELECT COUNT(*) as c FROM chatbot_logs 
-    WHERE created_at >= datetime('now', '-${days} days')
-  `).get() as any)?.c || 0;
+  const [statsRow] = await sql`
+    SELECT 
+      COUNT(*) AS total_sessions,
+      COALESCE(SUM(fallback_count), 0) AS total_fallbacks,
+      COALESCE(SUM(message_count), 0) AS total_messages
+    FROM chatbot_logs
+    WHERE created_at >= ${daysAgoIso}
+  `;
 
-  const totalFallbacks = (db.prepare(`
-    SELECT SUM(fallback_count) as c FROM chatbot_logs 
-    WHERE created_at >= datetime('now', '-${days} days')
-  `).get() as any)?.c || 0;
-
-  const totalMessages = (db.prepare(`
-    SELECT SUM(message_count) as c FROM chatbot_logs 
-    WHERE created_at >= datetime('now', '-${days} days')
-  `).get() as any)?.c || 0;
+  const totalSessions = Number(statsRow?.total_sessions) || 0;
+  const totalFallbacks = Number(statsRow?.total_fallbacks) || 0;
+  const totalMessages = Number(statsRow?.total_messages) || 0;
 
   // Most asked questions (top last_query)
-  const topQueries = db.prepare(`
-    SELECT last_query, COUNT(*) as count 
-    FROM chatbot_logs 
-    WHERE last_query != '' AND created_at >= datetime('now', '-${days} days')
-    GROUP BY last_query 
-    ORDER BY count DESC 
+  const topQueries = await sql`
+    SELECT last_query, COUNT(*) AS count
+    FROM chatbot_logs
+    WHERE last_query != '' AND created_at >= ${daysAgoIso}
+    GROUP BY last_query
+    ORDER BY count DESC
     LIMIT 10
-  `).all() as { last_query: string; count: number }[];
+  `;
 
   // Daily trend
-  const dailyTrend = db.prepare(`
-    SELECT date(created_at) as date, COUNT(*) as sessions, SUM(fallback_count) as fallbacks
+  const dailyTrend = await sql`
+    SELECT DATE(created_at) AS date, COUNT(*) AS sessions, SUM(fallback_count) AS fallbacks
     FROM chatbot_logs
-    WHERE created_at >= datetime('now', '-${days} days')
-    GROUP BY date(created_at)
+    WHERE created_at >= ${daysAgoIso}
+    GROUP BY DATE(created_at)
     ORDER BY date ASC
-  `).all() as { date: string; sessions: number; fallbacks: number }[];
+  `;
 
   // Recent conversations
-  const total = (db.prepare(`SELECT COUNT(*) as c FROM chatbot_logs`).get() as any)?.c || 0;
-  const recentConversations = db.prepare(`
-    SELECT * FROM chatbot_logs ORDER BY created_at DESC LIMIT ? OFFSET ?
-  `).all(perPage, offset) as any[];
+  const [countRow] = await sql`SELECT COUNT(*) AS c FROM chatbot_logs`;
+  const total = Number(countRow?.c) || 0;
+  const recentConversations = await sql`
+    SELECT * FROM chatbot_logs ORDER BY created_at DESC LIMIT ${perPage} OFFSET ${offset}
+  `;
 
   return NextResponse.json(successResponse({
     overview: {
       totalSessions,
-      totalMessages: totalMessages || 0,
-      totalFallbacks: totalFallbacks || 0,
-      avgMessagesPerSession: totalSessions > 0 ? Math.round((totalMessages || 0) / totalSessions) : 0,
-      fallbackRate: totalMessages > 0 ? Math.round(((totalFallbacks || 0) / totalMessages) * 100) : 0,
+      totalMessages,
+      totalFallbacks,
+      avgMessagesPerSession: totalSessions > 0 ? Math.round(totalMessages / totalSessions) : 0,
+      fallbackRate: totalMessages > 0 ? Math.round((totalFallbacks / totalMessages) * 100) : 0,
     },
     topQueries,
     dailyTrend,
@@ -79,31 +82,20 @@ export async function POST(request: Request) {
 
     if (!session_id) return NextResponse.json(errorResponse('session_id required'), { status: 400 });
 
-    const existing = db.prepare('SELECT id FROM chatbot_logs WHERE session_id = ?').get(session_id) as any;
+    const existing = await sql`SELECT id FROM chatbot_logs WHERE session_id = ${session_id}`;
 
-    if (existing) {
-      db.prepare(`
-        UPDATE chatbot_logs 
-        SET messages = ?, message_count = ?, fallback_count = ?, last_query = ?, updated_at = datetime('now')
-        WHERE session_id = ?
-      `).run(
-        JSON.stringify(messages || []),
-        (messages || []).length,
-        fallback_count || 0,
-        last_query || '',
-        session_id
-      );
+    if (existing.length > 0) {
+      await sql`
+        UPDATE chatbot_logs
+        SET messages = ${JSON.stringify(messages || [])}, message_count = ${(messages || []).length},
+            fallback_count = ${fallback_count || 0}, last_query = ${last_query || ''}, updated_at = NOW()
+        WHERE session_id = ${session_id}
+      `;
     } else {
-      db.prepare(`
+      await sql`
         INSERT INTO chatbot_logs (session_id, messages, message_count, fallback_count, last_query)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(
-        session_id,
-        JSON.stringify(messages || []),
-        (messages || []).length,
-        fallback_count || 0,
-        last_query || ''
-      );
+        VALUES (${session_id}, ${JSON.stringify(messages || [])}, ${(messages || []).length}, ${fallback_count || 0}, ${last_query || ''})
+      `;
     }
 
     return NextResponse.json(successResponse({ logged: true }));

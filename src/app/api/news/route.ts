@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getNewsList, createNews } from '@/lib/services/news.service';
 import { successResponse, errorResponse } from '@/lib/utils';
+import { getSession } from '@/lib/auth';
 
 /**
  * GET /api/news
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
     const category = searchParams.get('category') || undefined;
     const search = searchParams.get('search') || searchParams.get('q') || undefined;
 
-    const result = getNewsList({ page, perPage, category, search });
+    const result = await getNewsList({ page, perPage, category, search });
 
     return NextResponse.json(
       successResponse(result.items, {
@@ -36,9 +37,14 @@ export async function GET(request: Request) {
 /**
  * POST /api/news
  * 
- * Create a news item manually (admin).
+ * Create a news item manually (admin only).
  */
 export async function POST(request: Request) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json(errorResponse('Unauthorized: Sesi admin diperlukan'), { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { title, description, content, thumbnail, category, date, link_url } = body;
@@ -50,7 +56,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const id = createNews({
+    const id = await createNews({
       title,
       description,
       content: content || '',
