@@ -68,10 +68,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ total: Number(totalRow?.total) || 0, today: Number(todayRow?.count) || 0 });
     }
 
-    // Increment daily counter
+    // Increment daily counter (MySQL syntax)
     await sql`
       INSERT INTO visitors (date, count) VALUES (${today}, 1)
-      ON CONFLICT (date) DO UPDATE SET count = visitors.count + 1
+      ON DUPLICATE KEY UPDATE count = count + 1
     `;
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()

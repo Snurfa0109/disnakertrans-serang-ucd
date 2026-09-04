@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Calendar, Briefcase, GraduationCap, MapPin, ArrowRight, ExternalLink, Clock, Building2, BookOpen, Globe2, Banknote, Layers } from 'lucide-react';
+import { Calendar, Briefcase, GraduationCap, MapPin, ArrowRight, ExternalLink, Clock, Building2, BookOpen, Globe2, Banknote, Layers, Sparkles, Zap, Wrench, Laptop, Scissors, Coffee } from 'lucide-react';
 
 export interface PelatihanItem {
   id: number;
@@ -57,6 +57,103 @@ function CompanyLogo({ url, name }: { url?: string; name: string }) {
       className="w-full h-full object-contain"
       onError={() => setError(true)}
     />
+  );
+}
+
+function PelatihanCover({ title, imageUrl, date }: { title: string; imageUrl?: string; date?: string }) {
+  const [imgError, setImgError] = useState(false);
+
+  const getVocationalTheme = (t: string) => {
+    const lower = (t || '').toLowerCase();
+    if (lower.includes('las') || lower.includes('welding')) {
+      return {
+        bg: 'from-amber-700 via-orange-800 to-slate-900',
+        label: 'Teknik Pengelasan (Las)',
+        icon: Sparkles
+      };
+    }
+    if (lower.includes('listrik') || lower.includes('elektro') || lower.includes('tenaga') || lower.includes('panel')) {
+      return {
+        bg: 'from-blue-700 via-indigo-800 to-slate-900',
+        label: 'Teknik Listrik & Tenaga',
+        icon: Zap
+      };
+    }
+    if (lower.includes('otomotif') || lower.includes('motor') || lower.includes('mobil') || lower.includes('mesin') || lower.includes('bubut') || lower.includes('cnc')) {
+      return {
+        bg: 'from-rose-700 via-red-900 to-slate-900',
+        label: 'Teknik Otomotif & Mesin',
+        icon: Wrench
+      };
+    }
+    if (lower.includes('komputer') || lower.includes('it') || lower.includes('web') || lower.includes('digital') || lower.includes('software') || lower.includes('desain')) {
+      return {
+        bg: 'from-cyan-700 via-sky-800 to-slate-900',
+        label: 'Teknologi Informasi & Digital',
+        icon: Laptop
+      };
+    }
+    if (lower.includes('jahit') || lower.includes('garmen') || lower.includes('busana') || lower.includes('fashion') || lower.includes('pola')) {
+      return {
+        bg: 'from-purple-700 via-fuchsia-900 to-slate-900',
+        label: 'Garmen & Tata Busana',
+        icon: Scissors
+      };
+    }
+    if (lower.includes('barista') || lower.includes('boga') || lower.includes('kuliner') || lower.includes('makanan') || lower.includes('roti')) {
+      return {
+        bg: 'from-amber-800 via-yellow-900 to-stone-900',
+        label: 'Tata Boga & Barista',
+        icon: Coffee
+      };
+    }
+    return {
+      bg: 'from-[#0A192F] via-[#1E3A8A] to-slate-900',
+      label: 'Pelatihan Vokasi Kerja',
+      icon: GraduationCap
+    };
+  };
+
+  const theme = getVocationalTheme(title);
+  const IconComponent = theme.icon;
+
+  if (imageUrl && !imgError) {
+    return (
+      <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
+        <img
+          src={imageUrl}
+          alt={title}
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
+        {date && (
+          <span className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-0.5 rounded">
+            {date}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative h-44 w-full bg-gradient-to-br ${theme.bg} p-4 flex flex-col justify-between overflow-hidden text-white shadow-inner`}>
+      <div className="flex items-center justify-between z-10">
+        <span className="text-[10px] font-bold tracking-wider uppercase bg-white/15 px-2.5 py-1 rounded backdrop-blur-sm border border-white/10 text-white">
+          {theme.label}
+        </span>
+        {date && (
+          <span className="bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium px-2.5 py-0.5 rounded border border-white/10">
+            {date}
+          </span>
+        )}
+      </div>
+      <div className="flex items-end justify-between z-10">
+        <IconComponent className="w-11 h-11 text-white/50" />
+        <span className="text-[10px] font-semibold text-white/80 uppercase tracking-wider bg-black/25 px-2 py-0.5 rounded">
+          BBPVP / DISNAKERTRANS
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -274,25 +371,7 @@ export default function AgendaHub({ pelatihanList = [], lowonganList = [], event
               className="bg-white dark:bg-[#1E293B] rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div>
-                <div className="relative h-40 w-full bg-gray-100 dark:bg-slate-800 overflow-hidden">
-                  {p.cover_image ? (
-                    <img
-                      src={p.cover_image}
-                      alt={p.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                      <GraduationCap className="w-12 h-12 text-slate-500" />
-                    </div>
-                  )}
-                  <span className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-0.5 rounded">
-                    {p.date}
-                  </span>
-                </div>
+                <PelatihanCover title={p.title} imageUrl={p.cover_image} date={p.date} />
 
                 <div className="p-5">
                   <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 inline-block mb-2">
@@ -417,25 +496,7 @@ export default function AgendaHub({ pelatihanList = [], lowonganList = [], event
                 className="bg-white dark:bg-[#1E293B] rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div>
-                  <div className="relative h-44 w-full bg-gray-100 dark:bg-slate-800 overflow-hidden">
-                    {p.cover_image ? (
-                      <img
-                        src={p.cover_image}
-                        alt={p.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                        <GraduationCap className="w-12 h-12 text-slate-500" />
-                      </div>
-                    )}
-                    <span className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-0.5 rounded">
-                      {p.date}
-                    </span>
-                  </div>
+                  <PelatihanCover title={p.title} imageUrl={p.cover_image} date={p.date} />
 
                   <div className="p-5">
                     <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 inline-block mb-2">

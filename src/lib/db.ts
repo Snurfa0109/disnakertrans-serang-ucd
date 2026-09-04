@@ -53,14 +53,18 @@ async function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any
     }
   });
 
+  // Strip Postgres RETURNING clause if present for MySQL compatibility
+  query = query.replace(/\s+RETURNING\s+[\w\s,*]+/i, '');
+
   const [result] = await pool.execute(query, params);
 
   // For SELECT → return rows array; for INSERT/UPDATE/DELETE → return result with affectedRows etc.
   if (Array.isArray(result)) {
     return result as any[];
   }
-  // Wrap result object as array-like so it's iterable but also has affectedRows
-  const wrapper: any = [];
+  // Wrap result object as array-like so it's iterable and supports both result.insertId and result[0].id
+  const insertId = (result as any)?.insertId || 0;
+  const wrapper: any = [{ id: insertId, insertId }];
   Object.assign(wrapper, result);
   return wrapper;
 }
@@ -75,13 +79,15 @@ const sqlTag: SqlTag = Object.assign(sql, {
   unsafe: async function (query: string, params: any[] = []): Promise<any[]> {
     let mysqlQuery = query.replace(/\$\d+/g, '?');
     mysqlQuery = mysqlQuery.replace(/\bILIKE\b/g, 'LIKE');
+    mysqlQuery = mysqlQuery.replace(/\s+RETURNING\s+[\w\s,*]+/i, '');
 
     const [result] = await pool.execute(mysqlQuery, params);
 
     if (Array.isArray(result)) {
       return result as any[];
     }
-    const wrapper: any = [];
+    const insertId = (result as any)?.insertId || 0;
+    const wrapper: any = [{ id: insertId, insertId }];
     Object.assign(wrapper, result);
     return wrapper;
   },

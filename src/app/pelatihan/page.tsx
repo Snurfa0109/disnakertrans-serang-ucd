@@ -95,9 +95,9 @@ export default async function PelatihanPage() {
               return (
                 <div key={j.id} className="bg-white dark:bg-[#1E293B] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                   <div>
-                    {/* Cover image if available */}
+                    {/* Cover image or Rich Vocational Thematic Banner */}
                     {j.cover_image ? (
-                      <div className="relative h-48 w-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                      <div className="relative h-48 w-full bg-slate-900 overflow-hidden">
                         <img
                           src={j.cover_image}
                           alt={j.title}
@@ -110,21 +110,39 @@ export default async function PelatihanPage() {
                         </div>
                       </div>
                     ) : (
-                      /* Date Banner fallback if no cover */
-                      <div className={`px-5 pt-5 pb-4 ${j.is_active ? 'bg-gradient-to-r from-[#0A192F] to-[#1E3A8A]' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`rounded-xl p-3 text-center min-w-[52px] ${j.is_active ? 'bg-white/10' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                              <p className={`text-[9px] font-bold tracking-widest ${j.is_active ? 'text-white/60' : 'text-gray-500 dark:text-gray-400'}`}>{monthStr}</p>
-                              <p className={`text-xl font-extrabold -mt-0.5 ${j.is_active ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>{dayNum}</p>
-                              <p className={`text-[9px] ${j.is_active ? 'text-white/50' : 'text-gray-400'}`}>{yearStr}</p>
-                            </div>
-                            <div>
-                              <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full ${sm.bg} ${sm.text}`}>
-                                {sm.label}
-                              </span>
-                            </div>
-                          </div>
+                      /* Vocational Gradient Banner if no cover */
+                      <div className={`relative h-44 w-full p-5 flex flex-col justify-between overflow-hidden text-white shadow-inner ${
+                        (j.title || '').toLowerCase().includes('las') || (j.title || '').toLowerCase().includes('welding')
+                          ? 'bg-gradient-to-br from-amber-700 via-orange-800 to-slate-900'
+                          : (j.title || '').toLowerCase().includes('listrik') || (j.title || '').toLowerCase().includes('elektro') || (j.title || '').toLowerCase().includes('tenaga')
+                          ? 'bg-gradient-to-br from-blue-700 via-indigo-800 to-slate-900'
+                          : (j.title || '').toLowerCase().includes('otomotif') || (j.title || '').toLowerCase().includes('motor') || (j.title || '').toLowerCase().includes('mesin')
+                          ? 'bg-gradient-to-br from-rose-700 via-red-900 to-slate-900'
+                          : (j.title || '').toLowerCase().includes('komputer') || (j.title || '').toLowerCase().includes('it') || (j.title || '').toLowerCase().includes('digital')
+                          ? 'bg-gradient-to-br from-cyan-700 via-sky-800 to-slate-900'
+                          : (j.title || '').toLowerCase().includes('jahit') || (j.title || '').toLowerCase().includes('garmen') || (j.title || '').toLowerCase().includes('busana')
+                          ? 'bg-gradient-to-br from-purple-700 via-fuchsia-900 to-slate-900'
+                          : 'bg-gradient-to-br from-[#0A192F] via-[#1E3A8A] to-slate-900'
+                      }`}>
+                        <div className="flex items-center justify-between z-10">
+                          <span className="text-[10px] font-bold tracking-wider uppercase bg-white/15 px-2.5 py-1 rounded backdrop-blur-sm border border-white/10 text-white">
+                            {((j.title || '').toLowerCase().includes('las') || (j.title || '').toLowerCase().includes('welding')) ? 'Teknik Pengelasan (Las)'
+                              : ((j.title || '').toLowerCase().includes('listrik') || (j.title || '').toLowerCase().includes('elektro') || (j.title || '').toLowerCase().includes('tenaga')) ? 'Teknik Listrik'
+                              : ((j.title || '').toLowerCase().includes('otomotif') || (j.title || '').toLowerCase().includes('motor') || (j.title || '').toLowerCase().includes('mesin')) ? 'Teknik Otomotif'
+                              : ((j.title || '').toLowerCase().includes('komputer') || (j.title || '').toLowerCase().includes('it') || (j.title || '').toLowerCase().includes('digital')) ? 'IT & Digital'
+                              : 'Pelatihan Vokasi'}
+                          </span>
+                          <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm ${sm.bg} ${sm.text}`}>
+                            {sm.label}
+                          </span>
+                        </div>
+                        <div className="flex items-end justify-between z-10">
+                          <span className="text-xl font-black text-white/90">
+                            {dayNum} {monthStr} {yearStr}
+                          </span>
+                          <span className="text-[10px] font-semibold text-white/80 uppercase tracking-wider bg-black/25 px-2 py-0.5 rounded">
+                            BBPVP Serang
+                          </span>
                         </div>
                       </div>
                     )}
