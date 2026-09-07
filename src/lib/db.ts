@@ -13,6 +13,9 @@ const globalForDb = globalThis as unknown as {
   connPool: mysql.Pool | undefined;
 };
 
+const isRemote = process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && !process.env.DB_HOST.includes('127.0.0.1');
+const useSsl = process.env.DB_SSL === 'true' || isRemote;
+
 const pool =
   globalForDb.connPool ??
   mysql.createPool({
@@ -20,11 +23,12 @@ const pool =
     port:     Number(process.env.DB_PORT) || 3306,
     user:     process.env.DB_USER     || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME     || 'disnakertrans',
+    database: process.env.DB_NAME     || 'test',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
     multipleStatements: true,
+    ssl: useSsl ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
   });
 
 if (process.env.NODE_ENV !== 'production') globalForDb.connPool = pool;
