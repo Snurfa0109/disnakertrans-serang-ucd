@@ -22,42 +22,51 @@ function renderWithLinks(text: string): React.ReactNode {
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
-    const id = (await params).id;
-    const rows = await sql`SELECT * FROM news WHERE id = ${parseInt(id)}`;
-    const item = rows[0] as any;
-    if (!item) return { title: 'Berita Tidak Ditemukan | Disnakertrans Serang' };
+    try {
+        const id = (await params).id;
+        const rows = await sql`SELECT * FROM news WHERE id = ${parseInt(id)}`;
+        const item = rows[0] as any;
+        if (!item) return { title: 'Berita Tidak Ditemukan | Disnakertrans Serang' };
 
-    const title = `${item.title} | Disnakertrans Serang`;
-    const description = item.description || item.title;
-    const thumbnail = item.thumbnail || getCategoryFallbackImage(item.category);
+        const title = `${item.title} | Disnakertrans Serang`;
+        const description = item.description || item.title;
+        const thumbnail = item.thumbnail || getCategoryFallbackImage(item.category);
 
-    return {
-        title,
-        description,
-        openGraph: {
+        return {
             title,
             description,
-            type: 'article',
-            publishedTime: item.date,
-            section: item.category || 'Berita',
-            images: thumbnail ? [{ url: thumbnail, alt: item.title }] : [],
-        },
-        twitter: {
-            card: 'summary_large_image',
-            title,
-            description,
-            images: thumbnail ? [thumbnail] : [],
-        },
-    };
+            openGraph: {
+                title,
+                description,
+                type: 'article',
+                publishedTime: item.date,
+                section: item.category || 'Berita',
+                images: thumbnail ? [{ url: thumbnail, alt: item.title }] : [],
+            },
+            twitter: {
+                card: 'summary_large_image',
+                title,
+                description,
+                images: thumbnail ? [thumbnail] : [],
+            },
+        };
+    } catch {
+        return { title: 'Berita Terkini | Disnakertrans Serang' };
+    }
 }
 
 export default async function BeritaDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const id = (await params).id;
-    const newsRows = await sql`SELECT * FROM news WHERE id = ${parseInt(id)}`;
-    const news = newsRows[0] as any;
+    let news: any = null;
+    let related: any[] = [];
+    try {
+        const newsRows = await sql`SELECT * FROM news WHERE id = ${parseInt(id)}`;
+        news = newsRows[0] as any;
+        related = await sql`SELECT id, title, thumbnail, date, category FROM news WHERE id != ${parseInt(id)} ORDER BY date DESC LIMIT 3` as any[];
+    } catch (err) {
+        console.error('[BeritaDetailPage] DB error:', err);
+    }
     if (!news) notFound();
-
-    const related = await sql`SELECT id, title, thumbnail, date, category FROM news WHERE id != ${parseInt(id)} ORDER BY date DESC LIMIT 3` as any[];
 
     const paragraphs = ((news.content && news.content.trim()) ? news.content : (news.description || ''))
         .split('\n').filter((p: string) => p.trim());

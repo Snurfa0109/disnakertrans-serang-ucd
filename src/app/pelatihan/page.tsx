@@ -24,9 +24,14 @@ function formatDate(dateStr: string): string {
 }
 
 export default async function PelatihanPage() {
-  const allJadwal = await sql`
-    SELECT * FROM jadwal_pelatihan ORDER BY is_active DESC, date ASC
-  ` as any[];
+  let allJadwal: any[] = [];
+  try {
+    allJadwal = await sql`
+      SELECT * FROM jadwal_pelatihan ORDER BY is_active DESC, date ASC
+    ` as any[];
+  } catch (err) {
+    console.error('[PelatihanPage] DB error:', err);
+  }
 
   const activeCount = allJadwal.filter(j => j.is_active).length;
 

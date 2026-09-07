@@ -7,8 +7,14 @@ import { ArrowRight, FileText, GraduationCap, Scale, Calendar, Briefcase, Messag
 export const revalidate = 60;
 
 export default async function Home() {
+  let latestNews: any[] = [];
+  try {
+    latestNews = await sql`SELECT * FROM news ORDER BY date DESC LIMIT 4` as any[];
+  } catch (err) {
+    console.error('[HomePage] DB error loading news:', err);
+  }
+
   const [
-    latestNews,
     heroTitle,
     heroSubtitle,
     heroCtaText,
@@ -18,7 +24,6 @@ export default async function Home() {
     portalSisnaker,
     portalLoker,
   ] = await Promise.all([
-    sql`SELECT * FROM news ORDER BY date DESC LIMIT 4` as Promise<any[]>,
     getSiteContentByKey('hero_title'),
     getSiteContentByKey('hero_subtitle'),
     getSiteContentByKey('hero_cta_text'),

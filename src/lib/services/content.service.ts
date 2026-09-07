@@ -16,15 +16,25 @@ export interface ContentItem {
 }
 
 export async function getSiteContent(section?: string): Promise<ContentItem[]> {
-  if (section) {
-    return sql`SELECT * FROM site_content WHERE section = ${section} ORDER BY id ASC` as Promise<ContentItem[]>;
+  try {
+    if (section) {
+      return await sql`SELECT * FROM site_content WHERE section = ${section} ORDER BY id ASC` as ContentItem[];
+    }
+    return await sql`SELECT * FROM site_content ORDER BY section ASC, id ASC` as ContentItem[];
+  } catch (err) {
+    console.error('[getSiteContent] Error:', err);
+    return [];
   }
-  return sql`SELECT * FROM site_content ORDER BY section ASC, id ASC` as Promise<ContentItem[]>;
 }
 
 export async function getSiteContentByKey(key: string): Promise<string | null> {
-  const rows = await sql`SELECT value FROM site_content WHERE \`key\` = ${key}`;
-  return (rows[0] as { value: string } | undefined)?.value ?? null;
+  try {
+    const rows = await sql`SELECT value FROM site_content WHERE \`key\` = ${key}`;
+    return (rows[0] as { value: string } | undefined)?.value ?? null;
+  } catch (err) {
+    console.error(`[getSiteContentByKey] Error for ${key}:`, err);
+    return null;
+  }
 }
 
 export async function setSiteContent(key: string, value: string, updatedBy?: number): Promise<boolean> {
