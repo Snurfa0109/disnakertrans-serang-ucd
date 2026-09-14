@@ -7,6 +7,7 @@
 
 import sql from '@/lib/db';
 import cache from '@/lib/cache';
+import newsBackup from '@/data/news-backup.json';
 
 export interface NewsItem {
   id: number;
@@ -58,14 +59,49 @@ export async function getNewsList(params: NewsPaginationParams = {}) {
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-  const countResult = await sql.unsafe(`SELECT COUNT(*) AS total FROM news ${where}`, qp);
-  const total = Number(countResult[0]?.total) || 0;
+  let total = 0;
+  let items: NewsItem[] = [];
 
-  const listParams = [...qp, perPage, offset];
-  const items = await sql.unsafe(
-    `SELECT * FROM news ${where} ORDER BY date DESC LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
-    listParams
-  ) as NewsItem[];
+  try {
+    const countResult = await sql.unsafe(`SELECT COUNT(*) AS total FROM news ${where}`, qp);
+    total = Number(countResult[0]?.total) || 0;
+
+    // Auto-seed ke DB jika database kosong di Vercel (total < 5)
+    if (total < 5 && !params.category && !params.search) {
+      try {
+        for (const it of newsBackup) {
+          await sql`
+            INSERT IGNORE INTO news (title, slug, description, summary, content, thumbnail, category, source_url, source_name, date, created_at, updated_at)
+            VALUES (${it.title}, ${it.slug}, ${it.description}, ${it.summary}, ${it.content}, ${it.thumbnail}, ${it.category}, ${it.source_url}, ${it.source_name || 'Disnakertrans Kab. Serang'}, ${it.date}, NOW(), NOW())
+          `;
+        }
+        const recount = await sql.unsafe(`SELECT COUNT(*) AS total FROM news ${where}`, qp);
+        total = Number(recount[0]?.total) || total;
+      } catch {}
+    }
+
+    const listParams = [...qp, perPage, offset];
+    items = await sql.unsafe(
+      `SELECT * FROM news ${where} ORDER BY date DESC LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+      listParams
+    ) as NewsItem[];
+  } catch (err) {
+    console.error('[news.service] DB query failed, using backup:', err);
+  }
+
+  // Fallback ke newsBackup jika items masih kosong
+  if (!items || items.length === 0) {
+    let filtered = newsBackup as any[];
+    if (params.category) {
+      filtered = filtered.filter(n => n.category?.toLowerCase() === params.category?.toLowerCase());
+    }
+    if (params.search) {
+      const q = params.search.toLowerCase();
+      filtered = filtered.filter(n => n.title?.toLowerCase().includes(q) || n.description?.toLowerCase().includes(q));
+    }
+    total = filtered.length;
+    items = filtered.slice(offset, offset + perPage) as NewsItem[];
+  }
 
   const result = { items, total };
   cache.set(cacheKey, result, 120);
@@ -81,7 +117,14 @@ export async function getLatestNews(limit = 6): Promise<NewsItem[]> {
   const cached = cache.get<NewsItem[]>(cacheKey);
   if (cached) return cached;
 
-  const items = await sql`SELECT * FROM news ORDER BY date DESC LIMIT ${limit}` as NewsItem[];
+  let items: NewsItem[] = [];
+  try {
+    items = await sql`SELECT * FROM news ORDER BY date DESC LIMIT ${limit}` as NewsItem[];
+  } catch {}
+
+  if (!items || items.length === 0) {
+    items = (newsBackup as any[]).slice(0, limit) as NewsItem[];
+  }
 
   cache.set(cacheKey, items, 120);
   return items;
@@ -95,8 +138,16 @@ export async function getNewsById(id: number): Promise<NewsItem | null> {
   const cached = cache.get<NewsItem>(cacheKey);
   if (cached) return cached;
 
-  const rows = await sql`SELECT * FROM news WHERE id = ${id}`;
-  const item = rows[0] as NewsItem | undefined;
+  let item: NewsItem | null = null;
+  try {
+    const rows = await sql`SELECT * FROM news WHERE id = ${id}`;
+    if (rows && rows.length > 0) item = rows[0] as NewsItem;
+  } catch {}
+
+  if (!item) {
+    item = (newsBackup as any[]).find(n => n.id === id || String(n.id) === String(id)) || null;
+  }
+
   if (item) cache.set(cacheKey, item, 300);
   return item || null;
 }
@@ -109,8 +160,16 @@ export async function getNewsBySlug(slug: string): Promise<NewsItem | null> {
   const cached = cache.get<NewsItem>(cacheKey);
   if (cached) return cached;
 
-  const rows = await sql`SELECT * FROM news WHERE slug = ${slug}`;
-  const item = rows[0] as NewsItem | undefined;
+  let item: NewsItem | null = null;
+  try {
+    const rows = await sql`SELECT * FROM news WHERE slug = ${slug}`;
+    if (rows && rows.length > 0) item = rows[0] as NewsItem;
+  } catch {}
+
+  if (!item) {
+    item = (newsBackup as any[]).find(n => n.slug === slug) || null;
+  }
+
   if (item) cache.set(cacheKey, item, 300);
   return item || null;
 }

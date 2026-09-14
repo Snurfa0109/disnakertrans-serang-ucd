@@ -5,6 +5,7 @@ import Link from 'next/link';
 import React from 'react';
 import ShareButtons from '@/components/ShareButtons';
 import { getCategoryFallbackImage } from '@/lib/utils';
+import newsBackup from '@/data/news-backup.json';
 
 export const revalidate = 60;
 
@@ -24,8 +25,16 @@ function renderWithLinks(text: string): React.ReactNode {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
     try {
         const id = (await params).id;
-        const rows = await sql`SELECT * FROM news WHERE id = ${parseInt(id)}`;
-        const item = rows[0] as any;
+        let item: any = null;
+        try {
+            const rows = await sql`SELECT * FROM news WHERE id = ${parseInt(id)}`;
+            item = rows[0] as any;
+        } catch {}
+
+        if (!item) {
+            item = (newsBackup as any[]).find(n => String(n.id) === String(id) || n.slug === id) || null;
+        }
+
         if (!item) return { title: 'Berita Tidak Ditemukan | Disnakertrans Serang' };
 
         const title = `${item.title} | Disnakertrans Serang`;
@@ -66,6 +75,14 @@ export default async function BeritaDetailPage({ params }: { params: Promise<{ i
     } catch (err) {
         console.error('[BeritaDetailPage] DB error:', err);
     }
+
+    if (!news) {
+        news = (newsBackup as any[]).find(n => String(n.id) === String(id) || n.slug === id) || null;
+    }
+    if (!related || related.length === 0) {
+        related = (newsBackup as any[]).filter(n => String(n.id) !== String(id)).slice(0, 3);
+    }
+
     if (!news) notFound();
 
     const paragraphs = ((news.content && news.content.trim()) ? news.content : (news.description || ''))

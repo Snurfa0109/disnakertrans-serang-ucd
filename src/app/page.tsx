@@ -2,6 +2,7 @@ import Link from "next/link";
 import sql from "@/lib/db";
 import { getCategoryFallbackImage } from "@/lib/utils";
 import { getSiteContentByKey } from "@/lib/services/content.service";
+import newsBackup from "@/data/news-backup.json";
 import { ArrowRight, FileText, GraduationCap, Scale, Calendar, Briefcase, MessageSquare, ExternalLink } from "lucide-react";
 
 export const revalidate = 60;
@@ -12,6 +13,10 @@ export default async function Home() {
     latestNews = await sql`SELECT * FROM news ORDER BY date DESC LIMIT 4` as any[];
   } catch (err) {
     console.error('[HomePage] DB error loading news:', err);
+  }
+
+  if (!latestNews || latestNews.length === 0) {
+    latestNews = newsBackup.slice(0, 4);
   }
 
   const [

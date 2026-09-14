@@ -5,6 +5,7 @@ import { getCategoryFallbackImage } from "@/lib/utils";
 import KecamatanMap from "@/components/KecamatanMap";
 import PeluangSummary from "@/components/PeluangSummary";
 import DokumenPublikSection from "@/components/DokumenPublikSection";
+import newsBackup from "@/data/news-backup.json";
 
 export const revalidate = 60;
 
@@ -124,20 +125,9 @@ export default async function InformasiPublikPage() {
         }
     });
 
-    // Fallback news dari JSON backup jika allNews kosong
+    // Fallback news dari newsBackup jika allNews kosong
     if (allNews.length === 0) {
-        try {
-            const fs = await import('fs');
-            const path = await import('path');
-            const backupFile = path.resolve(process.cwd(), 'scripts/news-backup.json');
-            if (fs.existsSync(backupFile)) {
-                const raw = fs.readFileSync(backupFile, 'utf8');
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    allNews = parsed.slice(0, 10);
-                }
-            }
-        } catch {}
+        allNews = (newsBackup as any[]).slice(0, 10);
     }
 
     const utama = allNews[0] || null;
