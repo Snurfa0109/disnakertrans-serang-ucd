@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import sql from '@/lib/db';
 import { CalendarDays, MapPin, Clock, ChevronRight, Home, BookOpen, MessageSquare, ArrowRight, ExternalLink } from 'lucide-react';
+import pelatihanBackup from '@/data/pelatihan-backup.json';
 
 export const revalidate = 60;
 
@@ -31,6 +32,10 @@ export default async function PelatihanPage() {
     ` as any[];
   } catch (err) {
     console.error('[PelatihanPage] DB error:', err);
+  }
+
+  if (!allJadwal || allJadwal.length === 0) {
+    allJadwal = pelatihanBackup;
   }
 
   const activeCount = allJadwal.filter(j => j.is_active).length;

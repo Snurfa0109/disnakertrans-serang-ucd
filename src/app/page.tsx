@@ -49,10 +49,10 @@ export default async function Home() {
   ];
 
   const portalTerkait = [
-    { title: "Portal LAPOR!", desc: "Layanan Aspirasi dan Pengaduan Online Rakyat", href: portalLapor || "https://lapor.go.id" },
-    { title: "Portal SIPP", desc: "Sistem Informasi Pengawasan Ketenagakerjaan", href: portalSipp || "https://sipp.naker.go.id" },
-    { title: "SISNAKER", desc: "Sistem Informasi Ketenagakerjaan Nasional", href: portalSisnaker || "https://sisnaker.go.id" },
-    { title: "KarirHub Kemnaker", desc: "Portal Lowongan Kerja Kementerian Tenaga Kerja", href: portalLoker || "https://karirhub.kemnaker.go.id" },
+    { title: "Portal LAPOR!", desc: "Layanan Aspirasi dan Pengaduan Online Rakyat", href: portalLapor || "https://www.lapor.go.id/" },
+    { title: "Kemnaker RI", desc: "Portal resmi Kementerian Ketenagakerjaan RI", href: portalSipp || "https://kemnaker.go.id/" },
+    { title: "SIAPkerja Kemnaker", desc: "Sistem Informasi Ketenagakerjaan Nasional", href: portalSisnaker || "https://siapkerja.kemnaker.go.id/" },
+    { title: "KarirHub Kemnaker", desc: "Portal Lowongan Kerja Resmi Kemnaker RI", href: portalLoker || "https://karirhub.kemnaker.go.id/" },
     { title: "Website Resmi Kab. Serang", desc: "Portal utama Pemerintah Kabupaten Serang", href: "https://serangkab.go.id/" },
   ];
 
@@ -209,13 +209,17 @@ export default async function Home() {
                       {news.category || 'Berita'}
                     </div>
                   </div>
-                  <div className="p-5 flex-1 flex flex-col">
-                    <div className="flex items-center text-[11px] text-gray-400 dark:text-gray-500 mb-2.5 gap-1.5">
-                       <Calendar className="w-3.5 h-3.5" />
+                  <div className="p-4 flex-1 flex flex-col">
+                    <div className="flex items-center text-[10px] text-gray-400 dark:text-gray-500 mb-2 gap-1.5 font-medium">
+                       <Calendar className="w-3 h-3 text-[#FBBF24]" />
                        <span>{new Date(news.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                     </div>
-                    <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] transition-colors leading-snug">{news.title}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed">{news.description}</p>
+                    <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white mb-1.5 line-clamp-2 group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] transition-colors leading-snug">
+                      {news.title}
+                    </h3>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                      {news.description}
+                    </p>
                   </div>
                 </Link>
               ))}

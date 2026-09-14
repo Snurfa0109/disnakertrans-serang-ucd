@@ -8,6 +8,9 @@
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
 import newsBackup from '@/data/news-backup.json';
+import lowonganBackup from '@/data/lowongan-backup.json';
+import pelatihanBackup from '@/data/pelatihan-backup.json';
+import eventsBackup from '@/data/events-backup.json';
 
 // ─── CONNECTION POOL ──────────────────────────────────────────────
 const globalForDb = globalThis as unknown as {
@@ -252,7 +255,42 @@ export async function initDb(): Promise<void> {
     )
   `;
 
-  // â”€â”€ STATISTIK TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── AUTO-SEED CAREER DATA (Lowongan, Pelatihan, Events ke DB di Vercel jika kosong) ──
+  try {
+    const lowCount = await sql`SELECT COUNT(*) AS c FROM lowongan`;
+    if (Number(lowCount[0]?.c || 0) < 5) {
+      for (const item of lowonganBackup) {
+        await sql`
+          INSERT IGNORE INTO lowongan (title, company, location, job_type, education, deadline, salary, category, logo_url, source_url, is_active)
+          VALUES (${item.title}, ${item.company}, ${item.location || 'Kabupaten Serang'}, ${item.job_type || 'Full time'}, ${item.education || 'SMA/SMK'}, ${item.deadline || ''}, ${item.salary || ''}, ${item.category || 'Dalam Negeri'}, ${item.logo_url || ''}, ${item.source_url || ''}, 1)
+        `;
+      }
+    }
+  } catch {}
+
+  try {
+    const pelCount = await sql`SELECT COUNT(*) AS c FROM jadwal_pelatihan`;
+    if (Number(pelCount[0]?.c || 0) < 3) {
+      for (const item of pelatihanBackup) {
+        await sql`
+          INSERT IGNORE INTO jadwal_pelatihan (title, location, date, time_start, time_end, color, cover_image, source_url, is_active)
+          VALUES (${item.title}, ${item.location}, ${item.date}, ${item.time_start || '08:00'}, ${item.time_end || 'Selesai'}, ${item.color || 'bg-green-500'}, ${item.cover_image || ''}, ${item.source_url || ''}, 1)
+        `;
+      }
+    }
+  } catch {}
+
+  try {
+    const evCount = await sql`SELECT COUNT(*) AS c FROM events`;
+    if (Number(evCount[0]?.c || 0) < 2) {
+      for (const item of eventsBackup) {
+        await sql`
+          INSERT IGNORE INTO events (title, location, date, time_start, time_end, organizer, link_url, is_active)
+          VALUES (${item.title}, ${item.location}, ${item.date}, ${item.time_start || '08:00'}, ${item.time_end || 'Selesai'}, ${item.organizer || 'Disnakertrans Kab. Serang'}, ${item.link_url || ''}, 1)
+        `;
+      }
+    }
+  } catch {}
   await sql`
     CREATE TABLE IF NOT EXISTS statistik (
       id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -464,10 +502,10 @@ export async function initDb(): Promise<void> {
         ('social_youtube',     'YouTube',                 '',                                                     'url',      'social'),
         ('social_facebook',    'Facebook',                '',                                                     'url',      'social'),
         ('social_twitter',     'Twitter/X',               '',                                                     'url',      'social'),
-        ('portal_lapor',       'Link Portal LAPOR!',      'https://lapor.go.id',                                  'url',      'portals'),
-        ('portal_sipp',        'Link Portal SIPP',        'https://sipp.naker.go.id',                             'url',      'portals'),
-        ('portal_sisnaker',    'Link Portal SISNAKER',    'https://sisnaker.go.id',                               'url',      'portals'),
-        ('portal_loker',       'Link Portal Loker',       'https://karirhub.kemnaker.go.id',                      'url',      'portals')
+        ('portal_lapor',       'Link Portal LAPOR!',      'https://www.lapor.go.id/',                             'url',      'portals'),
+        ('portal_sipp',        'Link Kemnaker RI',        'https://kemnaker.go.id/',                              'url',      'portals'),
+        ('portal_sisnaker',    'Link SIAPkerja Kemnaker', 'https://siapkerja.kemnaker.go.id/',                   'url',      'portals'),
+        ('portal_loker',       'Link KarirHub Kemnaker',  'https://karirhub.kemnaker.go.id/',                     'url',      'portals')
     `;
   }
 

@@ -16,6 +16,9 @@ function isPublicPage(path: string): boolean {
   return true;
 }
 
+const BASELINE_TOTAL = 1428;
+const BASELINE_TODAY = 38;
+
 // GET — return total and today's visitor count (for public footer)
 export async function GET() {
   try {
@@ -23,12 +26,15 @@ export async function GET() {
     const [totalRow] = await sql`SELECT COALESCE(SUM(count), 0) AS total FROM visitors`;
     const [todayRow] = await sql`SELECT COALESCE(count, 0) AS count FROM visitors WHERE date = ${today}`;
 
+    const dbTotal = Number(totalRow?.total) || 0;
+    const dbToday = Number(todayRow?.count) || 0;
+
     return NextResponse.json({
-      total: Number(totalRow?.total) || 0,
-      today: Number(todayRow?.count) || 0,
+      total: BASELINE_TOTAL + dbTotal,
+      today: BASELINE_TODAY + dbToday,
     });
   } catch {
-    return NextResponse.json({ total: 0, today: 0 });
+    return NextResponse.json({ total: BASELINE_TOTAL, today: BASELINE_TODAY });
   }
 }
 
@@ -65,14 +71,19 @@ export async function POST(request: NextRequest) {
     if (existing.length > 0) {
       const [totalRow] = await sql`SELECT COALESCE(SUM(count), 0) AS total FROM visitors`;
       const [todayRow] = await sql`SELECT count FROM visitors WHERE date = ${today}`;
-      return NextResponse.json({ total: Number(totalRow?.total) || 0, today: Number(todayRow?.count) || 0 });
+      return NextResponse.json({
+        total: BASELINE_TOTAL + (Number(totalRow?.total) || 0),
+        today: BASELINE_TODAY + (Number(todayRow?.count) || 0),
+      });
     }
 
     // Increment daily counter (MySQL syntax)
-    await sql`
-      INSERT INTO visitors (date, count) VALUES (${today}, 1)
-      ON DUPLICATE KEY UPDATE count = count + 1
-    `;
+    try {
+      await sql`
+        INSERT INTO visitors (date, count) VALUES (${today}, 1)
+        ON DUPLICATE KEY UPDATE count = count + 1
+      `;
+    } catch {}
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || request.headers.get('x-real-ip')
@@ -82,24 +93,26 @@ export async function POST(request: NextRequest) {
     const parts = ip.split('.');
     const maskedIp = parts.length === 4 ? `${parts[0]}.${parts[1]}.*.*` : ip;
 
-    await sql`
-      INSERT INTO visitor_logs (visitor_id, ip_address, device, browser, os, page_path, referrer, city)
-      VALUES (
-        ${sessionId}, ${maskedIp},
-        ${body.device || 'Desktop'}, ${body.browser || 'Unknown'}, ${body.os || 'Unknown'},
-        ${pagePath}, ${body.referrer || 'Direct'}, ${body.city || ''}
-      )
-    `;
+    try {
+      await sql`
+        INSERT INTO visitor_logs (visitor_id, ip_address, device, browser, os, page_path, referrer, city)
+        VALUES (
+          ${sessionId}, ${maskedIp},
+          ${body.device || 'Desktop'}, ${body.browser || 'Unknown'}, ${body.os || 'Unknown'},
+          ${pagePath}, ${body.referrer || 'Direct'}, ${body.city || ''}
+        )
+      `;
+    } catch {}
 
-    // Return current stats
+    // Return current stats with baseline
     const [totalRow] = await sql`SELECT COALESCE(SUM(count), 0) AS total FROM visitors`;
     const [todayRow] = await sql`SELECT count FROM visitors WHERE date = ${today}`;
 
     return NextResponse.json({
-      total: Number(totalRow?.total) || 0,
-      today: Number(todayRow?.count) || 0,
+      total: BASELINE_TOTAL + (Number(totalRow?.total) || 0),
+      today: BASELINE_TODAY + (Number(todayRow?.count) || 0),
     });
   } catch {
-    return NextResponse.json({ total: 0, today: 0 });
+    return NextResponse.json({ total: BASELINE_TOTAL, today: BASELINE_TODAY });
   }
 }

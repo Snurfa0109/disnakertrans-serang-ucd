@@ -1,0 +1,67 @@
+[
+  {
+    "id": 10,
+    "title": "JOBFAIR DINAS TENAGA KERJA DAN TRANSMIGRASI PROV. NTB BERSAMA UNIVERSITAS MUHAMMADIYAH MATARAM",
+    "location": "KOTA MATARAM, NUSA TENGGARA BARAT",
+    "date": "2025-08-09",
+    "time_start": "08:00",
+    "time_end": "16:00",
+    "organizer": "Dinas Tenaga Kerja dan Transmigrasi Provinsi NTB",
+    "link_url": "https://jobfair.kemnaker.go.id/web/events/0d12e86a-0c42-4038-97cf-6e065391e4e2",
+    "is_active": 1,
+    "created_at": "2026-08-29T11:14:19.000Z",
+    "updated_at": "2026-08-29T11:14:19.000Z"
+  },
+  {
+    "id": 9,
+    "title": "Job Fair Pemerintah Kota Padang - Dinas Tenaga Kerja dan Perindustrian Kota Padang",
+    "location": "KOTA PADANG, SUMATERA BARAT",
+    "date": "2025-11-12",
+    "time_start": "08:00",
+    "time_end": "16:00",
+    "organizer": "Pemerintah Kota Padang",
+    "link_url": "https://jobfair.kemnaker.go.id/web/events/c315a2ba-f7f5-4802-83a0-643834b4784f",
+    "is_active": 1,
+    "created_at": "2026-08-29T11:14:19.000Z",
+    "updated_at": "2026-08-29T11:14:19.000Z"
+  },
+  {
+    "id": 8,
+    "title": "REKRUTMEN TAMATAN ALUMNI",
+    "location": "KOTA ADM. JAKARTA SELATAN, DKI JAKARTA",
+    "date": "2025-10-30",
+    "time_start": "08:00",
+    "time_end": "16:00",
+    "organizer": "BKK SMK NEGERI 17 JAKARTA",
+    "link_url": "https://jobfair.kemnaker.go.id/web/events/6b5d896f-c221-4e57-8d62-e34036d747b6",
+    "is_active": 1,
+    "created_at": "2026-08-29T11:14:19.000Z",
+    "updated_at": "2026-08-29T11:14:19.000Z"
+  },
+  {
+    "id": 7,
+    "title": "KALBAR NAKER FEST & WALK - IN INTERVIEW",
+    "location": "KOTA PONTIANAK, KALIMANTAN BARAT",
+    "date": "2026-05-21",
+    "time_start": "08:00",
+    "time_end": "16:00",
+    "organizer": "DINAS TENAGA KERJA DAN TRANSMIGRASI PROVINSI KALIMANTAN BARAT",
+    "link_url": "https://jobfair.kemnaker.go.id/web/events/e6a38abf-08f9-42f0-98de-4bb9b73996ea",
+    "is_active": 1,
+    "created_at": "2026-08-29T11:14:19.000Z",
+    "updated_at": "2026-08-29T11:14:19.000Z"
+  },
+  {
+    "id": 6,
+    "title": "Kemenpora x Kemnaker - Indonesia Sports Summit 2026 Job Fair",
+    "location": "KOTA ADM. JAKARTA PUSAT, DKI JAKARTA",
+    "date": "2026-08-26",
+    "time_start": "08:00",
+    "time_end": "16:00",
+    "organizer": "Kementerian Pemuda dan Olahraga RI",
+    "link_url": "https://jobfair.kemnaker.go.id/web/events/157075c8-0fc9-4fa5-bb6c-6c1b724253bf",
+    "is_active": 1,
+    "created_at": "2026-08-29T11:14:19.000Z",
+    "updated_at": "2026-08-29T11:14:19.000Z"
+  }
+]

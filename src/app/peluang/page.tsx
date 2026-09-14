@@ -2,6 +2,9 @@ import sql from "@/lib/db";
 import AgendaHub from "@/components/AgendaHub";
 import Link from "next/link";
 import { Sparkles, ArrowLeft } from "lucide-react";
+import lowonganBackup from "@/data/lowongan-backup.json";
+import pelatihanBackup from "@/data/pelatihan-backup.json";
+import eventsBackup from "@/data/events-backup.json";
 
 export const revalidate = 60;
 
@@ -16,12 +19,29 @@ export default async function PeluangPage() {
   let allEvents: any[] = [];
 
   try {
-    allJadwal = await sql`SELECT * FROM jadwal_pelatihan WHERE is_active = TRUE ORDER BY date ASC` as any[];
-    allLowongan = await sql`SELECT * FROM lowongan WHERE is_active = TRUE ORDER BY id DESC` as any[];
-    allEvents = await sql`SELECT * FROM events WHERE is_active = TRUE ORDER BY id DESC` as any[];
+    const [jadwalRes, lowonganRes, eventsRes] = await Promise.allSettled([
+      sql`SELECT * FROM jadwal_pelatihan WHERE is_active = TRUE ORDER BY date ASC`,
+      sql`SELECT * FROM lowongan WHERE is_active = TRUE ORDER BY id DESC`,
+      sql`SELECT * FROM events WHERE is_active = TRUE ORDER BY id DESC`,
+    ]);
+
+    if (jadwalRes.status === 'fulfilled' && Array.isArray(jadwalRes.value) && jadwalRes.value.length > 0) {
+      allJadwal = jadwalRes.value;
+    }
+    if (lowonganRes.status === 'fulfilled' && Array.isArray(lowonganRes.value) && lowonganRes.value.length > 0) {
+      allLowongan = lowonganRes.value;
+    }
+    if (eventsRes.status === 'fulfilled' && Array.isArray(eventsRes.value) && eventsRes.value.length > 0) {
+      allEvents = eventsRes.value;
+    }
   } catch (err) {
     console.error('[PeluangPage] DB query error:', err);
   }
+
+  // Fallback data lengkap agar di Vercel selalu terisi penuh (Pelatihan: 8, Lowongan: 64, Event: 5)
+  if (!allJadwal || allJadwal.length === 0) allJadwal = pelatihanBackup;
+  if (!allLowongan || allLowongan.length === 0) allLowongan = lowonganBackup;
+  if (!allEvents || allEvents.length === 0) allEvents = eventsBackup;
 
   return (
     <div className="min-h-screen pb-16 bg-gray-50/60 dark:bg-[#0B1120]">

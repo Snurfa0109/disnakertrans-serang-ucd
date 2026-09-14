@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { getSession } from '@/lib/auth';
+import pelatihanBackup from '@/data/pelatihan-backup.json';
 
 export async function GET() {
+  let items: any[] = [];
   try {
-    const items = await sql`SELECT * FROM jadwal_pelatihan WHERE is_active = TRUE ORDER BY date ASC`;
-    return NextResponse.json({ success: true, data: items });
+    items = await sql`SELECT * FROM jadwal_pelatihan WHERE is_active = TRUE ORDER BY date ASC`;
   } catch (error) {
     console.error('[API] GET /api/jadwal-pelatihan error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch' }, { status: 500 });
   }
+
+  if (!items || items.length === 0) {
+    items = pelatihanBackup as any[];
+  }
+
+  return NextResponse.json({ success: true, data: items });
 }
 
 export async function POST(request: Request) {

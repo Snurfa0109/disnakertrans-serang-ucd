@@ -6,6 +6,9 @@ import KecamatanMap from "@/components/KecamatanMap";
 import PeluangSummary from "@/components/PeluangSummary";
 import DokumenPublikSection from "@/components/DokumenPublikSection";
 import newsBackup from "@/data/news-backup.json";
+import lowonganBackup from "@/data/lowongan-backup.json";
+import pelatihanBackup from "@/data/pelatihan-backup.json";
+import eventsBackup from "@/data/events-backup.json";
 
 export const revalidate = 60;
 
@@ -125,9 +128,18 @@ export default async function InformasiPublikPage() {
         }
     });
 
-    // Fallback news dari newsBackup jika allNews kosong
-    if (allNews.length === 0) {
+    // Fallback news, lowongan, pelatihan & events dari data backup jika kosong di Vercel
+    if (!allNews || allNews.length === 0) {
         allNews = (newsBackup as any[]).slice(0, 10);
+    }
+    if (!allLowongan || allLowongan.length === 0) {
+        allLowongan = (lowonganBackup as any[]).slice(0, 40);
+    }
+    if (!allJadwal || allJadwal.length === 0) {
+        allJadwal = pelatihanBackup as any[];
+    }
+    if (!allEvents || allEvents.length === 0) {
+        allEvents = eventsBackup as any[];
     }
 
     const utama = allNews[0] || null;

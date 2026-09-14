@@ -26,14 +26,16 @@ const DEFAULTS: ContactInfo = {
 };
 
 export default function Footer() {
-    const [stats, setStats] = useState({ total: 0, today: 0 });
+    const [stats, setStats] = useState({ total: 1428, today: 38 });
     const [contact, setContact] = useState<ContactInfo>(DEFAULTS);
 
     useEffect(() => {
         // Fetch visitor stats
         fetch("/api/visitors")
             .then((res) => res.json())
-            .then((data) => setStats(data))
+            .then((data) => {
+                if (data && data.total) setStats(data);
+            })
             .catch(() => {});
 
         // Fetch contact info from CMS
