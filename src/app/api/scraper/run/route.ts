@@ -21,16 +21,7 @@ export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const maxPages = Math.min(18, Math.max(1, parseInt(searchParams.get('pages') || '3', 10)));
-    const reset = searchParams.get('reset') === 'true';
-
-    if (reset) {
-      const deleted = await sql`
-        DELETE FROM news
-        WHERE source_name = 'Disnakertrans Kab. Serang'
-      `;
-      console.log(`[Scraper API] Reset: deleted existing articles`);
-    }
-
+    // Safe scraping: tidak menghapus data berita yang sudah ada
     console.log(`[Scraper API] Manual scrape triggered, max pages: ${maxPages}`);
 
     const [newsResult, lowonganResult, trainingsResult, eventsResult] = await Promise.all([

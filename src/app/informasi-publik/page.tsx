@@ -21,23 +21,123 @@ function GraduationCapIcon(props: any) {
     return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
 }
 
+const FALLBACK_STATS = [
+    { id: 1, key: 'umk_serang', label: 'UMK Kabupaten Serang 2026', value: 'Rp 5.178.521', description: 'Naik 6,6% dari tahun 2025', sort_order: 1 },
+    { id: 2, key: 'ump_banten', label: 'UMP Banten 2026', value: 'Rp 5.067.381', description: 'Naik 6,5% dari tahun 2025', sort_order: 2 },
+    { id: 3, key: 'perusahaan_terdaftar', label: 'Perusahaan Terdaftar', value: '3.047', description: 'Perusahaan', sort_order: 3 },
+    { id: 4, key: 'pencari_kerja', label: 'Pencari Kerja Terdaftar', value: '9.702', description: 'Orang (L: 4.307 | P: 5.395)', sort_order: 4 },
+    { id: 5, key: 'lowongan_tersedia', label: 'Lowongan Tersedia (2025)', value: '3.150', description: 'Lowongan', sort_order: 5 },
+];
+
+const FALLBACK_LOWONGAN = [
+    {
+        id: 999,
+        title: 'Operator Produksi & Teknisi Mesin Industri',
+        company: 'Kawasan Industri Modern Cikande / Serang',
+        location: 'Cikande, Kab. Serang',
+        job_type: 'Full time',
+        education: 'SMA/SMK/D3/S1',
+        deadline: '2026-12-31',
+        category: 'Dalam Negeri',
+        salary: 'Sesuai UMK Kab. Serang 2026',
+        source_url: 'https://karirhub.kemnaker.go.id',
+    }
+];
+
+const FALLBACK_JADWAL = [
+    {
+        id: 999,
+        title: 'Pelatihan Vokasi & Sertifikasi BNSP (Teknik Las & Otomasi)',
+        location: 'BBPVP Serang / BLK Disnakertrans Serang',
+        date: 'Tahun 2026',
+        time_start: '08:00',
+        time_end: '15:00',
+        color: 'bg-emerald-500',
+        source_url: 'https://skillhub.kemnaker.go.id',
+    }
+];
+
+const FALLBACK_EVENTS = [
+    {
+        id: 999,
+        title: 'Job Fair Terpadu Kabupaten Serang 2026',
+        location: 'Alun-alun Puspemkab Serang, Ciruas',
+        date: '2026-09-15',
+        time_start: '08:00',
+        time_end: '16:00',
+        organizer: 'Disnakertrans Kab. Serang',
+        link_url: '/peluang',
+    }
+];
+
 export default async function InformasiPublikPage() {
     let allNews: any[] = [];
-    let allStats: any[] = [];
-    let allJadwal: any[] = [];
-    let allLowongan: any[] = [];
-    let allEvents: any[] = [];
+    let allStats: any[] = [...FALLBACK_STATS];
+    let allJadwal: any[] = [...FALLBACK_JADWAL];
+    let allLowongan: any[] = [...FALLBACK_LOWONGAN];
+    let allEvents: any[] = [...FALLBACK_EVENTS];
     let allDocs: any[] = [];
 
     try {
-        allNews = await sql`SELECT * FROM news ORDER BY date DESC LIMIT 10` as any[];
-        allStats = await sql`SELECT * FROM statistik ORDER BY sort_order ASC` as any[];
-        allJadwal = await sql`SELECT * FROM jadwal_pelatihan WHERE is_active = TRUE ORDER BY date ASC` as any[];
-        allLowongan = await sql`SELECT * FROM lowongan WHERE is_active = TRUE ORDER BY id DESC LIMIT 40` as any[];
-        allEvents = await sql`SELECT * FROM events WHERE is_active = TRUE ORDER BY id DESC LIMIT 10` as any[];
-        allDocs = await sql`SELECT * FROM dokumen_publik WHERE is_active = TRUE ORDER BY sort_order ASC` as any[];
+        const [
+            newsResult,
+            statsResult,
+            jadwalResult,
+            lowonganResult,
+            eventsResult,
+            docsResult
+        ] = await Promise.allSettled([
+            sql`SELECT * FROM news ORDER BY date DESC LIMIT 10`,
+            sql`SELECT * FROM statistik ORDER BY sort_order ASC`,
+            sql`SELECT * FROM jadwal_pelatihan WHERE is_active = TRUE ORDER BY date ASC`,
+            sql`SELECT * FROM lowongan WHERE is_active = TRUE ORDER BY id DESC LIMIT 40`,
+            sql`SELECT * FROM events WHERE is_active = TRUE ORDER BY id DESC LIMIT 10`,
+            sql`SELECT * FROM dokumen_publik WHERE is_active = TRUE ORDER BY sort_order ASC`,
+        ]);
+
+        if (newsResult.status === 'fulfilled' && Array.isArray(newsResult.value) && newsResult.value.length > 0) {
+            allNews = newsResult.value;
+        }
+        if (statsResult.status === 'fulfilled' && Array.isArray(statsResult.value) && statsResult.value.length > 0) {
+            allStats = statsResult.value;
+        }
+        if (jadwalResult.status === 'fulfilled' && Array.isArray(jadwalResult.value) && jadwalResult.value.length > 0) {
+            allJadwal = jadwalResult.value;
+        }
+        if (lowonganResult.status === 'fulfilled' && Array.isArray(lowonganResult.value) && lowonganResult.value.length > 0) {
+            allLowongan = lowonganResult.value;
+        }
+        if (eventsResult.status === 'fulfilled' && Array.isArray(eventsResult.value) && eventsResult.value.length > 0) {
+            allEvents = eventsResult.value;
+        }
+        if (docsResult.status === 'fulfilled' && Array.isArray(docsResult.value) && docsResult.value.length > 0) {
+            allDocs = docsResult.value;
+        }
     } catch (err) {
-        console.error('[InformasiPublik] DB error:', err);
+        console.error('[InformasiPublik] DB fetch error:', err);
+    }
+
+    // Pastikan UMK dan UMP selalu tersedia di allStats
+    FALLBACK_STATS.forEach(fb => {
+        if (!allStats.some((s: any) => s.key === fb.key)) {
+            allStats.push(fb);
+        }
+    });
+
+    // Fallback news dari JSON backup jika allNews kosong
+    if (allNews.length === 0) {
+        try {
+            const fs = await import('fs');
+            const path = await import('path');
+            const backupFile = path.resolve(process.cwd(), 'scripts/news-backup.json');
+            if (fs.existsSync(backupFile)) {
+                const raw = fs.readFileSync(backupFile, 'utf8');
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    allNews = parsed.slice(0, 10);
+                }
+            }
+        } catch {}
     }
 
     const utama = allNews[0] || null;

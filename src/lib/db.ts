@@ -125,6 +125,31 @@ export async function initDb(): Promise<void> {
     )
   `;
 
+  // ── AUTO-RESTORE NEWS FROM BACKUP (mencegah berita hilang saat DB kosong/reset) ──
+  try {
+    const newsCount = await sql`SELECT COUNT(*) AS c FROM news`;
+    if (Number(newsCount[0]?.c || 0) < 5) {
+      const fs = await import('fs');
+      const path = await import('path');
+      const backupPath = path.resolve(process.cwd(), 'scripts/news-backup.json');
+      if (fs.existsSync(backupPath)) {
+        const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
+        if (Array.isArray(backupData) && backupData.length > 0) {
+          console.log(`[DB] Restoring ${backupData.length} news articles from backup...`);
+          for (const item of backupData) {
+            await sql`
+              INSERT INTO news (title, slug, description, summary, content, thumbnail, category, source_url, source_name, date, created_at, updated_at)
+              VALUES (${item.title}, ${item.slug}, ${item.description}, ${item.summary}, ${item.content}, ${item.thumbnail}, ${item.category}, ${item.source_url}, ${item.source_name || 'Disnakertrans Kab. Serang'}, ${item.date}, NOW(), NOW())
+            `;
+          }
+          console.log('[DB] News auto-restored successfully from backup.');
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[DB] Auto-restore news warning:', err);
+  }
+
   // â”€â”€ PENGADUAN TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   await sql`
     CREATE TABLE IF NOT EXISTS pengaduan (
