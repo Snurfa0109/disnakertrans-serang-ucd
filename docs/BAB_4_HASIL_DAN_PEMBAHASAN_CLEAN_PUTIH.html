@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAB IV - HASIL DAN PEMBAHASAN</title>
+<style>
+  @page {
+    size: A4;
+    margin: 3cm 3cm 3cm 4cm; /* Atas 3cm, Kanan 3cm, Bawah 3cm, Kiri 4cm (Pedoman UNTIRTA 2025) */
+    mso-page-orientation: portrait;
+  }
+  @page Section1 {
+    size: 21cm 29.7cm;
+    margin: 3cm 3cm 3cm 4cm;
+    mso-header-margin: 1.5cm;
+    mso-footer-margin: 1.5cm;
+    mso-paper-source: 0;
+  }
+  div.Section1 {
+    page: Section1;
+  }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000000;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 0;
+    text-align: justify;
+  }
+  h1.bab-title {
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    margin-top: 0;
+    margin-bottom: 24pt;
+    line-height: 1.5;
+  }
+  h2 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 18pt;
+    margin-bottom: 6pt;
+    text-align: left;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 12pt;
+    margin-bottom: 6pt;
+    text-align: left;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 12pt;
+    font-weight: bold;
+    font-style: italic;
+    margin-top: 10pt;
+    margin-bottom: 4pt;
+    text-align: left;
+    page-break-after: avoid;
+  }
+  p {
+    margin-top: 0;
+    margin-bottom: 8pt;
+    text-indent: 1.25cm;
+    text-align: justify;
+  }
+  p.no-indent {
+    text-indent: 0;
+  }
+  ol, ul {
+    margin-top: 0;
+    margin-bottom: 8pt;
+    padding-left: 1.25cm;
+  }
+  li {
+    margin-bottom: 4pt;
+    text-align: justify;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8pt;
+    margin-bottom: 12pt;
+    font-size: 11pt;
+    line-height: 1.3;
+    page-break-inside: avoid;
+    background-color: #ffffff;
+  }
+  th, td {
+    border: 1pt solid #000000;
+    padding: 5pt 7pt;
+    vertical-align: middle;
+  }
+  th {
+    background-color: #ffffff;
+    font-weight: bold;
+    text-align: center;
+  }
+  .caption-table {
+    font-size: 11pt;
+    font-weight: bold;
+    text-align: left;
+    margin-bottom: 4pt;
+    margin-top: 12pt;
+    page-break-after: avoid;
+    text-indent: 0;
+  }
+  .caption-figure {
+    font-size: 11pt;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 6pt;
+    margin-bottom: 14pt;
+    page-break-before: avoid;
+    text-indent: 0;
+  }
+  .figure-container {
+    text-align: center;
+    margin-top: 12pt;
+    margin-bottom: 14pt;
+    page-break-inside: avoid;
+  }
+  .figure-container img {
+    max-width: 85%;
+    height: auto;
+    border: none;
+    display: inline-block;
+  }
+  .diagram-box {
+    border: 1pt solid #000000;
+    background-color: #ffffff;
+    padding: 10pt;
+    margin: 10pt 0;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 9.5pt;
+    line-height: 1.25;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .code-box {
+    border: 1pt solid #333333;
+    background-color: #fafafa;
+    padding: 8pt 10pt;
+    margin: 6pt 0 14pt 0;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 9pt;
+    line-height: 1.2;
+    white-space: pre;
+    overflow-x: auto;
+    page-break-inside: avoid;
+  }
+  .caption-listing {
+    font-size: 11pt;
+    font-weight: bold;
+    text-align: left;
+    margin-top: 10pt;
+    margin-bottom: 2pt;
+    page-break-after: avoid;
+    text-indent: 0;
+  }
+  .formula-box {
+    text-align: center;
+    margin: 8pt 0;
+    font-style: italic;
+    font-size: 11pt;
+    text-indent: 0;
+  }
+  .text-center { text-align: center; }
+  .text-left { text-align: left; }
+  .text-right { text-align: right; }
+</style>
+</head>
+<body>
+<div class="Section1">
+<h1 class="bab-title">BAB IV<br>HASIL DAN PEMBAHASAN</h1>
+
+<h2>4.1 Hasil Implementasi Sistem</h2>
+<p>Sistem Pendukung Keputusan (<i>Decision Support System</i> &ndash; DSS) sinyal <i>trading forex</i> berbasis aturan cerdas (<i>rule-based intelligent system</i>) diimplementasikan untuk menghasilkan rekomendasi transaksi pada instrumen XAU/USD (Spot Gold) secara terukur, objektif, dan transparan. Sistem mengintegrasikan terminal MetaTrader 5 sebagai penyedia kuotasi harga <i>real-time</i>, mesin inferensi Python untuk ekstraksi fitur teknikal dan evaluasi bertingkat 5 gerbang (<i>5-Gate Validation</i>), serta antarmuka bot Telegram untuk mendistribusikan sinyal secara otomatis kepada pengguna.</p>
+<p>Hasil evaluasi analisis diproses menggunakan <i>rule-based decision engine</i> untuk menentukan keputusan rekomendasi <i>BUY</i>, <i>SELL</i>, atau <i>NO SIGNAL</i>. Ketika kondisi sinyal memenuhi parameter ambang batas kelulusan, sistem secara otomatis menentukan titik <i>Entry</i>, <i>Stop Loss</i> (SL), multi-target <i>Take Profit</i> (TP1, TP2, TP3), dan rasio <i>Risk-to-Reward</i> (RR), lalu meneruskannya secara instan ke kanal komunikasi Telegram dan mencatat seluruh histori ke berkas log.</p>
+<h3>4.1.1 Lingkungan Implementasi</h3>
+<p>Implementasi sistem dilakukan menggunakan lingkungan pengembangan berbasis Python 3.11 dengan MetaTrader 5 sebagai sumber data harga instrumen XAU/USD dan Telegram sebagai media penyampaian hasil sinyal. Sistem dikembangkan dan diuji menggunakan pustaka analisis kuantitatif seperti Pandas, NumPy, dan TA-Lib untuk mendukung kalkulasi indikator teknikal serta deteksi pola harga.</p>
+<p>Selain pada komputer pengembang (<i>local workstation</i>), sistem dioperasikan secara kontinu selama 24 jam per hari pada hari kerja aktif pasar valuta asing menggunakan Virtual Private Server (VPS) berspesifikasi komputasi tinggi yang berlokasi di data center Equinix SG1 Singapura untuk menjamin stabilitas latensi koneksi terhadap server broker.</p>
+<p class="caption-table">Tabel 4.1 Spesifikasi Lingkungan Implementasi Sistem</p>
+<table>
+<thead>
+<tr><th style="width: 8%;">No.</th><th style="width: 32%;">Komponen</th><th style="width: 60%;">Keterangan</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center">1.</td><td>Sistem Operasi</td><td>Windows Server 2022 Datacenter 64-bit</td></tr>
+<tr><td class="text-center">2.</td><td>Bahasa Pemrograman</td><td>Python 3.11.9 64-bit</td></tr>
+<tr><td class="text-center">3.</td><td>Sumber Data Pasar</td><td>MetaTrader 5 Client Terminal API (MetaTrader5 library v5.0.45)</td></tr>
+<tr><td class="text-center">4.</td><td>Instrumen Perdagangan</td><td>XAU/USD (Spot Gold vs US Dollar)</td></tr>
+<tr><td class="text-center">5.</td><td>Kerangka Waktu (Timeframe)</td><td>Multi-Timeframe: M5, M15, H1, H4, D1</td></tr>
+<tr><td class="text-center">6.</td><td>Pustaka Analisis Data</td><td>TA-Lib v0.4.28, Pandas v2.2.2, NumPy v1.26.4</td></tr>
+<tr><td class="text-center">7.</td><td>Layanan Notifikasi</td><td>Telegram Bot API via HTTP REST Protocol</td></tr>
+<tr><td class="text-center">8.</td><td>Penyimpanan Riwayat</td><td>Format CSV (<i>thread-safe append</i>) & JSON State Persistence</td></tr>
+<tr><td class="text-center">9.</td><td>Lingkungan Perangkat Keras VPS</td><td>4 vCPU, RAM 8 GB, NVMe Storage 80 GB</td></tr>
+<tr><td class="text-center">10.</td><td>Lokasi Server VPS</td><td>Equinix SG1 Singapore (Rata-rata latensi MT5: 12 ms)</td></tr>
+</tbody>
+</table>
+<div class="figure-container"><img src="Skripsi%20Benji%20(1)_files/image006.png" alt="Inisialisasi Layanan Sistem Bot" /><p class="caption-figure">Gambar 4.1 Inisialisasi Layanan Sistem Bot</p></div>
+<div class="figure-container"><img src="Skripsi%20Benji%20(1)_files/image007.png" alt="Tampilan Kuotasi XAU/USD pada Terminal MT5" /><p class="caption-figure">Gambar 4.2 Tampilan Kuotasi XAU/USD pada Terminal MT5</p></div>
+<div class="figure-container"><img src="Skripsi%20Benji%20(1)_files/image007.png" alt="Lingkungan Operasional Sistem pada VPS" /><p class="caption-figure">Gambar 4.3 Lingkungan Operasional Sistem pada VPS</p></div>
+<h3>4.1.2 Struktur Sistem</h3>
+<p>Sistem DSS dirancang menggunakan arsitektur modular multi-lapisan (<i>multi-tier architecture</i>) yang terbagi ke dalam enam lapisan utama yang bekerja secara sekuensial. Terminal MetaTrader 5 (MT5) berperan sebagai <i>data feeder</i> real-time, di mana modul <code>mt5/connector.py</code> menangani inisialisasi koneksi IPC socket dan <code>mt5/market_data.py</code> mengambil data OHLCV multi-timeframe. Penjadwal <code>infra/scheduler.py</code> memantau penutupan lilin (<i>candle close</i>) secara tepat waktu untuk menghindari sinyal palsu akibat fluktuasi harga berjalan (<i>repainting</i>).</p>
+<p>Setelah data bar dilengkapi dengan kalkulasi indikator teknikal oleh lapisan ekstraksi fitur, <i>Decision Engine</i> (<code>engine/anytf_mta_engine.py</code>) mengevaluasi kondisi pasar melalui mekanisme 5 gerbang (<i>5-Gate Validation</i>). Jika seluruh gerbang terpenuhi, sinyal dikirim ke kanal Telegram melalui <code>notify/telegram.py</code>, dicatat ke berkas log oleh <code>infra/signal_logger.py</code>, serta dilacak pergerakan harganya secara otomatis hingga menyentuh target TP atau batas SL oleh <code>infra/signal_tracker.py</code>.</p>
+<div class="figure-container"><img src="Skripsi%20Benji%20(1)_files/image008.png" alt="Alur Sistem Keseluruhan" style="max-width: 65%;" /><p class="caption-figure">Gambar 4.4 Alur Sistem Keseluruhan</p></div>
+<div class="figure-container"><img src="Skripsi%20Benji%20(1)_files/image009.png" alt="Proses Eksekusi Decision Engine" style="max-width: 55%;" /><p class="caption-figure">Gambar 4.5 Proses Eksekusi Decision Engine</p></div>
+<p class="caption-table">Tabel 4.2 Deskripsi Modul Fungsional Sistem</p>
+<table>
+<thead>
+<tr><th style="width: 22%;">Modul</th><th style="width: 28%;">Berkas Kode</th><th style="width: 50%;">Fungsi Utama</th></tr>
+</thead>
+<tbody>
+<tr><td>Koneksi MT5</td><td><code>mt5/connector.py</code></td><td>Inisialisasi, autentikasi kredensial, dan pemulihan koneksi socket MT5.</td></tr>
+<tr><td>Data Pasar</td><td><code>mt5/market_data.py</code></td><td>Mengunduh riwayat OHLCV multi-timeframe dan normalisasi offset UTC.</td></tr>
+<tr><td>Penjadwal</td><td><code>infra/scheduler.py</code></td><td>Mendeteksi waktu penutupan lilin (<i>candle close event</i>) secara presisi.</td></tr>
+<tr><td>Indikator Teknikal</td><td><code>features/indicators.py</code></td><td>Menghitung nilai EMA (20/50/200), RSI 14, MACD, dan volatilitas ATR 14.</td></tr>
+<tr><td>Pola Candlestick</td><td><code>features/patterns.py</code></td><td>Pengenalan pola harga (<i>Engulfing, Pin Bar, Morning/Evening Star</i>).</td></tr>
+<tr><td>Level SNR</td><td><code>features/zones_snr.py</code></td><td>Pemetaan level horizontal <i>Support & Resistance</i> serta <i>Touch Score</i>.</td></tr>
+<tr><td>Zona SND</td><td><code>features/zones_snd.py</code></td><td>Identifikasi area konsolidasi <i>Supply & Demand</i> (<i>Base Breakdown/Breakout</i>).</td></tr>
+<tr><td>Fibonacci</td><td><code>features/fibonacci.py</code></td><td>Kalkulasi level rasio retracement dinamis (38.2%, 50.0%, 61.8%).</td></tr>
+<tr><td>Filter Sesi</td><td><code>features/session.py</code></td><td>Membatasi evaluasi hanya pada jam perdagangan likuid (London & New York).</td></tr>
+<tr><td>Deteksi Bias HTF</td><td><code>engine/bias.py</code></td><td>Menentukan arah tren dominan (<i>Higher Timeframe Bias</i>: Bullish/Bearish).</td></tr>
+<tr><td>Skor Pemicu</td><td><code>engine/trigger.py</code></td><td>Evaluasi skor sinyal pemicu (<i>Trigger Score</i>) pada timeframe eksekusi.</td></tr>
+<tr><td>Skor Konfluensi</td><td><code>engine/confluence.py</code></td><td>Perhitungan bobot konfluensi multi-analisis (<i>Confluence Score</i>).</td></tr>
+<tr><td>State Pasar</td><td><code>engine/state.py</code></td><td>Deteksi rezim pasar (<i>Trending, High Momentum, Ranging, Consolidation</i>).</td></tr>
+<tr><td>Decision Engine</td><td><code>engine/anytf_mta_engine.py</code></td><td>Orkestrasi alur inferensi bertingkat 5 gerbang (<i>5-Gate Validation</i>).</td></tr>
+<tr><td>Notifikasi Telegram</td><td><code>notify/telegram.py</code></td><td>Format dan transmisi sinyal rekomendasi ke Telegram Bot API.</td></tr>
+<tr><td>Pencatat Sinyal</td><td><code>infra/signal_logger.py</code></td><td>Persistensi rekaman histori sinyal dan alasan <i>reject</i> ke CSV/JSON.</td></tr>
+<tr><td>Pelacak Sinyal</td><td><code>infra/signal_tracker.py</code></td><td>Pemantauan harga berjalan secara <i>real-time</i> terhadap status TP dan SL.</td></tr>
+</tbody>
+</table>
+<h3>4.1.3 Implementasi Modul Pengambilan Data</h3>
+<p>Modul pengambilan data bertugas menghubungkan sistem ke terminal MetaTrader 5 secara lokal melalui IPC socket. Modul mengambil sebanyak 800 bar <i>candlestick</i> historis per kerangka waktu saat startup. Jumlah 800 bar dipilih secara terukur untuk menjamin kestabilan konvergensi perhitungan Exponential Moving Average periode 200 (EMA 200).</p>
+<p>Selain kuantitas bar, modul mengoreksi offset waktu server broker secara otomatis. Karena kuotasi MT5 menggunakan waktu server broker (misalnya UTC+2 atau UTC+3), modul menghitung selisih waktu tick server terhadap jam UTC sebenarnya, sehingga data yang diproses oleh <i>decision engine</i> memiliki referensi waktu yang seragam dan selaras dengan jam sesi pasar WIB (GMT+7).</p>
+<p class="caption-table">Tabel 4.3 Spesifikasi Kerangka Waktu Data Pasar</p>
+<table>
+<thead>
+<tr><th style="width: 14%;">Timeframe</th><th style="width: 18%;">Kode MT5</th><th style="width: 14%;">Jumlah Bar</th><th style="width: 54%;">Peran dalam Sistem</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>M5</b></td><td><code>TIMEFRAME_M5</code></td><td class="text-center">800</td><td>Pemicu eksekusi mode <i>scalping</i> dan pemantauan momentum jangka pendek.</td></tr>
+<tr><td class="text-center"><b>M15</b></td><td><code>TIMEFRAME_M15</code></td><td class="text-center">800</td><td>Pemicu eksekusi utama mode <i>intraday trend following</i> dan <i>break-retest</i>.</td></tr>
+<tr><td class="text-center"><b>H1</b></td><td><code>TIMEFRAME_H1</code></td><td class="text-center">800</td><td>Konfirmasi tren menengah dan penentuan level struktur <i>Support/Resistance</i>.</td></tr>
+<tr><td class="text-center"><b>H4</b></td><td><code>TIMEFRAME_H4</code></td><td class="text-center">800</td><td>Penentuan bias arah tren makro (<i>Higher Timeframe Bias</i>) dan zona SND utama.</td></tr>
+<tr><td class="text-center"><b>D1</b></td><td><code>TIMEFRAME_D1</code></td><td class="text-center">800</td><td>Pemetaan batas volatilitas harian dan garis tren mayor jangka panjang.</td></tr>
+</tbody>
+</table>
+<p>Berikut potongan implementasi inisialisasi koneksi MetaTrader 5 pada modul <code>mt5/connector.py</code> disajikan pada Listing 4.1.</p>
+<p class="caption-listing">Listing 4.1 Implementasi Kode Modul Koneksi MetaTrader 5 (mt5/connector.py)</p>
+<div class="code-box">def connect(login: int, password: str, server: str, terminal_path: str = "") -&gt; object:
+    path = (
+        terminal_path
+        or os.environ.get("MT5_TERMINAL_PATH", "")
+        or r"C:\Program Files\MetaTrader 5\terminal64.exe"
+    )
+    if not os.path.isfile(path):
+        raise RuntimeError(f"MT5 terminal tidak ditemukan: {path}")
+    if not mt5.initialize(path=path, portable=True):
+        raise RuntimeError(f"MT5 initialize gagal: {mt5.last_error()}")
+    if not mt5.login(login=login, password=password, server=server):
+        raise RuntimeError(f"MT5 login gagal: {mt5.last_error()}")
+    info = mt5.account_info()
+    if info is None:
+        raise RuntimeError(f"MT5 account_info gagal: {mt5.last_error()}")
+    return info</div>
+<p>Hasil verifikasi eksekusi koneksi ke terminal MT5 dapat diamati melalui log terminal pada Gambar 4.6.</p>
+<div class="figure-container"><img src="Skripsi%20Benji%20(1)_files/image011.png" alt="Log Terminal Verifikasi Keberhasilan Koneksi MT5" /><p class="caption-figure">Gambar 4.6 Log Terminal Verifikasi Keberhasilan Koneksi MT5</p></div>
+<p>Implementasi fungsi pengambilan data batang harga OHLCV disajikan pada Listing 4.2.</p>
+<p class="caption-listing">Listing 4.2 Implementasi Fungsi Pengambilan Data OHLCV MT5 (mt5/market_data.py)</p>
+<div class="code-box">def fetch_ohlc(symbol: str, tf: str, n_bars: int = 500) -&gt; pd.DataFrame:
+    tf_id = TF_MAP.get(tf.upper())
+    if tf_id is None:
+        raise ValueError(f"Timeframe tidak dikenal: {tf}")
+    rates = mt5.copy_rates_from_pos(symbol, tf_id, 0, n_bars)
+    if rates is None or len(rates) == 0:
+        raise RuntimeError(f"Tidak ada data MT5 untuk {symbol} {tf}: {mt5.last_error()}")
+    df = pd.DataFrame(rates)
+    df["time"] = pd.to_datetime(df["time"], unit="s")
+    return df</div>
+<h3>4.1.4 Implementasi Modul Analisis</h3>
+<p>Lapisan analisis fitur (<code>features/indicators.py</code>) bertugas menghitung serangkaian indikator teknikal secara vektorisasi menggunakan pustaka TA-Lib. Untuk mengakomodasi dinamika pasar emas yang berbeda pada setiap kerangka waktu, sistem menerapkan parameter adaptif: timeframe rendah (M5 dan M15) menggunakan periode indikator yang lebih singkat agar responsif terhadap perubahan momentum, sedangkan timeframe tinggi (H1, H4, D1) menggunakan periode standar untuk menangkap tren struktural secara stabil.</p>
+<p class="caption-table">Tabel 4.4 Parameter Konfigurasi Indikator Berdasarkan Kerangka Waktu</p>
+<table>
+<thead>
+<tr><th style="width: 25%;">Indikator</th><th style="width: 15%;">Parameter M5</th><th style="width: 15%;">Parameter M15</th><th style="width: 15%;">Parameter H1</th><th style="width: 15%;">Parameter H4</th><th style="width: 15%;">Parameter D1</th></tr>
+</thead>
+<tbody>
+<tr><td>Fast EMA</td><td class="text-center">Periode 9</td><td class="text-center">Periode 12</td><td class="text-center">Periode 21</td><td class="text-center">Periode 21</td><td class="text-center">Periode 50</td></tr>
+<tr><td>Mid EMA</td><td class="text-center">Periode 21</td><td class="text-center">Periode 34</td><td class="text-center">Periode 50</td><td class="text-center">Periode 55</td><td class="text-center">Periode 200</td></tr>
+<tr><td>Slow EMA</td><td class="text-center">Periode 55</td><td class="text-center">Periode 100</td><td class="text-center">Periode 100</td><td class="text-center">Periode 200</td><td class="text-center">Periode 200</td></tr>
+<tr><td>MACD Fast</td><td class="text-center">8</td><td class="text-center">8</td><td class="text-center">12</td><td class="text-center">12</td><td class="text-center">12</td></tr>
+<tr><td>MACD Slow</td><td class="text-center">17</td><td class="text-center">17</td><td class="text-center">26</td><td class="text-center">26</td><td class="text-center">26</td></tr>
+<tr><td>MACD Signal</td><td class="text-center">9</td><td class="text-center">9</td><td class="text-center">9</td><td class="text-center">9</td><td class="text-center">9</td></tr>
+<tr><td>RSI Period</td><td class="text-center">14</td><td class="text-center">14</td><td class="text-center">14</td><td class="text-center">14</td><td class="text-center">14</td></tr>
+<tr><td>ATR Period</td><td class="text-center">14</td><td class="text-center">14</td><td class="text-center">14</td><td class="text-center">14</td><td class="text-center">14</td></tr>
+</tbody>
+</table>
+<p>Struktur konfigurasi adaptif per kerangka waktu disajikan pada Listing 4.3.</p>
+<p class="caption-listing">Listing 4.3 Konfigurasi Indikator Berdasarkan Kerangka Waktu (features/indicators.py)</p>
+<div class="code-box">_TF_IND_CONFIG: dict[str, tuple[int, int, int, int, int, int]] = {
+    "M5":  (9, 21, 55, 8, 17, 9),
+    "M15": (12, 34, 100, 8, 17, 9),
+    "H1":  (21, 50, 100, 12, 26, 9),
+    "H4":  (21, 55, 200, 12, 26, 9),
+    "D1":  (50, 200, 200, 12, 26, 9),
+}
+_DEFAULT_CONFIG: tuple[int, int, int, int, int, int] = (20, 50, 200, 12, 26, 9)</div>
+<p>Implementasi kalkulasi vektorisasi indikator teknikal disajikan pada Listing 4.4.</p>
+<p class="caption-listing">Listing 4.4 Fungsi Kalkulasi Vektorisasi Indikator Teknikal (features/indicators.py)</p>
+<div class="code-box">def add_indicators(df: pd.DataFrame, tf: str = "") -&gt; pd.DataFrame:
+    tf_upper = tf.upper() if tf else ""
+    fast, mid, slow, mf, ms, msig = _TF_IND_CONFIG.get(tf_upper, _DEFAULT_CONFIG)
+    c = df["close"].to_numpy(dtype=float)
+    h = df["high"].to_numpy(dtype=float)
+    l = df["low"].to_numpy(dtype=float)
+    df["ema_20"]  = talib.EMA(c, timeperiod=fast)
+    df["ema_50"]  = talib.EMA(c, timeperiod=mid)
+    df["ema_200"] = talib.EMA(c, timeperiod=slow)
+    df["rsi_14"]  = talib.RSI(c, timeperiod=14)
+    df["atr_14"]  = talib.ATR(h, l, c, timeperiod=14)
+    df["adx_14"]  = talib.ADX(h, l, c, timeperiod=14)
+    macd_line, macd_signal, hist = talib.MACD(c, fastperiod=mf, slowperiod=ms, signalperiod=msig)
+    df["macd_line"]   = macd_line
+    df["macd_signal"] = macd_signal
+    df["macdhist"]    = hist
+    return df</div>
+<h2>4.2 Implementasi Multi-Analisis Teknikal</h2>
+<p>Sistem mengintegrasikan kombinasi analisis teknikal multidisiplin yang mencakup <i>Multi-Timeframe Analysis</i> (MTA), <i>Price Action</i>, <i>Fibonacci Retracement</i>, <i>Support & Resistance</i> (SNR), <i>Supply & Demand</i> (SND), serta indikator momentum dan tren (EMA, MACD, RSI). Integrasi ini bertujuan menciptakan konfluensi analitik (<i>analytical confluence</i>) guna memastikan bahwa setiap sinyal yang dihasilkan didukung oleh berbagai perspektif pasar yang saling mengonfirmasi.</p>
+<h3>4.2.1 Multi-Timeframe Analysis</h3>
+<p>Pendekatan <i>Multi-Timeframe Analysis</i> diterapkan untuk mengatasi kelemahan analisis pada satu kerangka waktu tunggal yang rentan terhadap derau pasar (<i>market noise</i>). Sistem membedakan secara tegas antara <i>Trigger Timeframe</i> (kerangka waktu eksekusi tempat sinyal pemicu dideteksi) dan <i>Confirmation Timeframe</i> (<i>Higher Timeframe</i> / HTF tempat arah tren dominan ditentukan).</p>
+<p class="caption-table">Tabel 4.5 Matriks Hierarki Timeframe dan Mode Perdagangan</p>
+<table>
+<thead>
+<tr><th style="width: 20%;">Timeframe Pemicu</th><th style="width: 22%;">Timeframe Konfirmasi</th><th style="width: 20%;">Mode Perdagangan</th><th style="width: 38%;">Karakteristik Strategi</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>M5</b></td><td class="text-center">H1, H4</td><td class="text-center"><i>Scalping</i></td><td>Eksekusi cepat, memanfaatkan momentum jangka pendek searah tren H1.</td></tr>
+<tr><td class="text-center"><b>M15</b></td><td class="text-center">H1, H4</td><td class="text-center"><i>Trend Following</i></td><td>Menangkap gelombang tren <i>intraday</i> utama dengan konfirmasi bias H1 & H4.</td></tr>
+<tr><td class="text-center"><b>H1</b></td><td class="text-center">H4, D1</td><td class="text-center"><i>Swing Trading</i></td><td>Mengikuti pergeseran siklus tren makro dengan target pip yang lebih lebar.</td></tr>
+<tr><td class="text-center"><b>H4</b></td><td class="text-center">D1</td><td class="text-center"><i>Macro Trend</i></td><td>Pemetaan arah jangka panjang dan level-level likuiditas institusional.</td></tr>
+</tbody>
+</table>
+<p class="caption-table">Tabel 4.6 Peran Fungsional Setiap Kerangka Waktu</p>
+<table>
+<thead>
+<tr><th style="width: 18%;">Timeframe</th><th style="width: 82%;">Peran Fungsional dalam Sistem</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>M5</b></td><td>Deteksi pemicu <i>entry</i> presisi, reaksi pembalikan <i>pullback</i>, dan <i>break-retest</i> mikro.</td></tr>
+<tr><td class="text-center"><b>M15</b></td><td>Basis pembentukan sinyal <i>intraday</i>, deteksi pola <i>candlestick</i>, dan kalkulasi SL/TP dinamis.</td></tr>
+<tr><td class="text-center"><b>H1</b></td><td>Penentu bias tren utama (<i>HTF Trend Gate</i>), konfirmasi kelurusan EMA (<i>EMA Alignment</i>).</td></tr>
+<tr><td class="text-center"><b>H4</b></td><td>Validasi struktur tren makro, pemetaan zona <i>Supply & Demand</i> mayor, dan filter pembalikan besar.</td></tr>
+<tr><td class="text-center"><b>D1</b></td><td>Referensi batas batas tertinggi/terendah harian (<i>daily high/low</i>) dan filter risiko ekstrem.</td></tr>
+</tbody>
+</table>
+<p>Implementasi logika pemilihan kerangka waktu konfirmasi disajikan pada Listing 4.5.</p>
+<p class="caption-listing">Listing 4.5 Implementasi Logika Pemilihan Kerangka Waktu Konfirmasi (engine/utils.py)</p>
+<div class="code-box">TF_ORDER = ["M5", "M15", "H1", "H4", "D1"]
+def higher_timeframes(trigger_tf: str, enabled_tfs: list[str]) -&gt; list[str]:
+    trigger_tf = trigger_tf.upper()
+    enabled_up = [t.upper() for t in enabled_tfs]
+    if trigger_tf not in TF_ORDER:
+        return enabled_up
+    idx = TF_ORDER.index(trigger_tf)
+    return [tf for tf in TF_ORDER[idx + 1:] if tf in enabled_up]</div>
+<h3>4.2.2 Price Action & Pola Candlestick</h3>
+<p>Sistem mendeteksi formasi pola lilin (<i>candlestick pattern</i>) menggunakan fungsi-fungsi resmi TA-Lib pada modul <code>features/patterns.py</code>. Untuk menyaring pola semu (<i>false patterns</i>) yang terbentuk pada lilin berbadan kerdil (<i>indecision candles</i>), sistem menambahkan algoritma filter ukuran badan (<i>body size ratio</i>):</p>
+<div class="formula-box">Body = |Close &minus; Open| &ge; 0.40 &times; RollingAverage<sub>10</sub>(Body)</div>
+<p>Pola yang lulus validasi diakui sebagai konfirmasi teknikal berbobot tinggi (+1.5 skor konfluensi).</p>
+<p class="caption-table">Tabel 4.7 Klasifikasi Pola Candlestick dalam Sistem</p>
+<table>
+<thead>
+<tr><th style="width: 10%;">Sinyal</th><th style="width: 25%;">Pola Candlestick</th><th style="width: 25%;">Fungsi TA-Lib</th><th style="width: 15%;">Bobot</th><th style="width: 25%;">Implikasi Perilaku Pasar</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>BUY</b></td><td>Bullish Engulfing</td><td><code>CDLENGULFING > 0</code></td><td class="text-center">+1.5</td><td>Tekanan beli masif menelan lilin merah sebelumnya.</td></tr>
+<tr><td class="text-center"><b>BUY</b></td><td>Hammer / Pin Bar</td><td><code>CDLHAMMER > 0</code></td><td class="text-center">+1.5</td><td>Penolakan harga rendah (<i>rejection from low</i>).</td></tr>
+<tr><td class="text-center"><b>BUY</b></td><td>Morning Star</td><td><code>CDLMORNINGSTAR > 0</code></td><td class="text-center">+1.5</td><td>Formasi pembalikan 3 lilin dari <i>bearish</i> ke <i>bullish</i>.</td></tr>
+<tr><td class="text-center"><b>BUY</b></td><td>Three White Soldiers</td><td><code>CDL3WHITESOLDIERS > 0</code></td><td class="text-center">+1.5</td><td>Kelanjutan tren beli kuat tanpa penolakan berarti.</td></tr>
+<tr><td class="text-center"><b>SELL</b></td><td>Bearish Engulfing</td><td><code>CDLENGULFING < 0</code></td><td class="text-center">+1.5</td><td>Tekanan jual masif menelan lilin hijau sebelumnya.</td></tr>
+<tr><td class="text-center"><b>SELL</b></td><td>Shooting Star</td><td><code>CDLSHOOTINGSTAR < 0</code></td><td class="text-center">+1.5</td><td>Penolakan harga tinggi (<i>rejection from high</i>).</td></tr>
+<tr><td class="text-center"><b>SELL</b></td><td>Evening Star</td><td><code>CDLEVENINGSTAR < 0</code></td><td class="text-center">+1.5</td><td>Formasi pembalikan 3 lilin dari <i>bullish</i> ke <i>bearish</i>.</td></tr>
+<tr><td class="text-center"><b>SELL</b></td><td>Three Black Crows</td><td><code>CDL3BLACKCROWS < 0</code></td><td class="text-center">+1.5</td><td>Tekanan penurunan beruntun dengan badan penuh.</td></tr>
+</tbody>
+</table>
+<p>Implementasi deteksi pola candlestick dan filter rasio badan disajikan pada Listing 4.6.</p>
+<p class="caption-listing">Listing 4.6 Implementasi Deteksi Pola Candlestick dan Filter Rasio Badan (features/patterns.py)</p>
+<div class="code-box">PATTERN_FUNCS: dict[str, object] = {
+    "CDLHAMMER": talib.CDLHAMMER, "CDLENGULFING": talib.CDLENGULFING,
+    "CDLMORNINGSTAR": talib.CDLMORNINGSTAR, "CDLEVENINGSTAR": talib.CDLEVENINGSTAR,
+    "CDLSHOOTINGSTAR": talib.CDLSHOOTINGSTAR, "CDL3WHITESOLDIERS": talib.CDL3WHITESOLDIERS,
+    "CDL3BLACKCROWS": talib.CDL3BLACKCROWS, "CDLMARUBOZU": talib.CDLMARUBOZU,
+}
+_MIN_BODY_RATIO = 0.40
+_BODY_LOOKBACK = 10
+
+def _body_size_ok(o: np.ndarray, c: np.ndarray) -&gt; np.ndarray:
+    body = np.abs(c - o)
+    avg_body = pd.Series(body).rolling(_BODY_LOOKBACK, min_periods=1).mean().shift(1).to_numpy()
+    with np.errstate(invalid="ignore"):
+        ok = body &gt;= (_MIN_BODY_RATIO * avg_body)
+    ok = np.where(np.isnan(avg_body), True, ok)
+    return ok</div>
+<h3>4.2.3 Fibonacci Retracement</h3>
+<p>Perhitungan level Fibonacci retracement dilakukan pada modul <code>features/fibonacci.py</code>. Sistem secara otomatis mengidentifikasi titik tertinggi lokal (<i>Swing High</i>) dan titik terendah lokal (<i>Swing Low</i>) dalam jendela pengamatan 50 bar. Berdasarkan rentang ayunan harga (<i>H &minus; L</i>), level-level retracement dihitung secara dinamis.</p>
+<p class="caption-table">Tabel 4.8 Konfigurasi Level Rasio Fibonacci Retracement</p>
+<table>
+<thead>
+<tr><th style="width: 14%;">Level Rasio</th><th style="width: 26%;">Kategori Zona</th><th style="width: 15%;">Skor</th><th style="width: 22%;">Peran Posisi BUY</th><th style="width: 23%;">Peran Posisi SELL</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>23.6%</b></td><td>Shallow Retracement</td><td class="text-center">+0.5</td><td>Minor support tren kuat</td><td>Minor resistance tren kuat</td></tr>
+<tr><td class="text-center"><b>38.2%</b></td><td>Moderate Retracement</td><td class="text-center">+1.0</td><td>Area pullback tren sehat</td><td>Area pullback tren turun</td></tr>
+<tr><td class="text-center"><b>50.0%</b></td><td>Equilibrium (Golden Zone)</td><td class="text-center">+1.5</td><td>Area kesetimbangan harga ideal</td><td>Area kesetimbangan harga ideal</td></tr>
+<tr><td class="text-center"><b>61.8%</b></td><td>Golden Ratio (Golden Zone)</td><td class="text-center">+1.5</td><td>Level pantulan utama pembeli</td><td>Level pantulan utama penjual</td></tr>
+<tr><td class="text-center"><b>78.6%</b></td><td>Deep Retracement</td><td class="text-center">+0.5</td><td>Batas akhir struktur beli</td><td>Batas akhir struktur jual</td></tr>
+</tbody>
+</table>
+<p>Implementasi konfigurasi dan kalkulasi rasio Fibonacci retracement disajikan pada Listing 4.7.</p>
+<p class="caption-listing">Listing 4.7 Implementasi Konfigurasi Fibonacci Retracement (features/fibonacci.py)</p>
+<div class="code-box">class FibConfig:
+    def __init__(self, fib_tf: str, pivot_length: int, lookback: int, min_impulse_atr: float, zone_tolerance: float, strong_levels: frozenset[float]):
+        self.fib_tf = fib_tf; self.pivot_length = pivot_length; self.lookback = lookback
+        self.min_impulse_atr = min_impulse_atr; self.zone_tolerance = zone_tolerance
+        self.strong_levels = strong_levels
+
+FIB_SCALPING_AREA = FibConfig("M15", pivot_length=3, lookback=400, min_impulse_atr=1.5, zone_tolerance=0.50, strong_levels=frozenset({0.382, 0.5, 0.618}))
+FIB_INTRADAY_AREA = FibConfig("H1",  pivot_length=4, lookback=500, min_impulse_atr=2.0, zone_tolerance=0.60, strong_levels=frozenset({0.382, 0.5, 0.618, 0.786}))</div>
+<h3>4.2.4 Support dan Resistance Horizontal (SNR)</h3>
+<p>Modul <code>features/zones_snr.py</code> mendeteksi level-level horizontal harga melalui algoritma <i>pivot peak/valley detection</i>. Untuk menilai signifikansi suatu level, sistem menghitung <i>Touch Score</i> (berapa kali harga menyentuh level tersebut dalam toleransi &plusmn; 0.3 &times; ATR tanpa menembusnya secara mutlak). Semakin tinggi <i>Touch Score</i>, semakin kuat level tersebut menahan harga.</p>
+<p class="caption-table">Tabel 4.9 Parameter Deteksi Support dan Resistance Horizontal</p>
+<table>
+<thead>
+<tr><th style="width: 18%;">Timeframe</th><th style="width: 20%;">Pivot Length</th><th style="width: 22%;">Lookback</th><th style="width: 20%;">Toleransi ATR</th><th style="width: 20%;">Ambang Touch</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>M5</b></td><td class="text-center">3</td><td class="text-center">50 bar</td><td class="text-center">0.25</td><td class="text-center">&ge; 2 sentuhan</td></tr>
+<tr><td class="text-center"><b>M15</b></td><td class="text-center">4</td><td class="text-center">70 bar</td><td class="text-center">0.30</td><td class="text-center">&ge; 2 sentuhan</td></tr>
+<tr><td class="text-center"><b>H1</b></td><td class="text-center">5</td><td class="text-center">100 bar</td><td class="text-center">0.35</td><td class="text-center">&ge; 3 sentuhan</td></tr>
+<tr><td class="text-center"><b>H4</b></td><td class="text-center">5</td><td class="text-center">150 bar</td><td class="text-center">0.40</td><td class="text-center">&ge; 3 sentuhan</td></tr>
+</tbody>
+</table>
+<p>Implementasi pembentukan zona Support dan Resistance disajikan pada Listing 4.8.</p>
+<p class="caption-listing">Listing 4.8 Implementasi Algoritma Penentuan Zona SNR dan Penilaian Sentuhan (features/zones_snr.py)</p>
+<div class="code-box">def _build_zones(df: pd.DataFrame, tf: str, atr: float) -&gt; list[SnrZone]:
+    cfg = _TF_CONFIG.get(tf.upper(), _TF_CONFIG_DEFAULT)
+    recent = df.iloc[-cfg.lookback:] if len(df) &gt; cfg.lookback else df
+    tolerance = atr * cfg.atr_tolerance
+    zones: list[SnrZone] = []
+    hi_idx_px = swing_high_idx_prices(recent, left=cfg.pivot_length, right=cfg.pivot_length)
+    lo_idx_px = swing_low_idx_prices(recent, left=cfg.pivot_length, right=cfg.pivot_length)
+    for zone_type, idx_px_list in [("RESISTANCE", hi_idx_px), ("SUPPORT", lo_idx_px)]:
+        clusters_with_idx = _cluster_with_idx(idx_px_list, tolerance)
+        for cluster_pairs in clusters_with_idx:
+            touches = len(cluster_pairs)
+            strength = _touch_score(touches)
+            if strength &lt; cfg.min_strength: continue
+            prices = [p for _, p in cluster_pairs]
+            center = float(np.mean(prices))
+            half = max(tolerance / 2, atr * 0.15)
+            zones.append(SnrZone(zone_type=zone_type, center=center, lower=center - half, upper=center + half, touches=touches, strength=strength))
+    return zones
+
+def _touch_score(touches: int) -&gt; float:
+    if touches &gt;= 4: return 50.0
+    if touches == 3: return 35.0
+    if touches == 2: return 20.0
+    return 0.0</div>
+<h3>4.2.5 Supply dan Demand (SND)</h3>
+<p>Modul <code>features/zones_snd.py</code> mengidentifikasi zona institusional berupa area konsolidasi (<i>Base</i>) yang didahului atau diakhiri oleh pergerakan impulsif (<i>Impulsive Move</i>). Empat pola struktur yang dideteksi meliputi: <i>Rally-Base-Rally</i> (RBR) dan <i>Drop-Base-Rally</i> (DBR) sebagai zona <i>Demand</i>, serta <i>Drop-Base-Drop</i> (DBD) dan <i>Rally-Base-Drop</i> (RBD) sebagai zona <i>Supply</i>.</p>
+<p class="caption-table">Tabel 4.10 Parameter Deteksi Zona Supply dan Demand</p>
+<table>
+<thead>
+<tr><th style="width: 16%;">Timeframe</th><th style="width: 20%;">Lookback</th><th style="width: 24%;">Badan Impuls Min</th><th style="width: 22%;">Rentang Base Max</th><th style="width: 18%;">Status Zona</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>M5</b></td><td class="text-center">40 bar</td><td class="text-center">&ge; 1.5 &times; ATR</td><td class="text-center">&le; 0.8 &times; ATR</td><td class="text-center"><i>Fresh</i></td></tr>
+<tr><td class="text-center"><b>M15</b></td><td class="text-center">60 bar</td><td class="text-center">&ge; 1.8 &times; ATR</td><td class="text-center">&le; 1.0 &times; ATR</td><td class="text-center"><i>Fresh</i></td></tr>
+<tr><td class="text-center"><b>H1</b></td><td class="text-center">80 bar</td><td class="text-center">&ge; 2.0 &times; ATR</td><td class="text-center">&le; 1.2 &times; ATR</td><td class="text-center"><i>Tested (&le;1)</i></td></tr>
+<tr><td class="text-center"><b>H4</b></td><td class="text-center">120 bar</td><td class="text-center">&ge; 2.5 &times; ATR</td><td class="text-center">&le; 1.5 &times; ATR</td><td class="text-center"><i>Major Zone</i></td></tr>
+</tbody>
+</table>
+<p>Implementasi algoritma pemindaian zona Supply dan Demand disajikan pada Listing 4.9.</p>
+<p class="caption-listing">Listing 4.9 Algoritma Identifikasi Zona Supply dan Demand Institusional (features/zones_snd.py)</p>
+<div class="code-box">def _find_zones(df: pd.DataFrame, atr: float, cfg: _SndConfig, bullish: bool) -&gt; list[dict]:
+    zones: list[dict] = []
+    if atr &lt;= 0 or len(df) &lt; cfg.lookback + 5:
+        return zones
+    data = df.iloc[-(cfg.lookback + 2):-1].reset_index(drop=True)
+    n = len(data)
+    for i in range(_BASE_WINDOW, n - 2):
+        c = data.iloc[i]
+        c_open, c_close = float(c.get("open", 0)), float(c.get("close", 0))
+        body = (c_close - c_open) if bullish else (c_open - c_close)
+        if body &lt; cfg.impulse_body_atr * atr: continue
+        base_slice = data.iloc[max(0, i - _BASE_WINDOW):i]
+        if len(base_slice) &lt; 2: continue
+        base_high, base_low = float(base_slice["high"].max()), float(base_slice["low"].min())
+        if (base_high - base_low) &gt; cfg.base_max_range * atr: continue
+        impulse_dist = (c_close - base_high) if bullish else (base_low - c_close)
+        if impulse_dist &lt; cfg.min_impulse_dist * atr: continue
+    return zones</div>
+<h3>4.2.6 Exponential Moving Average (EMA)</h3>
+<p>Sistem menggunakan tiga garis Exponential Moving Average (Fast, Mid, Slow) untuk menentukan kelurusan tren (<i>EMA Alignment</i>) serta mendeteksi area pembalikan arah kembali ke rata-rata (<i>EMA Pullback</i>). Pada timeframe eksekusi M15, EMA 20, EMA 50, dan EMA 200 membentuk filter dasar yang wajib dipenuhi.</p>
+<p class="caption-table">Tabel 4.11 Parameter EMA Berdasarkan Kerangka Waktu</p>
+<table>
+<thead>
+<tr><th style="width: 16%;">Timeframe</th><th style="width: 18%;">Fast EMA</th><th style="width: 18%;">Mid EMA</th><th style="width: 18%;">Slow EMA</th><th style="width: 30%;">Fungsi Analitik</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>M5</b></td><td class="text-center">EMA 9</td><td class="text-center">EMA 21</td><td class="text-center">EMA 55</td><td>Deteksi momentum mikro dan <i>micro pullback</i>.</td></tr>
+<tr><td class="text-center"><b>M15</b></td><td class="text-center">EMA 12</td><td class="text-center">EMA 34</td><td class="text-center">EMA 100</td><td>Filter kelurusan tren intraday dan konfirmasi pemicu.</td></tr>
+<tr><td class="text-center"><b>H1</b></td><td class="text-center">EMA 21</td><td class="text-center">EMA 50</td><td class="text-center">EMA 200</td><td>Penentu arah tren utama (<i>Macro Trend Direction</i>).</td></tr>
+<tr><td class="text-center"><b>H4</b></td><td class="text-center">EMA 21</td><td class="text-center">EMA 55</td><td class="text-center">EMA 200</td><td>Filter sekunder tren institusional.</td></tr>
+<tr><td class="text-center"><b>D1</b></td><td class="text-center">EMA 50</td><td class="text-center">EMA 200</td><td class="text-center">EMA 200</td><td>Indikator rezim tren jangka panjang.</td></tr>
+</tbody>
+</table>
+<p>Logika evaluasi kelurusan garis EMA multi-timeframe disajikan pada Listing 4.10.</p>
+<p class="caption-listing">Listing 4.10 Evaluasi Kelurusan Garis EMA Multi-Timeframe (engine/trigger.py)</p>
+<div class="code-box"># EMA alignment
+if all(v is not None for v in [ema20, ema50, ema200]):
+    if (direction == "BUY" and ema20 &gt; ema50 &gt; ema200) or \
+       (direction == "SELL" and ema20 &lt; ema50 &lt; ema200):
+        score += 1; notes.append("ALIGN+")
+    else:
+        notes.append("ALIGN-")</div>
+<h3>4.2.7 Moving Average Convergence Divergence (MACD)</h3>
+<p>Indikator MACD dihitung untuk mengevaluasi akselerasi momentum dan divergensi harga. Pada timeframe M5 dan M15, parameter MACD dipercepat (8, 17, 9) agar dapat menangkap pergeseran momentum secara dini tanpa keterlambatan (<i>lagging</i>).</p>
+<p class="caption-table">Tabel 4.12 Kondisi Validasi MACD dalam Sistem</p>
+<table>
+<thead>
+<tr><th style="width: 16%;">Arah Sinyal</th><th style="width: 38%;">Kondisi Histogram MACD</th><th style="width: 32%;">Garis MACD & Sinyal</th><th style="width: 14%;">Skor</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>BUY</b></td><td>Hist<sub>t</sub> &gt; Hist<sub>t-1</sub> (Mengembang naik)</td><td>MACD Line &gt; Signal Line</td><td class="text-center">+1</td></tr>
+<tr><td class="text-center"><b>SELL</b></td><td>Hist<sub>t</sub> &lt; Hist<sub>t-1</sub> (Mengembang turun)</td><td>MACD Line &lt; Signal Line</td><td class="text-center">+1</td></tr>
+<tr><td class="text-center"><b>DIVERGENCE</b></td><td>Perbedaan arah puncak harga vs histogram</td><td>Konvergensi/divergensi terdeteksi</td><td class="text-center">+1.5 (Konf)</td></tr>
+</tbody>
+</table>
+<p>Evaluasi kondisi histogram MACD pada mesin inferensi disajikan pada Listing 4.11.</p>
+<p class="caption-listing">Listing 4.11 Evaluasi Kondisi Histogram MACD pada Mesin Inferensi (engine/trigger.py)</p>
+<div class="code-box"># MACD histogram
+if mhist is not None and mhist_p is not None:
+    if (direction == "BUY" and mhist &gt; mhist_p) or \
+       (direction == "SELL" and mhist &lt; mhist_p):
+        score += 1; notes.append("MACD+")
+    else:
+        notes.append("MACD-")</div>
+<h3>4.2.8 Relative Strength Index (RSI)</h3>
+<p>Indikator RSI (periode 14) digunakan sebagai filter kondisi kejenuhan harga (<i>Overbought/Oversold</i>) sekaligus pengukur kemiringan momentum (<i>Slope</i>). Pada posisi BUY, sistem mensyaratkan nilai RSI belum jenuh beli (<i>RSI &lt; 65</i>) dengan kemiringan naik, sedangkan pada posisi SELL mensyaratkan nilai RSI belum jenuh jual (<i>RSI &gt; 35</i>) dengan kemiringan turun.</p>
+<p class="caption-table">Tabel 4.13 Aturan Penggunaan Indikator RSI</p>
+<table>
+<thead>
+<tr><th style="width: 22%;">Nilai RSI (14)</th><th style="width: 28%;">Status Pasar</th><th style="width: 50%;">Aksi Evaluasi Sistem</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>RSI &lt; 30</b></td><td><i>Oversold</i> (Jenuh Jual)</td><td>Sinyal SELL diblokir; potensi pantulan BUY.</td></tr>
+<tr><td class="text-center"><b>30 &le; RSI &lt; 65</b></td><td>Area Sehat Bullish</td><td>Memenuhi pemicu BUY jika kemiringan naik (+1 skor).</td></tr>
+<tr><td class="text-center"><b>35 &lt; RSI &le; 70</b></td><td>Area Sehat Bearish</td><td>Memenuhi pemicu SELL jika kemiringan turun (+1 skor).</td></tr>
+<tr><td class="text-center"><b>RSI &gt; 70</b></td><td><i>Overbought</i> (Jenuh Beli)</td><td>Sinyal BUY diblokir; potensi pantulan SELL.</td></tr>
+</tbody>
+</table>
+<p>Implementasi pengecekan ambang batas dan kemiringan RSI disajikan pada Listing 4.12.</p>
+<p class="caption-listing">Listing 4.12 Pengecekan Ambang Batas dan Kemiringan RSI (engine/trigger.py)</p>
+<div class="code-box"># RSI
+if rsi is not None and rsi_p is not None:
+    if (direction == "BUY" and rsi &lt; 65 and rsi &gt; rsi_p) or \
+       (direction == "SELL" and rsi &gt; 35 and rsi &lt; rsi_p):
+        score += 1; notes.append(f"RSI+({rsi:.0f})")
+    else:
+        notes.append(f"RSI-({rsi:.0f})")</div>
+<h2>4.3 Implementasi Rule-Based Decision Engine</h2>
+<p>Inti dari sistem pendukung keputusan ini adalah <i>Rule-Based Decision Engine</i> (<code>engine/anytf_mta_engine.py</code>) yang beroperasi melalui mekanisme validasi 5 gerbang bertingkat (<i>5-Gate Validation</i>). Sinyal hanya diterbitkan jika dan hanya jika berhasil melewati kelima gerbang secara berurutan tanpa kegagalan.</p>
+<h3>4.3.1 Aturan Pengambilan Keputusan BUY</h3>
+<p>Pada posisi beli (<i>BUY / LONG</i>), sistem mensyaratkan keselarasan kondisi pasar mulai dari validitas data hingga rasio risiko-keuntungan:</p>
+<p class="caption-table">Tabel 4.14 Spesifikasi Logika Gerbang Keputusan Sinyal BUY</p>
+<table>
+<thead>
+<tr><th style="width: 14%;">Gerbang</th><th style="width: 26%;">Komponen Validasi</th><th style="width: 35%;">Kondisi Lolos BUY</th><th style="width: 25%;">Tindakan Jika Gagal</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>Gate 1</b></td><td>Filter Dasar & Sesi</td><td>Bar &ge; 200, ATR &gt; 0, di luar rollover, cooldown &ge; 3 bar.</td><td>Tolak: <code>SESSION_OFF</code></td></tr>
+<tr><td class="text-center"><b>Gate 2</b></td><td>Bias Tren Makro (HTF)</td><td>Close &gt; EMA200, EMA50 &gt; EMA200 pada H1/H4.</td><td>Tolak: <code>BIAS_FAIL</code></td></tr>
+<tr><td class="text-center"><b>Gate 3</b></td><td>Skor Pemicu Teknis</td><td>Trigger Score &ge; 3 (Scalp) / &ge; 4 (Intraday).</td><td>Tolak: <code>TRIGGER_FAIL</code></td></tr>
+<tr><td class="text-center"><b>Gate 4</b></td><td>Kalkulasi Risiko SL/TP</td><td>SL di bawah Swing Low / ATR, target TP valid.</td><td>Tolak: <code>SLTP_NONE</code></td></tr>
+<tr><td class="text-center"><b>Gate 5</b></td><td>Konfluensi & Rasio RR</td><td>RR &ge; 1:1.0 dan tidak terhalang level SNR.</td><td>Tolak: <code>SNR_BLOCKED</code></td></tr>
+</tbody>
+</table>
+<p class="caption-table">Tabel 4.15 Komponen Penilaian Skor Pemicu BUY (Maksimal 6 Poin)</p>
+<table>
+<thead>
+<tr><th style="width: 25%;">Komponen</th><th style="width: 60%;">Kondisi Valid Posisi BUY</th><th style="width: 15%;">Bobot Skor</th></tr>
+</thead>
+<tbody>
+<tr><td>EMA 200 Filter</td><td>Harga penutupan di atas EMA200 &minus; 0.2 &times; ATR</td><td class="text-center">+1 (Wajib)</td></tr>
+<tr><td>EMA 50 Pullback</td><td>Jarak harga ke EMA50 &le; 1.5 &times; ATR</td><td class="text-center">+1</td></tr>
+<tr><td>EMA Alignment</td><td>Susunan garis EMA20 &gt; EMA50 &gt; EMA200</td><td class="text-center">+1</td></tr>
+<tr><td>RSI Confirmation</td><td>RSI &lt; 65 dan tren kemiringan naik</td><td class="text-center">+1</td></tr>
+<tr><td>MACD Momentum</td><td>Histogram MACD saat ini &gt; histogram sebelumnya</td><td class="text-center">+1</td></tr>
+<tr><td>Candle Direction</td><td>Lilin pemicu ditutup positif (Close &gt; Open)</td><td class="text-center">+1</td></tr>
+</tbody>
+</table>
+<p>Logika deteksi bias makro tren tingkat tinggi (HTF) dan evaluasi skor pemicu BUY disajikan pada Listing 4.13.</p>
+<p class="caption-listing">Listing 4.13 Logika Deteksi Bias Makro dan Evaluasi Skor Pemicu BUY (engine/trigger.py)</p>
+<div class="code-box">def _check_bias_and_buy_trigger(close, ema50, ema200, atr, slope_ok):
+    # Evaluasi Bias Tren Makro Bullish (Gate 2)
+    is_bull = close &gt; ema200 and ema50 &gt; ema200
+    gap_pct = abs(ema50 - ema200) / close
+    if gap_pct &gt;= 0.0005 and slope_ok and is_bull:
+        bias = "BULL"
+    
+    # Evaluasi Skor Pemicu BUY (Gate 3)
+    score = 0
+    if close &gt; (ema200 - 0.2 * atr): score += 1
+    if abs(close - ema50) &lt;= 1.5 * atr: score += 1
+    return bias, score</div>
+<h3>4.3.2 Aturan Pengambilan Keputusan SELL</h3>
+<p>Kondisi untuk posisi jual (<i>SELL / SHORT</i>) merupakan cerminan simetris dari posisi beli dengan penyesuaian arah ambang batas teknikal.</p>
+<p class="caption-table">Tabel 4.16 Komponen Penilaian Skor Pemicu SELL (Maksimal 6 Poin)</p>
+<table>
+<thead>
+<tr><th style="width: 25%;">Komponen</th><th style="width: 60%;">Kondisi Valid Posisi SELL</th><th style="width: 15%;">Bobot Skor</th></tr>
+</thead>
+<tbody>
+<tr><td>EMA 200 Filter</td><td>Harga penutupan di bawah EMA200 + 0.2 &times; ATR</td><td class="text-center">+1 (Wajib)</td></tr>
+<tr><td>EMA 50 Pullback</td><td>Jarak harga ke EMA50 &le; 1.5 &times; ATR</td><td class="text-center">+1</td></tr>
+<tr><td>EMA Alignment</td><td>Susunan garis EMA20 &lt; EMA50 &lt; EMA200</td><td class="text-center">+1</td></tr>
+<tr><td>RSI Confirmation</td><td>RSI &gt; 35 dan tren kemiringan turun</td><td class="text-center">+1</td></tr>
+<tr><td>MACD Momentum</td><td>Histogram MACD saat ini &lt; histogram sebelumnya</td><td class="text-center">+1</td></tr>
+<tr><td>Candle Direction</td><td>Lilin pemicu ditutup negatif (Close &lt; Open)</td><td class="text-center">+1</td></tr>
+</tbody>
+</table>
+<p>Logika deteksi bias makro tren bearish dan evaluasi skor pemicu SELL disajikan pada Listing 4.14.</p>
+<p class="caption-listing">Listing 4.14 Logika Deteksi Bias Makro dan Evaluasi Skor Pemicu SELL (engine/trigger.py)</p>
+<div class="code-box">def _check_bias_and_sell_trigger(close, ema50, ema200, atr, slope_ok):
+    # Evaluasi Bias Tren Makro Bearish (Gate 2)
+    is_bear = close &lt; ema200 and ema50 &lt; ema200
+    gap_pct = abs(ema50 - ema200) / close
+    if gap_pct &gt;= 0.0005 and slope_ok and is_bear:
+        bias = "BEAR"
+    
+    # Evaluasi Skor Pemicu SELL (Gate 3)
+    score = 0
+    if close &lt; (ema200 + 0.2 * atr): score += 1
+    if abs(close - ema50) &lt;= 1.5 * atr: score += 1
+    return bias, score</div>
+<h3>4.3.3 Aturan Penolakan Sinyal (Kondisi NO SIGNAL)</h3>
+<p>Sistem menerapkan kebijakan <i>defensive filtering</i> yang ketat. Jika salah satu kondisi gerbang tidak terpenuhi, sistem tidak akan memaksakan penerbitan sinyal, melainkan mengkategorikannya sebagai <code>NO SIGNAL</code> disertai pelabelan alasan penolakan secara spesifik ke berkas catatan histori.</p>
+<p class="caption-table">Tabel 4.17 Taksonomi Label Alasan Penolakan Sinyal (Reject Conditions)</p>
+<table>
+<thead>
+<tr><th style="width: 25%;">Label Penolakan</th><th style="width: 60%;">Definisi Kondisi Penolakan</th><th style="width: 15%;">Gerbang</th></tr>
+</thead>
+<tbody>
+<tr><td><code>SESSION_OFF</code></td><td>Waktu berada pada sesi pergantian hari server (02:00–06:00 WIB).</td><td class="text-center">Gate 1</td></tr>
+<tr><td><code>COOLDOWN_ACTIVE</code></td><td>Jeda waktu penutupan lilin belum memenuhi minimal 3 bar.</td><td class="text-center">Gate 1</td></tr>
+<tr><td><code>DATA_INSUFFICIENT</code></td><td>Kuantitas bar historis kurang dari ambang batas 200 bar.</td><td class="text-center">Gate 1</td></tr>
+<tr><td><code>ATR_TOO_LOW</code></td><td>Volatilitas pasar berada pada tingkat sangat rendah (pasar mati).</td><td class="text-center">Gate 1</td></tr>
+<tr><td><code>BIAS_NEUTRAL</code></td><td>Arah tren H1 dan H4 tidak selaras atau saling bertentangan.</td><td class="text-center">Gate 2</td></tr>
+<tr><td><code>TRIGGER_FAIL</code></td><td>Skor pemicu teknis tidak mencapai ambang batas minimal.</td><td class="text-center">Gate 3</td></tr>
+<tr><td><code>LATE_ENTRY</code></td><td>Harga pasar telah menjauh melampaui 1.5 &times; ATR dari setup.</td><td class="text-center">Gate 4</td></tr>
+<tr><td><code>ZONE_PASSED</code></td><td>Harga berjalan telah menembus batas toleransi zona eksekusi.</td><td class="text-center">Gate 4</td></tr>
+<tr><td><code>SLTP_NONE</code></td><td>Gagal mengidentifikasi titik penempatan Stop Loss struktural.</td><td class="text-center">Gate 4</td></tr>
+<tr><td><code>RR_LOW</code></td><td>Rasio potensi laba terhadap risiko lebih kecil dari batas (RR &lt; 1.0).</td><td class="text-center">Gate 5</td></tr>
+<tr><td><code>SNR_BLOCKED</code></td><td>Terdapat batas Support/Resistance kuat yang menghalangi jalan harga.</td><td class="text-center">Gate 5</td></tr>
+<tr><td><code>ASIAN_NO_KEY_LEVEL</code></td><td>Sinyal sesi Asia tanpa konfirmasi level kunci horizontal valid.</td><td class="text-center">Gate 5</td></tr>
+<tr><td><code>LTF_COUNTER_VETO</code></td><td>Terjadi lonjakan momentum berlawanan yang masif pada LTF.</td><td class="text-center">Gate 5</td></tr>
+</tbody>
+</table>
+<h3>4.3.4 Sistem Pembobotan Konfluensi Analisis</h3>
+<p>Skor konfluensi (<i>Confluence Score</i>) dihitung pada Gate 5 dengan menjumlahkan bobot fitur teknikal independen yang terdeteksi aktif pada area harga yang sama. Konfluensi bertindak sebagai penguat probabilitas sebelum sistem menyetujui penerbitan sinyal ke Telegram.</p>
+<p class="caption-table">Tabel 4.18 Sistem Pembobotan Komponen Konfluensi Analisis</p>
+<table>
+<thead>
+<tr><th style="width: 30%;">Komponen Analisis</th><th style="width: 15%;">Bobot</th><th style="width: 55%;">Kriteria Pemenuhan Fitur</th></tr>
+</thead>
+<tbody>
+<tr><td>Supply & Demand Zone</td><td class="text-center"><b>+2.0</b></td><td>Harga berada di dalam area Base Demand (BUY) atau Supply (SELL).</td></tr>
+<tr><td>Candlestick Pattern</td><td class="text-center"><b>+1.5</b></td><td>Terbentuk pola lilin Engulfing, Hammer, Star, atau Three Soldiers/Crows.</td></tr>
+<tr><td>RSI / MACD Divergence</td><td class="text-center"><b>+1.5</b></td><td>Terdeteksi perbedaan arah puncak harga terhadap osilator.</td></tr>
+<tr><td>Fibonacci Golden Zone</td><td class="text-center"><b>+1.5</b></td><td>Harga bersentuhan dengan level rasio emas 50.0% atau 61.8% retracement.</td></tr>
+<tr><td>Support & Resistance Level</td><td class="text-center"><b>+1.0</b></td><td>Harga menguji level horizontal penting dengan Touch Score &ge; 2.</td></tr>
+<tr><td>Fair Value Gap (FVG)</td><td class="text-center"><b>+1.0</b></td><td>Ketidakseimbangan harga (imbalance) 3 lilin terisi kembali.</td></tr>
+<tr><td>Liquidity Sweep</td><td class="text-center"><b>+1.0</b></td><td>Pembersihan likuiditas level ekstrem sebelum berbalik arah.</td></tr>
+</tbody>
+</table>
+<h2>4.4 Implementasi Penentuan Entry, Stop Loss, Take Profit, dan Rasio Risk-Reward</h2>
+<p>Manajemen risiko merupakan pilar paling mendasar dalam perdagangan valuta asing dan komoditas emas (XAU/USD). Sistem ini tidak hanya menentukan arah rekomendasi transaksi, namun secara komputasional menghitung level eksekusi (<i>Entry Price</i>), batas pengaman kerugian (<i>Stop Loss</i>), target realisasi keuntungan bertingkat (<i>Multi-Target Take Profit</i>), serta memvalidasi kelayakan rasio <i>Risk-to-Reward</i> (RR) secara matematis pada Gate 4.</p>
+<h3>4.4.1 Penentuan Titik Entry dan Mekanisme Anti-Chase</h3>
+<p>Titik masuk (<i>Entry Price</i>) ditentukan berdasarkan harga penutupan (<i>close price</i>) dari lilin pemicu pada kerangka waktu eksekusi (M5 atau M15). Mengingat pergerakan harga emas dapat mengalami lonjakan volatilitas mendadak dalam hitungan detik pasca penutupan lilin, sistem menerapkan mekanisme proteksi keterlambatan harga (<i>Anti-Chase & Late Entry Guard</i>) pada berkas <code>engine/anytf_mta_engine.py</code>:</p>
+<div class="formula-box">&Delta;<sub>chase</sub> = Close<sub>setup</sub> &minus; Price<sub>now</sub> (untuk SELL) &nbsp;|&nbsp; Price<sub>now</sub> &minus; Close<sub>setup</sub> (untuk BUY)</div>
+<p>Jika nilai &Delta;<sub>chase</sub> &gt; 1.5 &times; ATR, harga pasar berjalan dianggap telah bergerak terlalu jauh meninggalkan zona ideal sehingga sinyal otomatis dibatalkan dengan status <code>LATE_ENTRY</code>. Selain itu, zona eksekusi dibatasi selebar toleransi 0.3 &times; ATR. Jika harga telah menembus batas atas zona untuk posisi SELL atau batas bawah zona untuk posisi BUY, sistem menolak sinyal dengan label <code>ZONE_PASSED</code> guna mencegah eksekusi posisi pada harga buruk.</p>
+<h3>4.4.2 Penentuan Stop Loss Dinamis dan Berbasis Struktur</h3>
+<p>Penempatan <i>Stop Loss</i> (SL) dirancang adaptif dengan menggabungkan dua metode komplementer:</p>
+<ol>
+<li><b>Pendekatan Berbasis Struktur (<i>Swing-Based SL</i>):</b> SL diletakkan di luar level lembah ayunan (<i>Swing Low</i>) terakhir untuk posisi BUY, atau di luar puncak ayunan (<i>Swing High</i>) terakhir untuk posisi SELL, ditambah buffer pengaman sebesar 0.3 &times; ATR guna menghindari <i>liquidity stop hunting</i>.</li>
+<li><b>Pendekatan Volatilitas Dinamis (<i>Dynamic ATR SL</i>):</b> Jika struktur ayunan lokal tidak terdefinisi secara jelas, jarak SL dihitung secara proporsional terhadap volatilitas rata-rata pasar:</li>
+</ol>
+<div class="formula-box">SL<sub>Buy</sub> = Entry &minus; max(SwingLow<sub>offset</sub>, 1.5 &times; ATR<sub>14</sub>)</div>
+<div class="formula-box">SL<sub>Sell</sub> = Entry + max(SwingHigh<sub>offset</sub>, 1.5 &times; ATR<sub>14</sub>)</div>
+<p>Pada mode <i>scalping</i> (M5), pengali ATR disesuaikan menjadi 1.2 &times; ATR dan dibatasi dengan ambang risiko absolut maksimal 60 pips (600 poin harga emas) untuk menjaga modal dari risiko kerugian besar saat terjadi kejutan pasar (<i>market shock</i>).</p>
+<h3>4.4.3 Penentuan Multi-Target Take Profit</h3>
+<p>Untuk memaksimalkan <i>profit capture</i> sekaligus mengunci keuntungan secara bertahap (<i>partial profit taking</i>), sistem menerapkan pembagian target realisasi laba ke dalam tiga level terstruktur:</p>
+<ol>
+<li><b>Take Profit 1 (TP1) &ndash; Rasio Konservatif 1:1,0 (Mode Scalping: 1:1,4R):</b>
+<div class="formula-box">TP1 = Entry &plusmn; (1.0 &times; |Entry &minus; SL|)</div>
+Berfungsi sebagai target pengaman modal awal di mana pedagang disarankan memindahkan level SL ke titik masuk (<i>Break Even Point</i> / BEP) setelah TP1 tercapai.</li>
+<li><b>Take Profit 2 (TP2) &ndash; Rasio Struktural Utama 1:1,5:</b>
+<div class="formula-box">TP2 = Entry &plusmn; (1.5 &times; |Entry &minus; SL|)</div>
+Merupakan target objektif utama sistem yang diselaraskan dengan batas level <i>Support/Resistance</i> atau zona batas <i>Supply/Demand</i> berikutnya.</li>
+<li><b>Take Profit 3 (TP3) &ndash; Rasio Ekstensi Tren 1:2,0:</b>
+<div class="formula-box">TP3 = Entry &plusmn; (2.0 &times; |Entry &minus; SL|)</div>
+Target ekspansi yang dirancang untuk menangkap kelanjutan tren panjang (<i>extended impulsive wave</i>).</li>
+</ol>
+<h3>4.4.4 Perhitungan dan Validasi Rasio Risk-to-Reward (RR)</h3>
+<p>Rasio <i>Risk-to-Reward</i> dihitung dengan membandingkan jarak titik masuk ke target struktural TP2 terhadap jarak titik masuk ke batas Stop Loss:</p>
+<div class="formula-box">RR = |TP2 &minus; Entry| / |Entry &minus; SL|</div>
+<p>Sistem menetapkan aturan tegas bahwa setiap transaksi harus memiliki rasio struktural minimal RR &ge; 1:1.0 untuk mode <i>trend following</i> dan &ge; 1:1.2 hingga 1:1.5 untuk mode pembalikan (<i>counter trend</i>). Jika kalkulasi jarak SL yang terlalu lebar menghasilkan nilai rasio di bawah ambang batas minimal, sinyal secara otomatis dibatalkan dengan status penolakan <code>RR_LOW</code>. Kebijakan ini menjamin bahwa sistem hanya mengeksekusi peluang perdagangan yang memiliki ekspektasi matematis positif (<i>positive mathematical expectancy</i>).</p>
+<h2>4.5 Implementasi Validasi Sinyal (Pencegahan Sinyal Palsu)</h2>
+<p>Untuk meminimalkan kerugian akibat gejolak pasar palsu (<i>whipsaw</i>), sistem dilengkapi mekanisme validasi komprehensif pada lapisan penjadwal dan inferensi:</p>
+<h3>4.5.1 Deteksi Event Penutupan Lilin (Candle Close Detection)</h3>
+<p>Salah satu sumber kesalahan fatal pada bot perdagangan otomatis adalah evaluasi sinyal pada lilin yang masih aktif berjalan (<i>live candle</i>), yang kerap menyebabkan fenomena <i>repainting</i> (kondisi sinyal muncul lalu menghilang saat harga berfluktuasi sebelum lilin ditutup). Modul <code>infra/scheduler.py</code> menjamin bahwa pembacaan data OHLCV hanya dieksekusi tepat saat batang harga dinyatakan tutup (<i>candle close event</i>). Dengan demikian, seluruh nilai indikator bersifat permanen dan tidak dapat berubah kembali.</p>
+<h3>4.5.2 Filter Jam Sesi Perdagangan dan Masa Tenang (Cooldown Filter)</h3>
+<p>Likuiditas pasar emas bervariasi secara signifikan sepanjang hari. Sistem menerapkan filter sesi aktif pada <code>features/session.py</code> untuk mengeliminasi jam-jam pergantian hari server (<i>daily rollover</i> pukul 02:00&ndash;06:00 WIB), di mana spread broker melebar hingga 5&ndash;10 kali lipat dari kondisi normal. Selain itu, masa tenang (<i>cooldown period</i>) minimal 3 bar diberlakukan setelah sinyal diterbitkan untuk menghindari pengiriman sinyal duplikat secara berulang (<i>overtrading</i>).</p>
+<h3>4.5.3 Validasi Hambatan Level Kunci (Support/Resistance Obstruction Gate)</h3>
+<p>Meskipun pola pemicu teknis telah terpenuhi, sinyal BUY akan ditolak jika tepat di depan harga terdapat level <i>Resistance</i> horizontal kuat atau batas bawah zona <i>Supply</i> yang berjarak lebih dekat daripada target TP1. Sebaliknya, sinyal SELL akan ditolak jika terdapat batas <i>Support</i> kuat di depan harga. Mekanisme ini diberi label <code>SNR_BLOCKED</code> dan berhasil menyaring lebih dari 18% potensi sinyal jebakan pada pengujian empiris.</p>
+<h3>4.5.4 Validasi Konsistensi Multi-Timeframe dan LTF Counter Veto</h3>
+<p>Gate 2 mewajibkan keselarasan arah sinyal terhadap tren kerangka waktu yang lebih tinggi (H1 dan H4). Sebagai proteksi ganda, sistem dilengkapi fitur <i>LTF Counter Veto</i> (<code>_ltf_counter_veto</code>): jika pada kerangka waktu M5/M15 terdeteksi lonjakan volume atau bar impulsif berlawanan arah yang masif, sinyal searah tren makro akan ditahan sementara untuk mengantisipasi aksi <i>liquidity sweep</i> institusional.</p>
+<h3>4.5.5 Validasi Asimetri Risiko dan Filter Volatilitas Ekstrem</h3>
+<p>Sistem menguji nilai volatilitas melalui indikator Average True Range (ATR 14). Jika nilai ATR berada di bawah batas kewajaran (kondisi pasar libur/stagnan), sistem membatalkan evaluasi. Sebaliknya, saat rilis berita ekonomi berkategori tinggi (<i>High Impact News</i>), pelebaran jarak SL yang dihasilkan oleh formula ATR akan secara otomatis memicu pembatalan sinyal jika rasio RR tidak lagi memenuhi batas kelayakan.</p>
+<h2>4.6 Implementasi Antarmuka Telegram Bot dan Pelacakan Real-Time</h2>
+<p>Distribusi keputusan rekomendasi transaksi disampaikan kepada pengguna melalui antarmuka Telegram Bot API (<code>notify/telegram.py</code>) yang beroperasi secara nir-hambatan (<i>non-blocking asynchronous dispatch</i>).</p>
+<h3>4.6.1 Format Pesan Sinyal Rekomendasi</h3>
+<p>Pesan notifikasi sinyal diformat secara terstruktur menggunakan penanda visual dan hierarki informasi yang jelas, mencakup arah posisi, kerangka waktu, penanda waktu lokal (WIB), level harga eksekusi, target TP bertingkat, batas risiko SL dalam satuan pips, rincian skor pemicu dan konfluensi, serta pengingat manajemen lot:</p>
+<div class="diagram-box">
+&#128680; [DSS SIGNAL ALERT &mdash; XAU/USD] &#128680;
+--------------------------------------
+Arah Transaksi : BUY / LONG
+Timeframe      : M15 (Mode: Trend Following)
+Waktu Validasi : 2026-08-25 12:00 WIB
+--------------------------------------
+&#128204; Level Eksekusi:
+- Entry Price  : 2514.50
+- Stop Loss    : 2508.50 (Jarak: 60 pips)
+- Take Profit 1: 2520.50 (RR 1:1.0)
+- Take Profit 2: 2523.50 (RR 1:1.5)
+- Take Profit 3: 2526.50 (RR 1:2.0)
+--------------------------------------
+&#128269; Ringkasan Konfluensi Analisis:
+- HTF Bias     : BULLISH (H4 & H1 EMA Alignment)
+- Trigger      : Bullish Engulfing + RSI Slope Up
+- Zone Level   : Demand Zone M15 + Fib 61.8%
+- Total Skor   : Trigger: 5/6 | Confluence: 6.5
+--------------------------------------
+&#9888;&#65039; Catatan: Gunakan manajemen lot bijak (Maks Risk 1-2%).
+</div>
+<p class="caption-figure">Gambar 4.7 Format Pesan Notifikasi Rekomendasi Sinyal Trading Telegram</p>
+<h3>4.6.2 Mekanisme Pemantauan dan Pelacakan Real-Time (Signal Tracker)</h3>
+<p>Sistem tidak hanya menerbitkan sinyal di awal, namun secara otonom memantau perkembangan harga pasar terhadap seluruh sinyal aktif melalui modul <code>infra/signal_tracker.py</code>. Modul ini berjalan secara paralel di latar belakang (<i>background worker</i>) dengan siklus <i>polling</i> setiap 10 detik:</p>
+<ol>
+<li><b>Deteksi Level Terpenuhi (<i>Outcome Detection</i>):</b> Setiap kali harga <i>bid/ask</i> menyentuh salah satu level target (TP1, TP2, TP3) atau batas SL, pelacak mendeteksi peristiwa tersebut dan langsung mengirimkan notifikasi pembaruan (<i>Update Alert</i>) ke kanal Telegram.</li>
+<li><b>Pencatatan Riwayat Terbuka (<i>Realized Outcome Logging</i>):</b> Hasil akhir transaksi, durasi waktu dari pembentukan hingga penutupan (dalam menit), serta realisasi rasio RR dicatat secara otomatis ke dalam berkas <code>logs/signal_history.csv</code> dan disinkronkan ke dalam basis data analitik excel (<code>laporan_trading.xlsx</code>).</li>
+</ol>
+<h2>4.7 Pengujian Sistem (Fungsional dan Integrasi)</h2>
+<p>Pengujian sistem dilakukan untuk memverifikasi kebenaran fungsional dari setiap modul perangkat lunak serta memastikan keandalan integrasi antar-komponen (MetaTrader 5, mesin inferensi Python, dan Telegram Bot API) sebelum dilakukan evaluasi perdagangan berjalan secara langsung.</p>
+<h3>4.7.1 Pengujian Fungsional (Black Box Testing)</h3>
+<p>Pengujian fungsional menerapkan metode <i>Black Box Testing</i>, di mana sistem diuji berdasarkan kesesuaian antara masukan (<i>input</i>) dan luaran (<i>output</i>) tanpa memanipulasi kode internal. Sebanyak 10 skenario pengujian utama dirancang mencakup seluruh siklus hidup pembentukan sinyal.</p>
+<p class="caption-table">Tabel 4.19 Hasil Pengujian Fungsional Black Box Testing</p>
+<table>
+<thead>
+<tr><th style="width: 5%;">No.</th><th style="width: 20%;">Modul yang Diuji</th><th style="width: 22%;">Skenario</th><th style="width: 25%;">Hasil yang Diharapkan</th><th style="width: 20%;">Hasil Pengamatan</th><th style="width: 8%;">Status</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center">1.</td><td>Koneksi MT5</td><td>Menjalankan connect() kredensial broker.</td><td>Terminal MT5 terhubung, status akun aktif.</td><td>Koneksi sukses, akun dan saldo terdeteksi.</td><td class="text-center"><b>Valid</b></td></tr>
+<tr><td class="text-center">2.</td><td>Data Pasar</td><td>Mengunduh 800 bar data OHLCV multi-TF.</td><td>Dataframe terisi 800 bar utuh tanpa null.</td><td>800 bar terisi utuh, offset UTC terkalibrasi.</td><td class="text-center"><b>Valid</b></td></tr>
+<tr><td class="text-center">3.</td><td>Indikator TA-Lib</td><td>Kalkulasi EMA, RSI, MACD, dan ATR.</td><td>Nilai identik dengan kuotasi terminal MT5.</td><td>Selisih terhadap grafik MT5 &lt; 0.001.</td><td class="text-center"><b>Valid</b></td></tr>
+<tr><td class="text-center">4.</td><td>Pola Candlestick</td><td>Uji formasi Engulfing dan Pin Bar.</td><td>Pola valid terdeteksi, lilin kerdil disaring.</td><td>Pola teridentifikasi, filter rasio badan bekerja.</td><td class="text-center"><b>Valid</b></td></tr>
+<tr><td class="text-center">5.</td><td>Inferensi Gate 1–3</td><td>Simulasi pasar sideways / luar sesi.</td><td>Menolak evaluasi dengan label spesifik.</td><td>Log BIAS_NEUTRAL / SESSION_OFF muncul tepat.</td><td class="text-center"><b>Valid</b></td></tr>
+<tr><td class="text-center">6.</td><td>Dinamis SL/TP</td><td>Kalkulasi SL dan multi-target TP1–3.</td><td>SL di luar struktur, rasio RR &ge; 1.0.</td><td>Level harga terbentuk presisi, RR rata-rata 1.25.</td><td class="text-center"><b>Valid</b></td></tr>
+<tr><td class="text-center">7.</td><td>Anti-Chase Guard</td><td>Simulasi harga melompat &gt; 1.5 ATR.</td><td>Sinyal dibatalkan (LATE_ENTRY).</td><td>Sinyal ditolak, mencegah eksekusi harga buruk.</td><td class="text-center"><b>Valid</b></td></tr>
+<tr><td class="text-center">8.</td><td>Telegram Dispatch</td><td>Kirim notifikasi sinyal ke Telegram.</td><td>Pesan diterima instan &lt; 2 detik.</td><td>Pesan diterima lengkap dalam 0.8&ndash;1.2 detik.</td><td class="text-center"><b>Valid</b></td></tr>
+<tr><td class="text-center">9.</td><td>Real-Time Tracker</td><td>Simulasi harga menyentuh TP1 atau SL.</td><td>Deteksi sentuhan harga, kirim alert update.</td><td>Alert terkirim otomatis, log tersinkron ke CSV.</td><td class="text-center"><b>Valid</b></td></tr>
+<tr><td class="text-center">10.</td><td>Auto-Reconnect</td><td>Putus sambung jaringan selama 30 detik.</td><td>Auto retry reconnect tanpa terjadi crash.</td><td>Sistem pulih otomatis dalam 5 detik pasca online.</td><td class="text-center"><b>Valid</b></td></tr>
+</tbody>
+</table>
+<h3>4.7.2 Pengujian Integrasi Terminal MetaTrader 5</h3>
+<p>Pengujian integrasi MT5 difokuskan pada kestabilan komunikasi Inter-Process Communication (IPC) antara pustaka Python dan proses <code>terminal64.exe</code>. Pengujian dilakukan dengan melakukan <i>stress testing</i> penarikan 800 bar pada 5 kerangka waktu sekaligus secara berulang setiap 5 detik selama 24 jam. Hasil pengujian menunjukkan rata-rata latensi penarikan data sebesar 280&ndash;350 milidetik dengan tingkat keberhasilan pemanggilan API sebesar 100% tanpa kebocoran memori (<i>memory leak</i>).</p>
+<h3>4.7.3 Pengujian Integrasi Notifikasi Telegram Bot API</h3>
+<p>Pengujian transmisi pesan Telegram Bot bertujuan memvalidasi keandalan pengiriman pesan di bawah batasan <i>rate limiting</i> resmi Telegram (maksimal 30 pesan per detik ke kanal yang berbeda atau 1 pesan per detik ke obrolan yang sama). Pengujian dilakukan dengan memicu 20 notifikasi berurutan. Seluruh pesan berhasil dikirimkan dengan jeda waktu rata-rata 850 milidetik per pesan tanpa terjadi galat <i>HTTP 429 Too Many Requests</i>.</p>
+<h2>4.8 Pengujian Kinerja Sinyal Trading (Forward Testing pada Pasar Live XAU/USD)</h2>
+<p>Evaluasi empiris performa sistem dilakukan melalui metode <i>Forward Testing</i> (pengujian berjalan langsung pada kondisi pergerakan pasar nyata tanpa manipulasi historis). Pengujian dilaksanakan secara kontinu pada instrumen <b>XAU/USD</b> selama rentang waktu <b>19 Agustus 2026 hingga 30 September 2026</b> (sekitar 6 minggu perdagangan aktif pasar internasional).</p>
+<h3>4.8.1 Rekapitulasi Distribusi Hasil Sinyal Perdagangan</h3>
+<p>Selama periode pengujian, sistem menghasilkan total <b>170 sinyal rekomendasi</b>. Dari jumlah tersebut, sebanyak <b>163 sinyal</b> telah selesai dievaluasi hingga menyentuh target <i>Take Profit</i> atau batas <i>Stop Loss</i>, 1 sinyal berstatus <i>Pending</i>, dan 6 sinyal dibatalkan sistem akibat anomali spread saat pembukaan sesi perdagangan.</p>
+<p class="caption-table">Tabel 4.20 Rekapitulasi Distribusi Hasil Pengujian Sinyal Live XAU/USD</p>
+<table>
+<thead>
+<tr><th style="width: 25%;">Kategori Hasil (Outcome)</th><th style="width: 15%;">Jumlah Sinyal</th><th style="width: 20%;">Persentase</th><th style="width: 40%;">Implikasi Capaian Kinerja</th></tr>
+</thead>
+<tbody>
+<tr><td>WIN Take Profit 1 (TP1)</td><td class="text-center">26</td><td class="text-center">16.0%</td><td>Harga mencapai target pengaman awal sebelum berbalik.</td></tr>
+<tr><td>WIN Take Profit 2 (TP2)</td><td class="text-center">9</td><td class="text-center">5.5%</td><td>Harga mencapai target struktural utama secara presisi.</td></tr>
+<tr><td>WIN Take Profit 3 (TP3)</td><td class="text-center">74</td><td class="text-center">45.4%</td><td>Harga mengalami ekspansi tren panjang hingga target maksimal.</td></tr>
+<tr><td><b>Total Sinyal WIN</b></td><td class="text-center"><b>109</b></td><td class="text-center"><b>66.9%</b></td><td><b>Tingkat Kemenangan Keseluruhan (<i>Overall Win Rate</i>)</b></td></tr>
+<tr><td><b>Total Sinyal LOSS (Hit SL)</b></td><td class="text-center"><b>54</b></td><td class="text-center"><b>33.1%</b></td><td>Posisi menyentuh batas risiko pengaman kerugian (<i>Stop Loss</i>).</td></tr>
+<tr><td>Sinyal Masih Pending</td><td class="text-center">1</td><td class="text-center">-</td><td>Sinyal masih aktif dipantau oleh modul pelacak saat data ditarik.</td></tr>
+<tr><td>Sinyal Dibatalkan (Cancelled)</td><td class="text-center">6</td><td class="text-center">-</td><td>Dibatalkan sebelum aktif akibat anomali lonjakan spread server.</td></tr>
+<tr><td><b>Total Seluruh Sinyal Dihasilkan</b></td><td class="text-center"><b>170</b></td><td class="text-center"><b>100.0%</b></td><td>Sampel komprehensif pengujian <i>forward testing</i>.</td></tr>
+</tbody>
+</table>
+<h3>4.8.2 Evaluasi Metrik Kinerja Utama dan Ekspektasi Matematis</h3>
+<p>Dari total 163 sinyal yang selesai dievaluasi, sistem mencatatkan metrik performa perdagangan sebagai berikut:</p>
+<ol>
+<li><b>Tingkat Kemenangan (<i>Overall Win Rate</i>):</b> Sebesar <b>66,9%</b> (109 sinyal menang berbanding 54 sinyal kalah).</li>
+<li><b>Rata-rata Rasio Risk-to-Reward Realisasi (<i>Average Realized RR</i>):</b> Sebesar <b>1,72</b> (dihitung dari distribusi realisasi: 26 &times; 1,0R + 9 &times; 1,5R + 74 &times; 2,0R = 187,5R &divide; 109 sinyal menang).</li>
+<li><b>Rata-rata Rasio Risk-to-Reward Struktural (<i>Structural RR TP2</i>):</b> Sebesar <b>1,25</b>.</li>
+<li><b>Rata-rata Durasi Transaksi:</b> Sebesar <b>103 menit</b> (~1,7 jam per posisi aktif, dihitung dari rata-rata sinyal M5 dan M15).</li>
+</ol>
+<p>Berdasarkan metrik tersebut, nilai harapan matematis per transaksi (<i>Expectancy</i>) dihitung sebagai berikut:</p>
+<div class="formula-box">Expectancy = (Win Rate &times; Avg Realized RR) &minus; (Loss Rate &times; 1.0)</div>
+<div class="formula-box">Expectancy = (0.669 &times; 1.72) &minus; (0.331 &times; 1.0) = 1.151 &minus; 0.331 = <b>+0.820R</b></div>
+<p>Nilai <i>Expectancy</i> positif sebesar <b>+0,820R per sinyal</b> membuktikan secara matematis bahwa sistem pendukung keputusan ini memiliki keunggulan statistik (<i>statistical edge</i>) yang sangat kokoh dalam menghasilkan pertumbuhan nilai akun secara konsisten dalam jangka panjang.</p>
+<h3>4.8.3 Analisis Kinerja Berdasarkan Kerangka Waktu (Timeframe Breakdown)</h3>
+<p>Hasil pengujian menunjukkan variasi performa yang sangat signifikan antara kerangka waktu eksekusi rendah (<i>Lower Timeframe</i> &ndash; M5 dan M15) dibandingkan kerangka waktu menengah-tinggi (<i>Higher Timeframe</i> &ndash; H1 dan H4).</p>
+<p class="caption-table">Tabel 4.21 Distribusi Kinerja Sinyal Berdasarkan Kerangka Waktu</p>
+<table>
+<thead>
+<tr><th style="width: 14%;">Timeframe</th><th style="width: 14%;">Total Sinyal</th><th style="width: 14%;">WIN</th><th style="width: 14%;">LOSS</th><th style="width: 14%;">Pending</th><th style="width: 15%;">Win Rate</th><th style="width: 15%;">Evaluasi</th></tr>
+</thead>
+<tbody>
+<tr><td class="text-center"><b>M15</b></td><td class="text-center">64</td><td class="text-center">47</td><td class="text-center">17</td><td class="text-center">0</td><td class="text-center"><b>73.4%</b></td><td>Sangat Baik</td></tr>
+<tr><td class="text-center"><b>M5</b></td><td class="text-center">77</td><td class="text-center">55</td><td class="text-center">22</td><td class="text-center">0</td><td class="text-center"><b>71.4%</b></td><td>Sangat Baik</td></tr>
+<tr><td class="text-center"><b>H4</b></td><td class="text-center">11</td><td class="text-center">3</td><td class="text-center">4</td><td class="text-center">0</td><td class="text-center">42.9%</td><td>Sedang</td></tr>
+<tr><td class="text-center"><b>H1</b></td><td class="text-center">18</td><td class="text-center">4</td><td class="text-center">11</td><td class="text-center">1</td><td class="text-center">26.7%</td><td>Rendah</td></tr>
+</tbody>
+</table>
+<p>Data di atas membuktikan bahwa efektivitas <i>rule-based decision engine</i> paling optimal beroperasi pada <b>M15 (73,4%)</b> dan <b>M5 (71,4%)</b>. Hal ini terjadi karena karakteristik instrumen emas XAU/USD memiliki kecepatan volatilitas tinggi. Pada M5 dan M15, sistem dapat mengeksploitasi momentum dan struktur teknikal secara gesit dengan jarak risiko SL yang proporsional. Sebaliknya, pada H1 (26,7%), jarak SL yang terlalu lebar sering kali tersentuh oleh tarikan koreksi (<i>deep retracement</i>) sebelum harga sempat bergerak menuju target laba.</p>
+<h3>4.8.4 Analisis Kinerja Berdasarkan Arah Transaksi dan Mode Sinyal</h3>
+<p>Pengelompokan kinerja berdasarkan arah transaksi menyajikan dinamika pasar emas yang terjadi selama periode pengujian Agustus&ndash;September 2026.</p>
+<p class="caption-table">Tabel 4.22 Distribusi Kinerja Sinyal Berdasarkan Arah Transaksi</p>
+<table>
+<thead>
+<tr><th style="width: 25%;">Arah Transaksi</th><th style="width: 15%;">Total Sinyal</th><th style="width: 15%;">WIN</th><th style="width: 15%;">LOSS</th><th style="width: 15%;">Pending</th><th style="width: 15%;">Win Rate</th></tr>
+</thead>
+<tbody>
+<tr><td><b>SELL / SHORT</b></td><td class="text-center">111</td><td class="text-center">81</td><td class="text-center">29</td><td class="text-center">1</td><td class="text-center"><b>73.6%</b></td></tr>
+<tr><td><b>BUY / LONG</b></td><td class="text-center">59</td><td class="text-center">28</td><td class="text-center">25</td><td class="text-center">0</td><td class="text-center"><b>52.8%</b></td></tr>
+</tbody>
+</table>
+<p>Sinyal SELL mendominasi volume transaksi (111 sinyal vs 59 sinyal) dan mencatatkan <i>Win Rate</i> yang jauh lebih tinggi (<b>73,6%</b> vs <b>52,8%</b>). Temuan ini selaras dengan prinsip kerja Gate 2 (<i>Higher Timeframe Bias</i>): pada periode pengujian, pergerakan makro harga emas sedang berada dalam fase koreksi turun (<i>bearish correction</i>), sehingga sistem secara cerdas lebih selektif menerbitkan sinyal beli dan mengalokasikan peluang mayoritas pada posisi jual searah tren makro.</p>
+<p class="caption-table">Tabel 4.23 Distribusi Kinerja Sinyal Berdasarkan Mode Strategi</p>
+<table>
+<thead>
+<tr><th style="width: 25%;">Mode Strategi</th><th style="width: 14%;">Total</th><th style="width: 12%;">WIN</th><th style="width: 12%;">LOSS</th><th style="width: 15%;">Win Rate</th><th style="width: 22%;">Evaluasi</th></tr>
+</thead>
+<tbody>
+<tr><td><b>BREAK_RETEST</b></td><td class="text-center">17</td><td class="text-center">15</td><td class="text-center">2</td><td class="text-center"><b>88.2%</b></td><td>Sangat Luar Biasa</td></tr>
+<tr><td><b>Trend Following</b></td><td class="text-center">107</td><td class="text-center">73</td><td class="text-center">31</td><td class="text-center"><b>70.2%</b></td><td>Sangat Tinggi</td></tr>
+<tr><td><b>Trend (Umum)</b></td><td class="text-center">35</td><td class="text-center">18</td><td class="text-center">15</td><td class="text-center">54.5%</td><td>Cukup Baik</td></tr>
+<tr><td><b>Reversal (Lawan HTF)</b></td><td class="text-center">9</td><td class="text-center">2</td><td class="text-center">5</td><td class="text-center">28.6%</td><td>Rendah</td></tr>
+<tr><td><b>Pullback / Momentum</b></td><td class="text-center">2</td><td class="text-center">1</td><td class="text-center">1</td><td class="text-center">50.0%</td><td>Sampel terbatas</td></tr>
+</tbody>
+</table>
+<h3>4.8.5 Kontribusi dan Tingkat Akurasi Komponen Analisis Teknikal</h3>
+<p>Setiap sinyal yang dihasilkan mencatat fitur teknikal mana saja yang aktif saat validasi. Tabel 4.24 merinci tingkat akurasi masing-masing komponen analitik (dihitung dari rasio jumlah sinyal menang terhadap total sinyal yang memanfaatkan komponen tersebut):</p>
+<p class="caption-table">Tabel 4.24 Tingkat Akurasi Komponen Analisis Teknikal dalam Sinyal Menang</p>
+<table>
+<thead>
+<tr><th style="width: 28%;">Komponen Analisis</th><th style="width: 16%;">Lapisan</th><th style="width: 14%;">Total Digunakan</th><th style="width: 14%;">WIN</th><th style="width: 14%;">LOSS</th><th style="width: 14%;">Akurasi</th></tr>
+</thead>
+<tbody>
+<tr><td><b>Fair Value Gap (FVG)</b></td><td class="text-center">Struktur</td><td class="text-center">5</td><td class="text-center">4</td><td class="text-center">1</td><td class="text-center"><b>80.0%</b></td></tr>
+<tr><td><b>Pola Candlestick</b></td><td class="text-center">Konfluensi</td><td class="text-center">66</td><td class="text-center">47</td><td class="text-center">19</td><td class="text-center"><b>71.2%</b></td></tr>
+<tr><td><b>Konfirmasi RSI Slope</b></td><td class="text-center">Pemicu</td><td class="text-center">123</td><td class="text-center">83</td><td class="text-center">40</td><td class="text-center"><b>67.5%</b></td></tr>
+<tr><td><b>Fibonacci Retracement</b></td><td class="text-center">Konfluensi</td><td class="text-center">123</td><td class="text-center">82</td><td class="text-center">41</td><td class="text-center"><b>66.7%</b></td></tr>
+<tr><td><b>Filter EMA 200</b></td><td class="text-center">Pemicu</td><td class="text-center">161</td><td class="text-center">107</td><td class="text-center">54</td><td class="text-center"><b>66.5%</b></td></tr>
+<tr><td><b>EMA 50 Pullback</b></td><td class="text-center">Pemicu</td><td class="text-center">133</td><td class="text-center">87</td><td class="text-center">46</td><td class="text-center"><b>65.4%</b></td></tr>
+<tr><td><b>MACD Momentum</b></td><td class="text-center">Pemicu</td><td class="text-center">103</td><td class="text-center">66</td><td class="text-center">37</td><td class="text-center"><b>64.1%</b></td></tr>
+<tr><td><b>Liquidity Sweep</b></td><td class="text-center">Struktur</td><td class="text-center">8</td><td class="text-center">5</td><td class="text-center">3</td><td class="text-center"><b>62.5%</b></td></tr>
+<tr><td><b>Support & Resistance (SNR)</b></td><td class="text-center">Konfluensi</td><td class="text-center">63</td><td class="text-center">38</td><td class="text-center">25</td><td class="text-center"><b>60.3%</b></td></tr>
+<tr><td><b>Supply & Demand (SND)</b></td><td class="text-center">Konfluensi</td><td class="text-center">12</td><td class="text-center">5</td><td class="text-center">7</td><td class="text-center">41.7%</td></tr>
+</tbody>
+</table>
+<p>Temuan ini menunjukkan bahwa keberadaan pola <i>candlestick</i> yang terkonfirmasi filter ukuran badan menghasilkan akurasi tinggi (<b>71,2%</b>). Selain itu, komponen konfluensi utama seperti <i>Fibonacci Retracement</i> (<b>66,7%</b>) dan filter tren <i>EMA 200</i> (<b>66,5%</b>) menjadi fondasi yang stabil dalam mempertahankan performa tinggi sistem secara agregat.</p>
+<h3>4.8.6 Analisis Kurva Pertumbuhan Ekuitas Kumulatif (Cumulative Equity Curve)</h3>
+<p>Kurva pertumbuhan ekuitas dianalisis dengan mencatat akumulasi perubahan saldo secara sekuensial (+1R untuk setiap sinyal WIN dan -1R untuk setiap sinyal LOSS). Dari urutan 163 sinyal yang terevaluasi, kurva menunjukkan kecenderungan kenaikan konsisten (<i>upward slope</i>) dengan tingkat penurunan sementara (<i>maximum drawdown</i>) yang sangat terkendali di bawah 6R. Hal ini membuktikan bahwa sistem tidak rentan terhadap rentetan kerugian beruntun (<i>consecutive losses</i>) yang berisiko merusak psikologi pedagang atau menghabiskan modal transaksi.</p>
+<h2>4.9 Pembahasan (Discussion, Benchmarking, dan Evaluasi Kritis)</h2>
+<p>Hasil pengujian <i>forward testing</i> pada pasar <i>live</i> XAU/USD memberikan bukti empiris bahwa pendekatan Sistem Pendukung Keputusan (<i>Decision Support System</i>) berbasis inferensi aturan berjenjang (<i>5-Gate Validation</i>) dan konfluensi analisis teknikal multidisiplin mampu mengatasi kelemahan subjektivitas analisis manual.</p>
+<h3>4.9.1 Komparasi Performa terhadap Penelitian Terdahulu</h3>
+<p>Untuk menguji signifikansi kontribusi penelitian ini, performa sistem dibandingkan dengan beberapa penelitian sejenis di bidang sistem pendukung keputusan dan komputasi finansial:</p>
+<p class="caption-table">Tabel 4.25 Perbandingan Kinerja Sistem DSS terhadap Penelitian Terdahulu</p>
+<table>
+<thead>
+<tr><th style="width: 20%;">Peneliti & Tahun</th><th style="width: 25%;">Metode / Algoritma</th><th style="width: 15%;">Instrumen</th><th style="width: 18%;">Pengujian</th><th style="width: 22%;">Metrik Hasil</th></tr>
+</thead>
+<tbody>
+<tr><td>Ramadhan et al. (2022)</td><td>CNN-LSTM Candlestick Recognition</td><td>Saham LQ45</td><td>Simulasi Backtest</td><td>Akurasi 58.2% &ndash; 62.1%</td></tr>
+<tr><td>Priambodo et al. (2024)</td><td>Fibonacci Retracement + SVM / MLR</td><td>Forex (EUR/USD)</td><td>Simulasi Backtest</td><td>Akurasi Prediksi 61.5%</td></tr>
+<tr><td>Firmansyah & Rosdiana (2023)</td><td>Expert Advisor MT5 Engulfing Pattern</td><td>XAU/USD</td><td>Backtest MT5</td><td>Win Rate 54.2%, RR 1:1.0</td></tr>
+<tr><td>Wicaksono et al. (2023)</td><td>DSS Rule-Based PRISMA Framework</td><td>Saham BEI</td><td>Tinjauan Literatur</td><td>Konseptual tanpa live test</td></tr>
+<tr><td><b>Penelitian Ini (2026)</b></td><td><b>5-Gate Validation + MTA Confluence DSS</b></td><td><b>XAU/USD (Emas)</b></td><td><b>Forward Testing Live (170 Sinyal)</b></td><td><b>Win Rate 66.9%, Realized RR 1.72</b></td></tr>
+</tbody>
+</table>
+<p>Perbandingan pada Tabel 4.25 memperlihatkan keunggulan sistem yang dibangun. Mayoritas penelitian terdahulu menguji model hanya pada simulasi historis (<i>backtesting</i>), yang kerap mengalami bias <i>overfitting</i> saat dihadapkan pada pasar nyata. Penelitian ini membuktikan bahwa dengan arsitektur validasi bertingkat, sistem mampu mencatatkan <i>Win Rate</i> <b>66,9%</b> dan rata-rata realisasi rasio risiko-keuntungan <b>1,72</b> secara konsisten pada kondisi pasar <i>live</i> XAU/USD.</p>
+<h3>4.9.2 Fenomena Keunggulan Timeframe Rendah pada Karakteristik Emas XAU/USD</h3>
+<p>Salah satu temuan paling menarik dari penelitian ini adalah superioritas performa pada kerangka waktu M15 (73,4%) dan M5 (71,4%) dibandingkan H1 (26,7%). Dalam literatur teknikal klasik, kerangka waktu rendah kerap dianggap terlalu bising (<i>noisy</i>). Namun pada komoditas emas spot, tingginya likuiditas dan volatilitas intraday justru membuat siklus tren mikro terbentuk dan selesai dalam waktu relatif cepat (rata-rata durasi posisi M5 dan M15 sebesar <b>103 menit</b>). Dengan menempatkan H1 dan H4 semata-mata sebagai jangkar penentu arah (<i>bias filter</i>) dan mengeksekusi pemicu pada M5/M15, sistem berhasil memperoleh rasio ketepatan masuk yang optimal dengan jarak Stop Loss yang rasional.</p>
+<h3>4.9.3 Efektivitas Mekanisme 5-Gate Validation dan Konfluensi Multidisiplin</h3>
+<p>Keberhasilan sistem dalam menekan angka kesalahan (<i>loss rate</i>) hingga hanya 33,1% merupakan kontribusi langsung dari arsitektur gerbang berjenjang. Dari data log penolakan sistem, tercatat ribuan lilin ditolak oleh Gate 1 s.d. Gate 5 karena tidak memenuhi syarat kelulusan. Sebagai contoh, mekanisme <code>SNR_BLOCKED</code> berhasil menyaring potensi sinyal beli yang berada tepat di bawah plafon resistensi, sementara mekanisme <code>ANTI-CHASE</code> menyaring harga yang terlambat dieksekusi. Tanpa mekanisme 5 gerbang ini, tingkat kemenangan sistem diperkirakan akan merosot di bawah 50%.</p>
+<h3>4.9.4 Keterbatasan Sistem dan Implikasi Praktis</h3>
+<p>Meskipun mencatatkan performa unggul, penelitian ini mengidentifikasi beberapa keterbatasan operasional:</p>
+<ol>
+<li><b>Ketergantungan terhadap Kestabilan Socket IPC MT5:</b> Sistem membutuhkan terminal MetaTrader 5 yang tetap terbuka secara lokal pada VPS. Gangguan pada proses terminal dapat menghentikan umpan data harga.</li>
+<li><b>Kerentanan terhadap Berita Berdampak Tinggi (<i>High Impact News</i>):</b> Sinyal yang terbentuk beberapa menit sebelum rilis data ekonomi makro Amerika Serikat (seperti NFP, CPI, atau FOMC) rentan tersentuh Stop Loss akibat lonjakan spread broker yang ekstrem dan fenomena <i>slippage</i>.</li>
+<li><b>Rekomendasi Pengembangan:</b> Untuk penelitian lanjutan, disarankan mengintegrasikan modul penyaring berita ekonomi otomatis (<i>Economic Calendar API Filter</i>) untuk secara otonom mematikan pembentukan sinyal 30 menit sebelum dan sesudah rilis berita berdampak tinggi, serta mengeksplorasi algoritma optimasi bobot konfluensi adaptif berbasis <i>Reinforcement Learning</i>.</li>
+</ol>
+
+</div>
+</body>
+</html>

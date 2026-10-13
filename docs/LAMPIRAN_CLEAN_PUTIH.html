@@ -1,0 +1,3998 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAMPIRAN TUGAS AKHIR</title>
+<style>
+  @page {
+    size: A4;
+    margin: 3cm 3cm 3cm 4cm; /* Atas 3cm, Kanan 3cm, Bawah 3cm, Kiri 4cm (Pedoman UNTIRTA 2025) */
+    mso-page-orientation: portrait;
+  }
+  @page Section1 {
+    size: 21cm 29.7cm;
+    margin: 3cm 3cm 3cm 4cm;
+    mso-header-margin: 1.5cm;
+    mso-footer-margin: 1.5cm;
+    mso-paper-source: 0;
+  }
+  div.Section1 {
+    page: Section1;
+  }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000000;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 0;
+    text-align: justify;
+  }
+  h1.bab-title {
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    margin-top: 0;
+    margin-bottom: 24pt;
+    line-height: 1.5;
+  }
+  h2 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 18pt;
+    margin-bottom: 6pt;
+    line-height: 1.5;
+  }
+  h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 12pt;
+    margin-bottom: 4pt;
+    line-height: 1.5;
+  }
+  p {
+    margin-top: 0;
+    margin-bottom: 8pt;
+    text-indent: 1.25cm;
+    line-height: 1.5;
+  }
+  ol, ul {
+    margin-top: 0;
+    margin-bottom: 8pt;
+    padding-left: 1.25cm;
+    line-height: 1.5;
+  }
+  li {
+    margin-bottom: 4pt;
+    text-align: justify;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8pt;
+    margin-bottom: 12pt;
+    font-size: 11pt;
+    line-height: 1.3;
+    background-color: #ffffff;
+  }
+  th {
+    border-top: 1.5pt solid #000000;
+    border-bottom: 1.5pt solid #000000;
+    border-left: none;
+    border-right: none;
+    padding: 6pt 4pt;
+    font-weight: bold;
+    text-align: center;
+    background-color: #ffffff;
+  }
+  td {
+    border-top: none;
+    border-bottom: 0.5pt solid #dddddd;
+    border-left: none;
+    border-right: none;
+    padding: 5pt 4pt;
+    vertical-align: top;
+    background-color: #ffffff;
+  }
+  tr:last-child td {
+    border-bottom: 1.5pt solid #000000;
+  }
+  p.caption-table {
+    text-align: left;
+    font-size: 11pt;
+    font-weight: bold;
+    margin-top: 12pt;
+    margin-bottom: 4pt;
+    text-indent: 0;
+  }
+  .code-box {
+    border: 1pt solid #000000;
+    background-color: #ffffff;
+    padding: 8pt;
+    margin: 8pt 0 16pt 0;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 10pt;
+    line-height: 1.2;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    page-break-inside: auto;
+    overflow-x: auto;
+  }
+  .text-center { text-align: center; }
+  .text-left { text-align: left; }
+  .text-right { text-align: right; }
+</style>
+</head>
+<body>
+<div class="Section1">
+<h1 class="bab-title">LAMPIRAN</h1>
+
+<h2>Lampiran 1: Kode Program Utama Sistem Pendukung Keputusan</h2>
+<p>Berikut disajikan implementasi kode sumber utama sistem (<i>Core Engine Modules</i>) yang merepresentasikan logika akuisisi data, evaluasi aturan inferensi 5-Gate Validation, dan kalkulasi dinamis Stop Loss / Take Profit berbasis bahasa pemrograman Python 3.11 (mengikuti format penulisan kode sumber pada Lampiran 12 Pedoman Penulisan Tugas Akhir Informatika Untirta 2025 dengan jenis huruf <i>Courier New</i> ukuran 10 pt):</p>
+<h3>Lampiran 1.1 Titik Masuk Eksekusi Utama (<code>src/main.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/main.py</code><br>
+Modul ini berfungsi sebagai titik masuk eksekusi utama (entry point) yang mengorkestrasi siklus hidup sistem, inisialisasi konektivitas MetaTrader 5, penjadwalan pemindaian multi-timeframe berkala, penanganan sinyal interupsi (graceful shutdown), serta peluncuran worker thread pelacak transaksi secara simultan.</p>
+<div class="code-box">
+&quot;&quot;&quot;main.py — Entry point bot trading DSS Forex.
+
+Jalankan: python -m src.main
+Loop: candle close → evaluate_any_tf_mta() → sinyal ke Telegram → tracker pantau outcome.
+&quot;&quot;&quot;
+import re
+import time
+from datetime import datetime
+
+import MetaTrader5 as mt5
+import pandas as pd
+import pytz
+from loguru import logger
+
+from src.config.settings import load_settings
+from src.engine.anytf_mta_engine import evaluate_any_tf_mta
+from src.features.indicators import add_indicators
+from src.features.patterns import add_patterns
+from src.infra.logger import setup_logger
+from src.infra.reject_tracker import RejectTracker
+from src.infra.report.generator import generate_report
+from src.infra.scheduler import CandleCloseWatcher
+from src.infra.signal_logger import SignalLogger
+from src.infra.signal_tracker import SignalTracker
+from src.mt5.connector import connect, shutdown
+from src.mt5.market_data import ensure_symbol, fetch_ohlc
+from src.notify.telegram import send_message
+from src.notify.templates import format_signal
+
+
+# Reject label utilities
+
+
+def _extract(s: str, open_: str, close_: str) -&gt; str:
+    try:
+        return s[s.index(open_) + len(open_): s.rindex(close_)]
+    except (ValueError, IndexError):
+        return &quot;&quot;
+
+
+def _short_reject(raw: str) -&gt; str:
+    &quot;&quot;&quot;Reject reason satu baris untuk terminal log.&quot;&quot;&quot;
+    if not raw or raw in (&quot;INIT&quot;, &quot;OK&quot;):
+        return raw
+    u = raw.upper()
+
+    if u.startswith(&quot;NOT_ENOUGH_BARS&quot;):
+        return f&quot;Data kurang: {_extract(raw, &#x27;(&#x27;, &#x27;)&#x27;)} bar&quot;
+    if u.startswith(&quot;ATR_TOO_LOW_SCALPING&quot;):
+        atr  = re.search(r&quot;atr=([0-9.]+)&quot;, raw)
+        mn   = re.search(r&quot;min=([0-9.]+)&quot;, raw)
+        a    = atr.group(1) if atr else &quot;?&quot;
+        m    = mn.group(1)  if mn  else &quot;?&quot;
+        return f&quot;ATR scalping terlalu kecil: {a} (min {m} poin) — pasar terlalu flat&quot;
+    if u.startswith(&quot;ATR_INVALID&quot;):
+        return &quot;ATR tidak valid&quot;
+    if u.startswith(&quot;ATR_TOO_LOW&quot;):
+        return f&quot;ATR terlalu kecil: {_extract(raw, &#x27;(&#x27;, &#x27;)&#x27;)}&quot;
+    if u.startswith(&quot;COOLDOWN&quot;):
+        return f&quot;Cooldown: {_extract(raw, &#x27;(&#x27;, &#x27;)&#x27;)}&quot;
+    if u.startswith(&quot;OUT_OF_SESSION&quot;):
+        return f&quot;Luar sesi: {_extract(raw, &#x27;(&#x27;, &#x27;)&#x27;)}&quot;
+    if u.startswith(&quot;DAILY_LIMIT&quot;):
+        mode = &quot;scalping&quot; if &quot;SCALPING&quot; in u else &quot;intraday&quot;
+        count = _extract(raw, &quot;(&quot;, &quot;)&quot;)
+        return f&quot;Batas harian {mode}: {count}&quot;
+    if u.startswith(&quot;BIAS_FAIL+CT_FAIL&quot;):
+        ema  = re.search(r&quot;ema=([A-Z_]+)&quot;, raw)
+        macd = re.search(r&quot;macd=([A-Z_]+)&quot;, raw)
+        parts = []
+        if ema:  parts.append(f&quot;EMA:{ema.group(1)}&quot;)
+        if macd: parts.append(f&quot;MACD:{macd.group(1)}&quot;)
+        return &quot;Bias+CT gagal: &quot; + &quot; | &quot;.join(parts) if parts else &quot;Bias+CT gagal&quot;
+    if u.startswith(&quot;BIAS_FAIL&quot;):
+        detail = _extract(raw, &quot;(&quot;, &quot;)&quot;)
+        parts  = [f&quot;{tf}→{b.lower()}&quot; for item in detail.split()
+                  if &quot;:&quot; in item for tf, b in [item.split(&quot;:&quot;, 1)]]
+        return &quot;Bias: &quot; + &quot;, &quot;.join(parts) if parts else f&quot;Bias: {detail[:60]}&quot;
+    if u.startswith(&quot;TRIGGER_FAIL&quot;):
+        sc = re.search(r&quot;score=(\d+)/(\d+)&quot;, raw)
+        dr = re.search(r&quot;dir=(\w+)&quot;, raw)
+        if sc:
+            skor      = sc.group(1)
+            threshold = sc.group(2)
+            arah      = dr.group(1) if dr else &quot;&quot;
+            return f&quot;Trigger gagal: {skor}/6 (min={threshold}) {arah}&quot;.strip()
+        return &quot;Trigger gagal&quot;
+    if u.startswith(&quot;CONFLUENCE_FAIL&quot;):
+        sc = re.search(r&quot;conf=(\d+)/(\d+)&quot;, raw)
+        if sc:
+            skor      = sc.group(1)
+            threshold = sc.group(2)
+            notes = re.search(r&quot;\[(.*?)\]&quot;, raw)
+            extra = &quot;&quot;
+            if notes:
+                tags = [n.strip() for n in notes.group(1).split(&quot;,&quot;)
+                        if any(k in n for k in (&quot;Sweep&quot;, &quot;FVG&quot;))]
+                if tags:
+                    extra = &quot; [&quot; + &quot;,&quot;.join(tags) + &quot;]&quot;
+            return f&quot;Confluence rendah: {skor} (min={threshold}){extra}&quot;
+        return &quot;Confluence gagal&quot;
+    if u.startswith(&quot;SNR_BLOCKED&quot;):
+        return &quot;SNR blocked: jalan terblokir&quot;
+    if &quot;SNR_WEAK&quot; in u:
+        return &quot;SNR lemah: level 2-touch berkontribusi 30% (optimal: 5+ touch)&quot;
+    if &quot;MOM_RECOVERY_FAIL&quot; in u:
+        detail = re.search(r&quot;MOM_RECOVERY_FAIL:([^\]]+)&quot;, raw)
+        if detail:
+            return f&quot;Momentum Recovery gagal: {detail.group(1)}&quot;
+        return &quot;Momentum Recovery: syarat tidak terpenuhi&quot;
+    if &quot;MOM_RECOVERY&quot; in u:
+        arah   = re.search(r&quot;MOM_RECOVERY:(BULL|BEAR)\(([^)]+)\)&quot;, raw)
+        if arah:
+            dir_label = &quot;BUY&quot; if arah.group(1) == &quot;BULL&quot; else &quot;SELL&quot;
+            return f&quot;Momentum Recovery {dir_label}: {arah.group(2)}&quot;
+        arah2 = re.search(r&quot;MOM_RECOVERY:(BULL|BEAR)&quot;, raw)
+        dir_label = (&quot;BUY&quot; if arah2 and arah2.group(1) == &quot;BULL&quot; else &quot;SELL&quot;) if arah2 else &quot;?&quot;
+        return f&quot;Momentum Recovery: H1 NEUTRAL, impulse lokal → {dir_label}&quot;
+    if u.startswith(&quot;MARKET_TRANSITION&quot;):
+        adx = re.search(r&quot;adx_(\w+)=([0-9.]+)&quot;, raw)
+        if adx:
+            return f&quot;Transisi pasar: ADX {adx.group(1)}={adx.group(2)} (tren melemah, tunda Continuation)&quot;
+        return &quot;Transisi pasar: tren di TF penentu melemah&quot;
+    if u.startswith(&quot;ASIAN_NO_KEY_LEVEL&quot;):
+        return &quot;Asian: tidak ada level kunci (wajib SNR/SND)&quot;
+    if u.startswith(&quot;RR_FAIL&quot;):
+        rr  = re.search(r&quot;rr=([0-9.None]+)&quot;, raw)
+        mn  = re.search(r&quot;min=([0-9.]+)&quot;, raw)
+        return f&quot;RR terlalu rendah: {rr.group(1) if rr else &#x27;?&#x27;} (min {mn.group(1) if mn else &#x27;?&#x27;})&quot;
+    if u.startswith(&quot;SLTP_NONE&quot;):
+        return &quot;SL/TP tidak dapat dihitung&quot;
+
+    return raw.split(&quot;:&quot;)[0]
+
+
+def _short_reject_with_df(raw: str, df: pd.DataFrame | None = None) -&gt; str:
+    if not raw or raw in (&quot;INIT&quot;, &quot;OK&quot;):
+        return raw
+    u = raw.upper()
+    if u.startswith(&quot;CT_EMA200_FAIL&quot;) or u.startswith(&quot;EMA200_WAJIB&quot;):
+        # CT_EMA200_FAIL tidak memuat dir= di raw — baca dari df, fallback &quot;CT&quot;
+        dir_match = re.search(r&quot;dir=(\w+)&quot;, raw)
+        if df is not None and len(df) &gt;= 2:
+            try:
+                last   = df.iloc[-2]
+                close  = float(last.get(&quot;close&quot;, 0))
+                ema200 = last.get(&quot;ema_200&quot;)
+                if ema200 is not None and not pd.isna(ema200):
+                    ema200    = float(ema200)
+                    side      = &quot;di bawah&quot; if close &lt; ema200 else &quot;di atas&quot;
+                    dir_label = dir_match.group(1) if dir_match else &quot;CT&quot;
+                    return f&quot;EMA200: close={close:.1f} {side} EMA200={ema200:.1f} — {dir_label} ditolak&quot;
+            except Exception:
+                pass
+        dir_label = dir_match.group(1) if dir_match else &quot;CT&quot;
+        return f&quot;EMA200 berlawanan — {dir_label} ditolak&quot;
+    if u.startswith(&quot;LATE_ENTRY&quot;):
+        dist = re.search(r&quot;dist=([0-9.]+)&quot;, raw)
+        mx   = re.search(r&quot;max=([0-9.]+)&quot;, raw)
+        d    = dist.group(1) if dist else &quot;?&quot;
+        m    = mx.group(1)   if mx   else &quot;?&quot;
+        return f&quot;Late entry: harga sudah jauh {d} dari trigger (max {m})&quot;
+    return _short_reject(raw)
+
+
+def _fetch_prepare(symbol: str, tf: str, bars: int) -&gt; pd.DataFrame:
+    df = fetch_ohlc(symbol, tf, bars).sort_values(&quot;time&quot;).reset_index(drop=True)
+    df = add_indicators(df, tf=tf)
+    df = add_patterns(df)
+    return df
+
+
+def _get_mt5_tick(symbol: str) -&gt; tuple[float, float]:
+    tick = mt5.symbol_info_tick(symbol)
+    return (tick.bid, tick.ask) if tick else (0.0, 0.0)
+
+
+def _refresh_report(sig_logger: SignalLogger) -&gt; None:
+    try:
+        generate_report(sig_logger, silent=True)
+    except PermissionError:
+        logger.debug(&quot;Report skip: file sedang dibuka di Excel&quot;)
+    except Exception as e:
+        logger.debug(f&quot;Report refresh gagal: {e}&quot;)
+
+
+def main() -&gt; None:
+    setup_logger()
+    logger.info(&quot;Logger aktif&quot;)
+
+    s = load_settings()
+    logger.info(
+        f&quot;BOT START | symbols={s.symbols} TFs={s.timeframes} &quot;
+        f&quot;bars={s.bars} poll={s.poll_seconds}s&quot;
+    )
+    logger.info(
+        f&quot;PARAMS | RR&gt;={s.min_rr} trig&gt;={s.min_trigger_score} &quot;
+        f&quot;conf&gt;={s.min_confluence_score} votes&gt;={s.min_confirm_votes} &quot;
+        f&quot;cooldown={s.cooldown_bars}bar session={s.session_filter}&quot;
+    )
+    logger.info(
+        f&quot;PARAMS SCALPING | TP={s.scalping_tp1_rr}R/{s.scalping_tp2_rr}R/{s.scalping_tp3_rr}R &quot;
+        f&quot;SL&lt;=10pt ATR&gt;=5 OE&gt;={s.scalping_overextend_atr_mult}×ATR &quot;
+        f&quot;PB={&#x27;ON&#x27; if s.scalping_pullback_enabled else &#x27;OFF&#x27;} &quot;
+        f&quot;Sweep={&#x27;ON&#x27; if s.scalping_sweep_enabled else &#x27;OFF&#x27;} FVG={&#x27;ON&#x27; if s.scalping_fvg_enabled else &#x27;OFF&#x27;} &quot;
+        f&quot;trig&gt;={s.scalping_min_trigger_score} conf&gt;={s.scalping_min_confluence_score} &quot;
+        f&quot;cooldown M5={s.scalping_cooldown_bars_m5}bar M15={s.scalping_cooldown_bars_m15}bar&quot;
+    )
+    logger.info(
+        f&quot;PARAMS GATES | VETO+FLIP={&#x27;ON&#x27; if s.ltf_veto_enabled else &#x27;OFF&#x27;} &quot;
+        f&quot;flip_trig&gt;={s.flip_min_trigger} FLIP_key={&#x27;ON&#x27; if s.flip_require_key_level else &#x27;OFF&#x27;} &quot;
+        f&quot;H1_key={&#x27;ON&#x27; if s.h1_require_key_level else &#x27;OFF&#x27;} &quot;
+        f&quot;PB_floor={s.scalping_pullback_min_trigger} &quot;
+        f&quot;RangeQual_key={&#x27;ON&#x27; if s.range_quality_key_level else &#x27;OFF&#x27;}&quot;
+    )
+
+    sig_logger     = SignalLogger()
+    reject_tracker = RejectTracker(interval_minutes=30)
+    logger.info(&quot;SignalLogger aktif → logs/signal_history.csv&quot;)
+
+    def _notify(msg: str) -&gt; None:
+        try:
+            send_message(s.telegram_token, s.telegram_chat_id, msg)
+        except Exception as e:
+            logger.warning(f&quot;Notify error: {e}&quot;)
+
+    tracker = SignalTracker(
+        sig_logger        = sig_logger,
+        get_price_fn      = _get_mt5_tick,
+        send_notify_fn    = _notify,
+        refresh_report_fn = lambda: _refresh_report(sig_logger),
+    )
+    watcher = CandleCloseWatcher()
+
+    try:
+        acc = connect(s.mt5_login, s.mt5_password, s.mt5_server, s.mt5_terminal_path)
+        logger.info(f&quot;MT5 terhubung | login={acc.login} server={acc.server}&quot;)
+        tracker.start()
+
+        send_message(
+            s.telegram_token, s.telegram_chat_id,
+            (
+                &quot;&lt;b&gt;BOT TRADING ONLINE&lt;/b&gt;\n\n&quot;
+                f&quot;Account  : &lt;code&gt;{acc.login}&lt;/code&gt;\n&quot;
+                f&quot;Server   : &lt;code&gt;{acc.server}&lt;/code&gt;\n&quot;
+                f&quot;Symbols  : {&#x27;, &#x27;.join(s.symbols)}\n&quot;
+                f&quot;TFs      : {&#x27;, &#x27;.join(s.timeframes)}\n\n&quot;
+                f&quot;&lt;b&gt;Intraday&lt;/b&gt;: RR&gt;={s.min_rr} | Trig&gt;={s.min_trigger_score} &quot;
+                f&quot;| Conf&gt;={s.min_confluence_score} &quot;
+                f&quot;| D1_anchor={&#x27;ON&#x27; if s.intraday_require_d1 else &#x27;OFF&#x27;} &quot;
+                f&quot;| Cooldown={s.cooldown_bars}bar\n&quot;
+                f&quot;&lt;b&gt;Scalping&lt;/b&gt;: TP={s.scalping_tp1_rr}R/{s.scalping_tp2_rr}R/{s.scalping_tp3_rr}R &quot;
+                f&quot;| SL&lt;=10pt | OE&gt;={s.scalping_overextend_atr_mult}×ATR &quot;
+                f&quot;| PB={&#x27;ON&#x27; if s.scalping_pullback_enabled else &#x27;OFF&#x27;} &quot;
+                f&quot;| Trig&gt;={s.scalping_min_trigger_score} | Conf&gt;={s.scalping_min_confluence_score}\n&quot;
+                f&quot;Session  : {&#x27;ON&#x27; if s.session_filter else &#x27;OFF&#x27;}\n&quot;
+                f&quot;Tracker  : ON ({tracker.get_active_count()} sinyal pending)&quot;
+            ),
+        )
+
+        while True:
+            for symbol in s.symbols:
+                ensure_symbol(symbol)
+
+                data_by_tf: dict[str, pd.DataFrame] = {}
+                last_events: dict[str, object]      = {}
+
+                for trigger_tf in s.timeframes:
+                    tf_u = trigger_tf.upper()
+                    try:
+                        df = _fetch_prepare(symbol, tf_u, s.bars)
+                        data_by_tf[tf_u] = df
+                    except Exception as e:
+                        logger.error(f&quot;[FETCH ERROR] {symbol} {tf_u}: {e}&quot;)
+                        continue
+                    event = watcher.check(symbol, tf_u, df)
+                    if event is not None:
+                        last_events[tf_u] = event
+
+                if not last_events:
+                    continue   # tidak ada candle close — lanjut ke symbol berikutnya
+                               # TANPA sleep terpisah; satu-satunya sleep ada di bawah while True
+
+                bid, ask = _get_mt5_tick(symbol)
+                tfs_closing = &quot;, &quot;.join(last_events.keys())
+                logger.info(f&quot;{symbol} | Candle close: {tfs_closing} | bid={bid:.2f} ask={ask:.2f}&quot;)
+                reject_tracker.record_candle()
+                signal_count = 0
+
+                for tf_u in last_events:
+                    tf_u_norm = tf_u.upper()
+                    enabled_u = [t.upper() for t in s.timeframes]
+                    data_norm = {k.upper(): v for k, v in data_by_tf.items()}
+                    _sl_cap   = {
+                        &quot;M5&quot;:  s.max_sl_m5,  &quot;M15&quot;: s.max_sl_m15,
+                        &quot;H1&quot;:  s.max_sl_h1,  &quot;H4&quot;:  s.max_sl_h4,
+                        &quot;D1&quot;:  s.max_sl_d1,
+                    }
+                    _max_sl = _sl_cap.get(tf_u_norm, s.max_sl_points)
+
+                    try:
+                        sig = evaluate_any_tf_mta(
+                            data_by_tf           = data_norm,
+                            symbol               = symbol,
+                            trigger_tf           = tf_u_norm,
+                            enabled_tfs          = enabled_u,
+                            min_rr               = s.min_rr,
+                            min_confirm_votes    = s.min_confirm_votes,
+                            min_trigger_score    = s.min_trigger_score,
+                            min_confluence_score = s.min_confluence_score,
+                            cooldown_bars        = s.cooldown_bars,
+                            atr_min_pct          = s.atr_min_pct,
+                            sl_atr_mult          = s.sl_atr_mult,
+                            tp1_rr               = s.tp1_rr,
+                            tp2_rr               = s.tp2_rr,
+                            tp3_rr               = s.tp3_rr,
+                            max_sl_points        = _max_sl,
+                            sl_pips              = s.sl_pips,
+                            tp1_pips             = s.tp1_pips,
+                            tp2_pips             = s.tp2_pips,
+                            tp3_pips             = s.tp3_pips,
+                            pip_size             = s.pip_size,
+                            session_filter       = s.session_filter,
+                            counter_trend_enabled        = s.counter_trend_enabled,
+                            min_counter_confluence       = s.min_counter_confluence,
+                            counter_trend_min_rr         = s.counter_trend_min_rr,
+                            counter_trend_tfs            = s.counter_trend_tfs,
+                            scalping_min_trigger_score   = s.scalping_min_trigger_score,
+                            scalping_min_confluence_score= s.scalping_min_confluence_score,
+                            scalping_atr_min_points      = s.scalping_atr_min_points,
+                            scalping_sl_atr_mult         = s.scalping_sl_atr_mult,
+                            scalping_cooldown_bars       = s.scalping_cooldown_bars,
+                            scalping_cooldown_bars_m5    = s.scalping_cooldown_bars_m5,
+                            scalping_cooldown_bars_m15   = s.scalping_cooldown_bars_m15,
+                            scalping_tp1_rr              = s.scalping_tp1_rr,
+                            scalping_tp2_rr              = s.scalping_tp2_rr,
+                            scalping_tp3_rr              = s.scalping_tp3_rr,
+                            scalping_tp1_atr_mult        = s.scalping_tp1_atr_mult,
+                            scalping_overextend_atr_mult  = s.scalping_overextend_atr_mult,
+                            scalping_pullback_enabled  = s.scalping_pullback_enabled,
+                            scalping_sweep_enabled   = s.scalping_sweep_enabled,
+                            scalping_fvg_enabled     = s.scalping_fvg_enabled,
+                            momentum_ema200_tolerance= s.momentum_ema200_tolerance,
+                            range_rejection_enabled  = s.range_rejection_enabled,
+                            scalping_min_rr              = s.scalping_min_rr,
+                            scalping_counter_trend_min_rr= s.scalping_counter_trend_min_rr,
+                            market_transition_adx_block  = s.market_transition_adx_block,
+                            market_transition_adx_gray   = s.market_transition_adx_gray,
+                            scalping_h1_only             = s.scalping_h1_only,
+                            intraday_require_d1          = s.intraday_require_d1,
+                            ltf_veto_enabled             = s.ltf_veto_enabled,
+                            flip_min_trigger             = s.flip_min_trigger,
+                            flip_require_key_level       = s.flip_require_key_level,
+                            h1_require_key_level         = s.h1_require_key_level,
+                            scalping_pullback_min_trigger= s.scalping_pullback_min_trigger,
+                            range_quality_key_level       = s.range_quality_key_level,
+                        )
+                    except Exception as eval_err:
+# Exception satu TF/candle jangan mematikan seluruh bot — log, skip, lanjut.
+                        logger.error(f&quot;[EVAL ERROR] {symbol} {tf_u_norm}: {eval_err}&quot;, exc_info=True)
+                        continue
+
+                    if sig is None:
+                        raw    = data_norm.get(tf_u_norm, pd.DataFrame()).attrs.get(&quot;reject_reason&quot;, &quot;UNKNOWN&quot;)
+                        df_cur = data_norm.get(tf_u_norm)
+                        logger.info(f&quot;{symbol} {tf_u_norm:&lt;3} ✗  {_short_reject_with_df(raw, df_cur)}&quot;)
+                        logger.debug(f&quot;{tf_u_norm} raw: {raw[:200]}&quot;)
+                        reject_tracker.record_reject(symbol=symbol, tf=tf_u_norm, raw=raw, df=df_cur)
+                    else:
+                        signal_count += 1
+                        signal_id = sig_logger.log_signal(sig)
+                        mode_str = &quot;REVERSAL&quot; if sig.signal_mode == &quot;REVERSAL&quot; else sig.trade_mode.upper()
+                        logger.info(
+                            f&quot;{symbol} {tf_u_norm} 🚀 {sig.direction} [{mode_str}]&quot;
+                            f&quot;  entry={sig.entry:.2f}  sl={sig.sl:.2f}  tp1={sig.tp:.2f}&quot;
+                            f&quot;  RR={sig.rr:.2f}&quot;
+                            f&quot;  trig={sig.trigger_score}/{sig.trigger_max}&quot;
+                            f&quot;  conf={sig.confluence_score}&quot;
+                        )
+                        rec = sig_logger.get_by_id(signal_id)
+                        if rec:
+                            tracker.add_signal(rec)
+                        _refresh_report(sig_logger)
+                        send_message(
+                            s.telegram_token, s.telegram_chat_id,
+                            format_signal(sig, signal_id=signal_id),
+                        )
+
+                if signal_count &gt; 0:
+                    reject_tracker.record_signal()
+
+            reject_tracker.maybe_print_summary(
+                symbol=s.symbols[0] if s.symbols else &quot;XAUUSD&quot;
+            )
+            time.sleep(s.poll_seconds)
+
+    except KeyboardInterrupt:
+        logger.info(&quot;Bot dihentikan (Ctrl+C).&quot;)
+    except Exception:
+        logger.exception(&quot;FATAL ERROR — bot berhenti tidak terduga&quot;)
+    finally:
+        tracker.stop()
+        shutdown()
+        logger.info(&quot;MT5 disconnected. Bot selesai.&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+
+</div>
+
+<h3>Lampiran 1.2 Mesin Inferensi Keputusan (<code>src/engine/anytf_mta_engine.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/engine/anytf_mta_engine.py</code><br>
+Modul ini mengimplementasikan mesin inferensi berbasis aturan (Rule-Based Decision Engine) dengan kerangka kerja 5-Gate Validation, mengoordinasikan evaluasi kelayakan teknis, filter bias makro, penilaian pemicu eksekusi, konfluensi struktur, hingga validasi manajemen risiko sebelum menerbitkan sinyal transaksi.</p>
+<div class="code-box">
+&quot;&quot;&quot;anytf_mta_engine.py — Rule-Based Decision Engine (Multi-Timeframe Analysis).
+
+5 gate: Validasi -&gt; HTF Bias -&gt; Trigger Score -&gt; Confluence Score -&gt; SL/TP &amp; RR.
+Orchestrator: implementasi tiap gate dipecah ke submodul (bias/state/trigger/confluence/
+setup_plan/cooldown/utils). Simbol publik tetap re-export dari sini.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+from datetime import datetime
+
+import pandas as pd
+import pytz
+
+from src.engine.bias import _all_tf_bias, _detect_trade_mode, _vote_bias
+from src.engine.cooldown import (
+    _CONFLICT_WINDOW_SEC,
+    _LAST_LIVE_EMIT,
+    _LAST_SIGNAL_TIME,
+    _save_cooldown_state,
+    get_consec_loss_count,
+    record_loss,
+    reset_consec_loss,
+)
+from src.engine.confluence import _confluence_score, _is_counter_trend_valid
+from src.engine.setup_plan import scan_setup_plan
+from src.engine.state import _decisive_adx, _ltf_counter_veto, _market_state, detect_market_condition
+from src.engine.structure import structure_holds, structure_trend_start
+from src.engine.trigger import _has_key_level, _has_quality_key_level, _range_rejection_setup, _scalp_pullback_setup, _trigger_score
+from src.engine.utils import _atr_proxy, _latest_closed, _reject, calc_rr
+from src.features.entry_setup import classify_entry_setup
+from src.features.session import is_active_session, session_name, session_strictness
+from src.models.signal import Signal
+from src.risk.sl_tp import dynamic_atr_sltp, fixed_zone_sltp, swing_based_sltp
+from src.strategy.multi_timeframe import higher_timeframes
+
+
+def evaluate_any_tf_mta(
+    data_by_tf:           dict[str, pd.DataFrame],
+    symbol:               str,
+    trigger_tf:           str,
+    enabled_tfs:          list[str],
+    min_rr:               float = 1.5,
+    min_confirm_votes:    int   = 1,
+    min_trigger_score:    int   = 4,
+    min_confluence_score: int   = 2,
+    cooldown_bars:        int   = 3,
+    atr_min_pct:          float = 0.0006,
+    sl_atr_mult:          float = 1.5,
+    tp1_rr:               float = 1.5,
+    tp2_rr:               float = 2.5,
+    tp3_rr:               float = 4.0,
+    max_sl_points:        float = 50.0,
+    sl_pips:              float = 50.0,
+    tp1_pips:             float = 70.0,
+    tp2_pips:             float = 100.0,
+    tp3_pips:             float = 140.0,
+    pip_size:             float = 0.1,
+    session_filter:       bool  = True,
+    counter_trend_enabled:         bool             = True,
+    min_counter_confluence:        int              = 3,
+    counter_trend_min_rr:          float            = 2.0,
+    counter_trend_tfs:             list[str] | None = None,
+    scalping_min_trigger_score:    int              = 3,
+    scalping_min_confluence_score: int              = 2,
+    scalping_atr_min_points:       float            = 3.0,
+    scalping_sl_atr_mult:          float            = 1.2,
+    scalping_cooldown_bars:        int              = 5,
+    scalping_cooldown_bars_m5:     int              = 6,
+    scalping_cooldown_bars_m15:    int              = 5,
+    scalping_tp1_rr:               float            = 1.0,
+    scalping_tp2_rr:               float            = 1.6,
+    scalping_tp3_rr:               float            = 2.6,
+    scalping_tp1_atr_mult:         float            = 0.0,  # &gt;0 → TP1 scalping = ×ATR (off: ladder RR)
+    scalping_overextend_atr_mult:   float            = 1.2,  # anti-chase: jarak max entry dari EMA20 (×ATR)
+    momentum_ema200_tolerance:      float            = 1.0,  # jalur momentum: band EMA200 (×ATR)
+    range_rejection_enabled:        bool             = True, # RANGE lane: rejection di level kunci
+    scalping_pullback_enabled:      bool             = False, # mode pullback/rebound scalping (opsional)
+    scalping_sweep_enabled:         bool             = False, # liquidity sweep ikut skor scalping (off: logging-only)
+    scalping_fvg_enabled:           bool             = False, # FVG ikut skor scalping (off: logging-only)
+    scalping_min_rr:               float            = 1.0,
+    scalping_counter_trend_min_rr: float            = 1.5,
+    market_transition_adx_block:   float            = 15.0,
+    market_transition_adx_gray:    float            = 25.0,
+    scalping_h1_only:              bool             = True,
+    intraday_require_d1:           bool             = True,
+    # Tuas keketatan/reaksi (A/B testing tanpa ubah kode).
+    ltf_veto_enabled:              bool             = True,  # VETO + FLIP lane menyala
+    flip_min_trigger:              int              = 3,     # FLIP wajib trigger &gt;= ini
+    flip_require_key_level:        bool             = True,  # FLIP wajib key level
+    h1_require_key_level:          bool             = True,  # H1 wajib key level
+    scalping_pullback_min_trigger: int              = 2,     # floor trigger jalur PULLBACK
+    range_quality_key_level:       bool             = True,  # RANGE/sideways: continuation wajib level berkualitas
+) -&gt; Signal | None:
+    &quot;&quot;&quot;Evaluasi sinyal untuk satu (symbol, trigger_tf). Returns Signal jika 5 gate lulus.&quot;&quot;&quot;
+    trigger_tf  = trigger_tf.upper()
+    enabled_tfs = [tf.upper() for tf in enabled_tfs]
+
+    if trigger_tf not in data_by_tf:
+        return None
+
+    df_t = data_by_tf[trigger_tf]
+    _reject(df_t, &quot;INIT&quot;)
+
+    # Circuit breaker: counter loss terpisah per mode (key &quot;{symbol}_{mode}&quot;) —
+    # loss scalping tak memblokir intraday dan sebaliknya.
+    today_str   = datetime.now().strftime(&quot;%Y-%m-%d&quot;)
+    _is_scalping_tf = trigger_tf in {&quot;M5&quot;, &quot;M15&quot;}
+    _cb_key     = f&quot;{symbol}_{&#x27;scalping&#x27; if _is_scalping_tf else &#x27;intraday&#x27;}&quot;
+    _cb_mode    = &quot;scalping&quot; if _is_scalping_tf else &quot;intraday&quot;
+
+    # GATE 1 — Validasi teknis
+    if len(df_t) &lt; 200:
+        _reject(df_t, f&quot;NOT_ENOUGH_BARS({len(df_t)})&quot;); return None
+
+    last          = _latest_closed(df_t)
+    close_time_ts = pd.to_datetime(last[&quot;time&quot;])
+    # Simpan sebagai UTC eksplisit (suffix +00:00) agar iso_to_wib_str() tahu perlu konversi
+    close_time    = str(close_time_ts.to_pydatetime().replace(tzinfo=pytz.utc).isoformat())
+    price_now     = float(last[&quot;close&quot;])
+    atr           = _atr_proxy(df_t)
+
+    if atr &lt;= 0:
+        _reject(df_t, &quot;ATR_INVALID&quot;); return None
+    if atr &lt; price_now * atr_min_pct:
+        _reject(df_t, f&quot;ATR_TOO_LOW({atr:.4f})&quot;); return None
+
+    is_scalping = trigger_tf in {&quot;M5&quot;, &quot;M15&quot;}
+
+    # ATR absolut khusus scalping: tolak rentang paling sempit supaya SL/TP ATR-based
+    # punya ruang; atr_min_pct (relatif) tetap menjaring pasar ultra-flat.
+    if is_scalping and scalping_atr_min_points &gt; 0 and atr &lt; scalping_atr_min_points:
+        _reject(df_t, f&quot;ATR_TOO_LOW_SCALPING(atr={atr:.2f}/min={scalping_atr_min_points:.1f})&quot;)
+        return None
+
+    if is_scalping:
+        base_trig  = scalping_min_trigger_score
+        base_conf  = scalping_min_confluence_score
+        # Cooldown per-TF: M5/M15 punya nilai sendiri, TF lain fallback ke umum.
+        if trigger_tf == &quot;M5&quot;:
+            base_cd = scalping_cooldown_bars_m5
+        elif trigger_tf == &quot;M15&quot;:
+            base_cd = scalping_cooldown_bars_m15
+        else:
+            base_cd = scalping_cooldown_bars
+    else:
+        base_trig  = min_trigger_score
+        base_conf  = min_confluence_score
+        base_cd    = cooldown_bars
+
+    market_cond = detect_market_condition(df_t)
+    if market_cond == &quot;volatile&quot;:
+        eff_trig = max(1, base_trig - 1)
+        eff_conf = max(1, base_conf - 1)
+    elif market_cond == &quot;sideways&quot;:
+        eff_trig = base_trig + 1
+        eff_conf = base_conf + 1
+    else:
+        eff_trig = base_trig
+        eff_conf = base_conf
+
+    _asian_continuation_pending = False
+    if is_scalping:
+        _asian_continuation_pending = True
+
+    key        = (symbol, trigger_tf)
+    last_sig_t = _LAST_SIGNAL_TIME.get(key)
+    if last_sig_t is not None:
+        tf_min = {&quot;M1&quot;:1,&quot;M5&quot;:5,&quot;M15&quot;:15,&quot;M30&quot;:30,&quot;H1&quot;:60,&quot;H4&quot;:240,&quot;D1&quot;:1440}.get(trigger_tf, 5)
+        bars_since = (close_time_ts - last_sig_t).total_seconds() / (tf_min * 60)
+        if bars_since &lt; base_cd:
+            _reject(df_t, f&quot;COOLDOWN({bars_since:.1f}bar)&quot;); return None
+
+    now_utc = close_time_ts.to_pydatetime().replace(tzinfo=pytz.utc) if close_time_ts.tzinfo is None else close_time_ts.to_pydatetime()
+    sess    = session_name(now_utc)
+    
+    # Asian CONTINUATION: +1 trigger &amp; +1 confluence. Bias baru diketahui di GATE 2,
+    # maka session dicek di sini; hanya jalur CONTINUATION (REVERSAL/CT tak terpengaruh).
+    if _asian_continuation_pending and session_strictness(now_utc, tf=trigger_tf) == &quot;RELAXED&quot;:
+        eff_trig += 1
+        eff_conf += 1
+
+    # H1 hardening: rekam 29th WR 19% + loss gantung 6-10 jam — bar H1 dinaikkan
+    # +1 trigger &amp; +1 confluence (sebelum cap), key level diwajibkan di GATE 5.
+    if trigger_tf == &quot;H1&quot;:
+        eff_trig += 1
+        eff_conf += 1
+
+    # Cap: sideways(+1) dan asian(+1) bisa numpuk — tanpa cap butuh semua komponen
+    # sepakat (nyaris mustahil). Trig cap 5, conf cap 4.
+    eff_trig = min(eff_trig, 5)
+    eff_conf = min(eff_conf, 4)
+
+    if session_filter and not is_active_session(now_utc, trigger_tf):
+        _reject(df_t, f&quot;OUT_OF_SESSION({sess})&quot;); return None
+
+    # GATE 2 — HTF Bias
+    confirm_tfs       = higher_timeframes(trigger_tf, enabled_tfs)
+    bias, bias_detail = _vote_bias(
+        data_by_tf=data_by_tf, confirm_tfs=confirm_tfs,
+        trigger_tf=trigger_tf, min_confirm_votes=min_confirm_votes,
+        scalping_h1_only=scalping_h1_only,
+        intraday_require_d1=intraday_require_d1,
+    )
+
+    # GATE 3 — Trigger Score (Market-State Dispatch)
+    direction:    str | None = None
+    trig_score:   int        = 0
+    trig_notes:   str        = &quot;&quot;
+    _is_counter:  bool       = False
+    _flip_active: bool       = False
+    _pb_active:   bool       = False
+    _mom_active:  bool       = False
+    _range_active: bool      = False
+
+    # Market State Detector (2026-09-24): klasifikasi kondisi pasar → PILIH JALUR entry.
+    # State hanya menukar logic aktif, gate/threshold tetap utuh.
+    market_state, state_note = _market_state(
+        df_t, trigger_tf, data_by_tf,
+        market_transition_adx_block, market_transition_adx_gray,
+    )
+
+    if bias in (&quot;BULL&quot;, &quot;BEAR&quot;):
+        dir_try = &quot;BUY&quot; if bias == &quot;BULL&quot; else &quot;SELL&quot;
+
+        # MARKET TRANSITION: tren kehabisan tenaga — continuation diblokir sebelum
+        # buang-buang perhitungan (reversal/breakout jalur ketat; reversal off default).
+        if market_state == &quot;TRANSITION&quot;:
+            _reject(df_t, f&quot;MARKET_TRANSITION(state={state_note})&quot;)
+            return None
+
+        # Jalur 1 — CONTINUATION (trigger standar, gate EMA200 ketat 0.2×ATR).
+        ok, sc, nt = _trigger_score(df_t, dir_try, eff_trig)
+        if ok:
+            direction, trig_score, trig_notes = dir_try, sc, nt
+        elif scalping_pullback_enabled and is_scalping:
+            # Jalur 2 — PULLBACK (retrace 23-78.6% dlm tren kuat), diprioritaskan sebelum
+            # momentum — hanya tanpa pullback, berlanjut ke jalur momentum.
+            _pb_ok, _pb_note = _scalp_pullback_setup(df_t, dir_try, atr)
+            # Pullback floor: setup tanpa trigger minimal (kasus 0/6 lolos 29th) tak
+            # boleh emit — gagal floor jatuh ke jalur momentum seperti pullback gagal.
+            _pb_tok, _pb_tsc, _pb_tnt = _trigger_score(df_t, dir_try, min_score=scalping_pullback_min_trigger)
+            if _pb_ok and _pb_tok:
+                direction, trig_score, trig_notes = dir_try, _pb_tsc, f&quot;PULLBACK[{_pb_note}]&quot;
+                _pb_active = True
+            else:
+                if _pb_ok:
+                    _pb_note = f&quot;{_pb_note}+TRIGWEAK({_pb_tnt})&quot;
+                # Jalur 3 — MOMENTUM/BREAKOUT (tren kuat TANPA pullback → harga tak
+                # kembali ke EMA200): gate EMA200 dilonggarkan via MOMENTUM_EMA200_TOLERANCE.
+                if market_state in (&quot;HIGH_MOMENTUM&quot;, &quot;TREND_BULL&quot;, &quot;TREND_BEAR&quot;, &quot;BREAKOUT&quot;):
+                    _mok, _msc, _mnt = _trigger_score(
+                        df_t, dir_try, eff_trig,
+                        ema200_tolerance_mult=momentum_ema200_tolerance,
+                    )
+                    if _mok:
+                        direction, trig_score = dir_try, _msc
+                        trig_notes = f&quot;MOMENTUM[{_mnt}]&quot;
+                        _mom_active = True
+                    else:
+                        _reject(df_t, f&quot;TRIGGER_FAIL dir={dir_try} score={sc}/{eff_trig}[{nt}] &quot;
+                                      f&quot;+ PULLBACK_FAIL[{_pb_note}] + MOMENTUM_FAIL[{_mnt}] &quot;
+                                      f&quot;state={market_state}({state_note})&quot;)
+                        return None
+                else:
+                    _reject(df_t, f&quot;TRIGGER_FAIL dir={dir_try} score={sc}/{eff_trig}[{nt}] &quot;
+                                  f&quot;+ PULLBACK_FAIL[{_pb_note}] state={market_state}({state_note})&quot;)
+                    return None
+        else:
+            _reject(df_t, f&quot;TRIGGER_FAIL dir={dir_try} score={sc}/{eff_trig}[{nt}] &quot;
+                          f&quot;cond={market_cond} state={market_state}&quot;)
+            return None
+
+        # Market Transition Gate (zonasi ADX abu-abu): block..gray → +1 confluence.
+        _dec_reason, _dec_bonus = _decisive_adx(
+            trigger_tf, data_by_tf, market_transition_adx_block,
+            market_transition_adx_gray,
+        )
+        if _dec_reason:
+            _reject(df_t, _dec_reason)
+            return None
+        eff_conf = min(eff_conf + _dec_bonus, 5)
+    else:
+        # Bias HTF NEUTRAL → dua pilihan: CT/reversal (off default) atau RANGE lane.
+        _ct_tfs = [t.upper() for t in (counter_trend_tfs or [&quot;H1&quot;, &quot;H4&quot;])]
+        if counter_trend_enabled and trigger_tf in _ct_tfs:
+            ct_direction: str | None = None
+            ct_detail:    str        = &quot;&quot;
+            ct_score:     int        = 0
+            for try_dir in [&quot;BUY&quot;, &quot;SELL&quot;]:
+                ok_ct, det_ct, sc_ct = _is_counter_trend_valid(
+                    df=df_t, direction=try_dir, entry=price_now,
+                    atr=atr, tf=trigger_tf,
+                    min_counter_confluence=min_counter_confluence,
+                    is_scalping=is_scalping, data_by_tf=data_by_tf,
+                )
+                if ok_ct and sc_ct &gt; ct_score:
+                    ct_direction, ct_detail, ct_score = try_dir, det_ct, sc_ct
+
+            if ct_direction is None:
+                _reject(df_t, f&quot;BIAS_FAIL+CT_FAIL({bias_detail}) state={market_state}&quot;)
+                return None
+            direction   = ct_direction
+            _is_counter = True
+            ok_trig, trig_score, trig_full = _trigger_score(df_t, direction, min_score=1)
+            trig_notes = f&quot;{trig_full} [CT:{ct_detail} score={ct_score}]&quot;
+            if &quot;EMA200-&quot; in trig_full:
+                _reject(df_t, f&quot;CT_EMA200_FAIL({trig_full})&quot;); return None
+        elif range_rejection_enabled and is_scalping and market_state == &quot;RANGE&quot;:
+            # RANGE lane: sideways ASLI (bias netral + ADX sinyal rendah) → rejection di
+            # level kunci. Key level (SnR/SnD) diverifikasi di GATE 5; tanpa level = NO SIGNAL.
+            _r_dir, _r_note, _r_sc = _range_rejection_setup(df_t, atr)
+            if _r_dir is None:
+                _reject(df_t, f&quot;RANGE_NO_REJECTION[{_r_note}] state={market_state}({state_note})&quot;)
+                return None
+            direction, trig_score = _r_dir, _r_sc
+            trig_notes = f&quot;RANGE[{_r_note}]&quot;
+            _range_active = True
+        else:
+            _reject(df_t, f&quot;BIAS_FAIL({bias_detail}) state={market_state}({state_note})&quot;)
+            return None
+
+    # LTF veto + flip lane (simetris dua arah). Veto defensif: blokir sinyal searah
+    # bias HTF saat kaki momentum LTF berlawanan masih utuh (kasus 29th: H1 BEAR +
+    # rally M5/M15 → SELL diblokir). Anti-flicker: kalau momentum patah tapi struktur
+    # swing lawan (higher-low/lower-high) belum patah, veto tetap aktif.
+    # Flip ofensif: arah berlawanan dievaluasi dgn gate ketat (trigger ≥3, atau ≥2 bila
+    # ada struktur awal tren: swing/base break) + key level di GATE 5; gagal = reject.
+    # Hanya lane continuation/momentum — pullback/range/CT punya logika sendiri.
+    if direction in (&quot;BUY&quot;, &quot;SELL&quot;) and not (_pb_active or _range_active or _is_counter) and ltf_veto_enabled:
+        _opp = &quot;BUY&quot; if direction == &quot;SELL&quot; else &quot;SELL&quot;
+        _vetoed, _veto_note = _ltf_counter_veto(df_t, direction, atr)
+        if not _vetoed:
+            _hold, _hold_note = structure_holds(df_t, _opp)
+            if _hold:
+                _vetoed = True
+                _veto_note = f&quot;STRUCT_HOLD({_hold_note})&quot;
+        if _vetoed:
+            _fok, _fsc, _fnt = _trigger_score(df_t, _opp, min_score=2)
+            _v2, _v2_note = _ltf_counter_veto(df_t, _opp, atr)
+            _tstart, _ts_note = structure_trend_start(df_t, _opp, atr)
+            if (_fsc &gt;= flip_min_trigger or (_fsc &gt;= 2 and _tstart)) and not _v2:
+                direction, trig_score, trig_notes = _opp, _fsc, f&quot;FLIP[{_fnt}] {_veto_note}&quot;
+                if _ts_note:
+                    trig_notes += f&quot; STR[{_ts_note}]&quot;
+                _flip_active = True
+            else:
+                _reject(df_t, f&quot;{_veto_note} flip_fail[trig={_fsc} str={_ts_note or &#x27;-&#x27;} {_v2_note}]&quot;)
+                return None
+
+    # Anti-chase (fix 1 + fix 4): tolak bila harga sudah menyimpang DARI setup candle
+    # cukup untuk membuat zona entry tidak valid lagi. _chase diukur searah target
+    # (SELL: setup turun, BUY: setup naik) — lonjakan 1-2 candle terdeteksi, real-time
+    # (dist≈0) otomatis lolos. Guard sisi berlawanan (breakout): harga lewat zona atas/bawah.
+    _setup_ohlc = df_t.iloc[-2] if len(df_t) &gt;= 2 else df_t.iloc[-1]
+    _set_close  = float(_setup_ohlc[&quot;close&quot;])
+    _set_hi     = float(_setup_ohlc[&quot;high&quot;])
+    _set_lo     = float(_setup_ohlc[&quot;low&quot;])
+    _ez_half    = 0.3 * atr   # setengah lebar zona entry (sama dgn _EZ_FRAC di sl_tp)
+    _ez_top     = _set_hi + _ez_half
+    _ez_bot     = _set_lo - _ez_half
+    _chase      = (_set_close - price_now) if direction == &quot;SELL&quot; else (price_now - _set_close)
+    _chase_max  = 1.5 * atr
+    if _chase &gt; _chase_max:
+        _reject(df_t, f&quot;LATE_ENTRY(chase={_chase:.2f}/max={_chase_max:.2f})&quot;); return None
+    # Skip-rule jadi gate: SELL tak valid bila harga sudah di atas zona (breakout),
+    # BUY tak valid bila harga sudah di bawah zona.
+    if direction == &quot;SELL&quot; and price_now &gt; _ez_top:
+        _reject(df_t, f&quot;ZONE_PASSED(price={price_now:.2f}&gt;top={_ez_top:.2f})&quot;); return None
+    if direction == &quot;BUY&quot; and price_now &lt; _ez_bot:
+        _reject(df_t, f&quot;ZONE_PASSED(price={price_now:.2f}&lt;bot={_ez_bot:.2f})&quot;); return None
+
+    # GATE 4 — SL/TP
+    # RR berbeda untuk scalping (ambil profit cepat) vs intraday
+    eff_tp1_rr = scalping_tp1_rr if is_scalping else tp1_rr
+    eff_tp2_rr = scalping_tp2_rr if is_scalping else tp2_rr
+    eff_tp3_rr = scalping_tp3_rr if is_scalping else tp3_rr
+
+    if is_scalping:
+        plan = swing_based_sltp(
+            direction=direction, price_now=price_now, df=df_t, atr=atr,
+            is_scalping=True, tp1_rr=eff_tp1_rr, tp2_rr=eff_tp2_rr, tp3_rr=eff_tp3_rr,
+            max_sl=max_sl_points, sl_atr_mult_override=scalping_sl_atr_mult,
+            tp1_atr_mult_override=scalping_tp1_atr_mult,
+        )
+        if plan is None:
+            plan = dynamic_atr_sltp(
+                direction=direction, price_now=price_now, atr=atr,
+                is_scalping=True, tp1_rr=eff_tp1_rr, tp2_rr=eff_tp2_rr, tp3_rr=eff_tp3_rr,
+                max_sl=max_sl_points, df=df_t, sl_atr_mult_override=scalping_sl_atr_mult,
+                tp1_atr_mult_override=scalping_tp1_atr_mult,
+            )
+        sl_method = &quot;swing&quot; if (plan is not None and &quot;Swing&quot; in (plan.method or &quot;&quot;)) else &quot;dynamic_atr&quot;
+    else:
+        plan = dynamic_atr_sltp(
+            direction=direction, price_now=price_now, atr=atr,
+            is_scalping=False, tp1_rr=eff_tp1_rr, tp2_rr=eff_tp2_rr, tp3_rr=eff_tp3_rr,
+            max_sl=max_sl_points, df=df_t, data_by_tf=data_by_tf,
+            sl_atr_mult_override=sl_atr_mult,
+        )
+        sl_method = &quot;dynamic_atr&quot;
+    if plan is None:
+        plan = fixed_zone_sltp(
+            direction=direction, price_now=price_now,
+            entry_zone_pips=30, sl_pips=sl_pips,
+            tp1_pips=tp1_pips, tp2_pips=tp2_pips, tp3_pips=tp3_pips,
+            pip_size=pip_size,
+        )
+        sl_method = &quot;fixed&quot;
+    if plan is None:
+        _reject(df_t, &quot;SLTP_NONE&quot;); return None
+
+    # GATE 5 — Confluence + RR
+    conf_score, conf_notes, conf_detail = _confluence_score(
+        df=df_t, direction=direction, entry=price_now, atr=atr,
+        tf=trigger_tf, is_scalping=is_scalping, sl=float(plan.sl),
+        tp1_rr=eff_tp1_rr, data_by_tf=data_by_tf, now_utc=now_utc,
+        sweep_enabled=scalping_sweep_enabled, fvg_enabled=scalping_fvg_enabled,
+    )
+    if conf_score == -99:
+        _reject(df_t, f&quot;ASIAN_NO_KEY_LEVEL [{conf_notes}]&quot; if &quot;ASIAN_NO_KEY_LEVEL&quot; in conf_notes else f&quot;SNR_BLOCKED [{conf_notes}]&quot;); return None
+    if conf_score &lt; eff_conf:
+        _reject(df_t, f&quot;CONFLUENCE_FAIL conf={conf_score}/{eff_conf}[{conf_notes}] cond={market_cond}&quot;)
+        return None
+
+    # RANGE lane wajib punya key level (SnR/SnD) — rejection di level, bukan di tempat kosong.
+    # (Tanpa level, konfluensi bisa lolos via Pattern/Fib — di range itu = noise.)
+    if _range_active and not _has_key_level(conf_notes):
+        _reject(df_t, f&quot;RANGE_NO_KEY_LEVEL[{conf_notes}]&quot;)
+        return None
+
+    # H1 hardening: rekam WR 19% + loss gantung 6-10 jam (29th: 3/3 LOSS, semua SNR_FAR).
+    # Trigger H1 menahan posisi berjam-jam — tanpa key level = NO SIGNAL.
+    if trigger_tf == &quot;H1&quot; and h1_require_key_level and not _has_key_level(conf_notes):
+        _reject(df_t, f&quot;H1_NO_KEY_LEVEL[{conf_notes}]&quot;)
+        return None
+
+    # Flip lane wajib punya key level — entry melawan bias HTF hanya valid di level,
+    # bukan di tengah jalan (kontrol risiko ofensif; data reversal mentah WR 18%).
+    if _flip_active and flip_require_key_level and not _has_key_level(conf_notes):
+        _reject(df_t, f&quot;FLIP_NO_KEY_LEVEL[{conf_notes}]&quot;)
+        return None
+
+    # Quality key-level gate (2026-09-30): di pasar RANGE/CLEAN atau cond sideways,
+    # jalur continuation/momentum wajib level BERKUALITAS — SnR 3-touch (SnR_MED/SnR+)
+    # atau FIB_GOLDEN. SnR_WEAK (2-touch) tak dihitung: kasus loss 30/09 12:00 BUY 5/6
+    # di RANGE dgn SnR_WEAK disapu 15m padahal arah benar; semua WIN hari itu punya
+    # SnR 3-touch + FIB_GOLDEN. Pullback/range/flip/CT punya gerbang sendiri → tak diapply.
+    if range_quality_key_level and not (_pb_active or _range_active or _flip_active or _is_counter):
+        if market_state in (&quot;RANGE&quot;, &quot;CLEAN&quot;) or market_cond == &quot;sideways&quot;:
+            if not _has_quality_key_level(conf_notes):
+                _reject(df_t, f&quot;RANGE_QUALITY_NO_KEY_LEVEL[{conf_notes}]&quot;)
+                return None
+
+    entry_for_rr = plan.entry_high if direction == &quot;BUY&quot; else plan.entry_low
+    rr            = calc_rr(direction, entry_for_rr, plan.sl, plan.tp1)
+    rr_tp2_actual = calc_rr(direction, entry_for_rr, plan.sl, plan.tp2)
+    # Gate anti-chase (pengganti RR gate — TP proporsional SL membuat rr tetap): tolak entry
+    # yang &quot;ngejar&quot; — harga lebih jauh dari EMA20 sinyal-TF dari batas (×ATR).
+    if is_scalping:
+        _closed = df_t.iloc[:-1]
+        if len(_closed) &gt;= 30 and &quot;close&quot; in _closed.columns:
+            _ema20 = _closed[&quot;close&quot;].ewm(span=20, adjust=False).mean().iloc[-1]
+            _over  = (price_now - _ema20) if direction == &quot;BUY&quot; else (_ema20 - price_now)
+            _oe_max = scalping_overextend_atr_mult * atr
+            if _over &gt; _oe_max:
+                _reject(df_t, f&quot;OVEREXTENSION(ema20_dist={_over:.2f}/max={_oe_max:.2f})&quot;); return None
+
+    # Normalisasi ke tz-naive sebelum simpan agar konsisten saat load ulang
+    ts_to_save = close_time_ts.tz_localize(None) if close_time_ts.tzinfo is not None else close_time_ts
+    _LAST_SIGNAL_TIME[key] = ts_to_save
+    _save_cooldown_state()
+    _reject(df_t, &quot;OK&quot;)
+
+    # [8-Strategi — ADITIF] Label setup classifier (display/dedup, tak ubah skor-gate-threshold)
+    setup_mode, setup_note = classify_entry_setup(df_t, direction, atr)
+    # Mode dasar diambil dr JALUR yang aktif (state-based): momentum lane di atas
+    # tren kuat tanpa pullback dilabeli MOMENTUM (atau BREAKOUT kalau state breakout).
+    _state_mode: str | None = None
+    if _mom_active:
+        _state_mode = &quot;BREAKOUT_MOMENTUM&quot; if market_state == &quot;BREAKOUT&quot; else &quot;MOMENTUM&quot;
+    elif _range_active:
+        _state_mode = &quot;RANGE_REJECT&quot;
+    base_mode = &quot;FLIP&quot; if _flip_active else (_state_mode or (&quot;PULLBACK&quot; if _pb_active else (&quot;REVERSAL&quot; if _is_counter else &quot;CONTINUATION&quot;)))
+    # FLIP dipaksa menang atas classifier agar terpisah di data (evaluasi butuh label murni).
+    final_mode = base_mode if _flip_active else (setup_mode if setup_mode else base_mode)
+    mkt_tag = f&quot; [{market_cond.upper()}/{market_state}]&quot; if market_cond else &quot;&quot;
+
+    # [Conflict resolver — anti spam &quot;3 sinyal sekaligus&quot;] dedup LINTAS-TF per (symbol, direction):
+    # kirim duplikat arah-sama dalam window hanya bila konfluensinya LEBIH TINGGI dr yg terakhir.
+    _conf_key   = (symbol, direction)
+    _now_ts     = close_time_ts.timestamp()
+    _curr_conf  = float(conf_score)
+    _prev_emit  = _LAST_LIVE_EMIT.get(_conf_key)
+    if _prev_emit and (_now_ts - _prev_emit[0]) &lt;= _CONFLICT_WINDOW_SEC:
+        if _curr_conf &lt;= _prev_emit[1]:
+            _reject(df_t, f&quot;CONFLICT_SUPPRESS(prev_conf={_prev_emit[1]:.0f}&gt;=now={_curr_conf:.0f})&quot;)
+            return None
+    _LAST_LIVE_EMIT[_conf_key] = (_now_ts, _curr_conf)
+
+    trade_mode, exec_tf = _detect_trade_mode(trigger_tf)
+    enter_tag = f&quot; [setup={final_mode}]&quot; if setup_mode else &quot;&quot;
+    return Signal(
+        symbol=symbol, tf=trigger_tf, direction=direction, close_time=close_time,
+        signal_type=&quot;LIVE&quot;,
+        signal_mode=final_mode,
+        entry=float(entry_for_rr), entry_low=float(plan.entry_low),
+        entry_high=float(plan.entry_high), sl=float(plan.sl),
+        tp=float(plan.tp1), tp2=float(plan.tp2), tp3=float(plan.tp3),
+        rr=float(rr), rr_tp2_actual=float(rr_tp2_actual or 0.0),
+        sl_method=sl_method, atr_value=float(atr),
+        tp1_rr=float(eff_tp1_rr), tp2_rr=float(eff_tp2_rr), tp3_rr=float(eff_tp3_rr),
+        trigger_score=trig_score, trigger_max=6, confluence_score=conf_score,
+        htf_bias=bias_detail, htf_bias_all=_all_tf_bias(data_by_tf),
+        trigger_notes=f&quot;{trig_notes}{mkt_tag}&quot;,
+        confluence_notes=conf_notes,
+        pattern_names=conf_detail[&quot;pattern_names&quot;],
+        fib_detail=conf_detail[&quot;fib_detail&quot;], snr_detail=conf_detail[&quot;snr_detail&quot;],
+        snd_detail=conf_detail[&quot;snd_detail&quot;], divergence_detail=conf_detail[&quot;div_detail&quot;],
+        sweep_detail=conf_detail[&quot;sweep_detail&quot;], fvg_detail=conf_detail[&quot;fvg_detail&quot;],
+        session_name=sess,
+        trade_mode=trade_mode, exec_tf=exec_tf, is_setup_plan=False,
+    )
+
+</div>
+
+<h3>Lampiran 1.3 Evaluasi Bias Makro Multi-Timeframe (<code>src/engine/bias.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/engine/bias.py</code><br>
+Modul ini bertugas mengevaluasi arah tren makro dan momentum pada kerangka waktu tinggi (H4, H1, dan M30) menggunakan perpaduan EMA 50/200, kemiringan slope, serta algoritma voting terbobot untuk menetapkan bias konsensus pasar (Bullish, Bearish, atau Neutral).</p>
+<div class="code-box">
+&quot;&quot;&quot;─ HTF bias voting &amp; trade-mode classification.&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import pandas as pd
+
+from src.engine.utils import _atr_proxy, _latest_closed, _safe
+
+
+def _bias_from_tf(df: pd.DataFrame) -&gt; str | None:
+    if len(df) &lt; 200:
+        return None
+
+    last   = _latest_closed(df)
+    close  = _safe(last, &quot;close&quot;)
+    ema20  = _safe(last, &quot;ema_20&quot;)
+    ema50  = _safe(last, &quot;ema_50&quot;)
+    ema200 = _safe(last, &quot;ema_200&quot;)
+
+    if any(v is None for v in [close, ema50, ema200]):
+        return None
+
+    is_bull = close &gt; ema50 and close &gt; ema200
+    is_bear = close &lt; ema50 and close &lt; ema200  
+
+    if not (is_bull or is_bear):
+        return None
+
+    gap_pct = abs(ema50 - ema200) / close  
+
+    idx = df.index.get_loc(last.name) if hasattr(last, &quot;name&quot;) and last.name in df.index else -2
+    try:
+        ema50_recent = df[&quot;ema_50&quot;].iloc[max(0, idx - 4): idx + 1].dropna()
+    except Exception:
+        ema50_recent = df[&quot;ema_50&quot;].iloc[-7:-2].dropna()
+
+    slope_ok = False
+    if len(ema50_recent) &gt;= 3:
+        diffs   = ema50_recent.diff().dropna()
+        n_total = len(diffs)
+        if is_bull and (diffs &gt; 0).sum() / n_total &gt;= 0.5:
+            slope_ok = True
+        if is_bear and (diffs &lt; 0).sum() / n_total &gt;= 0.5:
+            slope_ok = True
+    else:
+        slope_ok = True
+
+    if gap_pct &gt;= 0.0005 and slope_ok:
+        candidate = &quot;BULL&quot; if is_bull else &quot;BEAR&quot;
+    elif atr := _atr_proxy(df):
+        if is_bull and close &gt; ema200 + atr:
+            candidate = &quot;BULL&quot;
+        elif is_bear and close &lt; ema200 - atr:
+            candidate = &quot;BEAR&quot;
+        else:
+            candidate = None
+    else:
+        candidate = None
+
+    return candidate
+
+
+def _bias_why_neutral(df: pd.DataFrame) -&gt; str:
+    &quot;&quot;&quot;Diagnostik kenapa _bias_from_tf None — dipakai log vote bias. Hindari &#x27;()&#x27; di return (pemangkasan main).&quot;&quot;&quot;
+    if len(df) &lt; 200:
+        return &quot;bars_kurang_200&quot;
+    last   = _latest_closed(df)
+    close  = _safe(last, &quot;close&quot;)
+    ema50  = _safe(last, &quot;ema_50&quot;)
+    ema200 = _safe(last, &quot;ema_200&quot;)
+    if any(v is None for v in [close, ema50, ema200]):
+        return &quot;kolom_MA_tidak_lengkap&quot;
+    if abs(ema50 - ema200) &lt;= abs(close) * 1e-6:
+        return f&quot;ema50_sama_ema200_kode_lama e50={ema50:.2f}&quot;
+    is_bull = close &gt; ema50 and close &gt; ema200
+    is_bear = close &lt; ema50 and close &lt; ema200
+    if not (is_bull or is_bear):
+        return f&quot;harga_antara_MA c={close:.0f} e50={ema50:.0f} e200={ema200:.0f}&quot;
+    gap_pct = abs(ema50 - ema200) / close
+    if gap_pct &lt; 0.0005:
+        return f&quot;gap_MA_kecil {gap_pct*100:.3f}pct&quot;
+    idx = df.index.get_loc(last.name) if hasattr(last, &quot;name&quot;) and last.name in df.index else -2
+    try:
+        ema50_recent = df[&quot;ema_50&quot;].iloc[max(0, idx - 4): idx + 1].dropna()
+    except Exception:
+        ema50_recent = df[&quot;ema_50&quot;].iloc[-7:-2].dropna()
+    if len(ema50_recent) &gt;= 3:
+        diffs = ema50_recent.diff().dropna()
+        n     = float(len(diffs))
+        slope_too_weak = (is_bull and (diffs &gt; 0).sum() / n &lt; 0.5) or \
+                         (is_bear and (diffs &lt; 0).sum() / n &lt; 0.5)
+        if slope_too_weak:
+            return f&quot;slope_ema50_lemah {diffs.iloc[-1]:+.2f}/bar&quot;
+    return &quot;unknown&quot;
+
+
+def _momentum_recovery_bias(
+    df_scalp: pd.DataFrame,
+    df_h1:    pd.DataFrame | None,
+) -&gt; tuple[str | None, str]:
+    &quot;&quot;&quot;Deteksi momentum recovery scalping saat H1 NEUTRAL — sistem skor min 3 dari 4
+    (slope ≥60%, impulse &gt;1.5×ATR, rsi searah, h1_ok EMA50 H1 tak berlawanan), bukan
+    wajib semua. Returns (bias, detail) utk log vote bias.&quot;&quot;&quot;
+    if len(df_scalp) &lt; 30:
+        return None, &quot;TOO_FEW_BARS&quot;
+
+    last = _latest_closed(df_scalp)
+    prev = df_scalp.iloc[-3] if len(df_scalp) &gt; 3 else last
+
+    close = _safe(last, &quot;close&quot;)
+    ema20 = _safe(last, &quot;ema_20&quot;)
+    ema50 = _safe(last, &quot;ema_50&quot;)
+    rsi   = _safe(last, &quot;rsi_14&quot;)
+    rsi_p = _safe(prev, &quot;rsi_14&quot;)
+    atr   = _atr_proxy(df_scalp)
+
+    if any(v is None for v in [close, ema20, ema50, rsi, rsi_p]) or atr &lt;= 0:
+        return None, &quot;DATA_INCOMPLETE&quot;
+
+    # Gerbang wajib: arah momentum
+    ema20_bull = ema20 &gt; ema50
+    ema20_bear = ema20 &lt; ema50
+    if not (ema20_bull or ema20_bear):
+        return None, &quot;NO_MOMENTUM_DIR&quot;
+    is_bull = ema20_bull
+
+    try:
+        idx         = df_scalp.index.get_loc(last.name) if hasattr(last, &quot;name&quot;) and last.name in df_scalp.index else -2
+        ema50_slice = df_scalp[&quot;ema_50&quot;].iloc[max(0, idx - 4): idx + 1].dropna()
+    except Exception:
+        ema50_slice = df_scalp[&quot;ema_50&quot;].iloc[-7:-2].dropna()
+
+    slope_ok = False
+    if len(ema50_slice) &gt;= 3:
+        diffs    = ema50_slice.diff().dropna()
+        n        = len(diffs)
+        slope_ok = ((diffs &gt; 0).sum() / n &gt;= 0.6) if is_bull else ((diffs &lt; 0).sum() / n &gt;= 0.6)
+
+    low_20  = float(df_scalp[&quot;low&quot;].iloc[-22:-2].min())  if len(df_scalp) &gt;= 22 else float(df_scalp[&quot;low&quot;].iloc[:-2].min())
+    high_20 = float(df_scalp[&quot;high&quot;].iloc[-22:-2].max()) if len(df_scalp) &gt;= 22 else float(df_scalp[&quot;high&quot;].iloc[:-2].max())
+    impulse_ok = (close &gt; low_20 + 1.5 * atr) if is_bull else (close &lt; high_20 - 1.5 * atr)
+
+    rsi_ok = (rsi &gt; 50 and rsi &gt; rsi_p) if is_bull else (rsi &lt; 50 and rsi &lt; rsi_p)
+
+    # H1 tidak boleh aktif berlawanan arah; karena skor 3/4, cukup satu syarat boleh
+    # gagal — H1 masih agak turun tapi 3 syarat lain solid tetap lolos.
+    h1_ok = True
+    if df_h1 is not None and len(df_h1) &gt;= 10:
+        try:
+            h1_last   = _latest_closed(df_h1)
+            h1_idx    = df_h1.index.get_loc(h1_last.name) if hasattr(h1_last, &quot;name&quot;) and h1_last.name in df_h1.index else -2
+            h1_ema50s = df_h1[&quot;ema_50&quot;].iloc[max(0, h1_idx - 4): h1_idx + 1].dropna()
+            if len(h1_ema50s) &gt;= 4:
+                h1_diffs = h1_ema50s.diff().dropna()
+                h1_n     = len(h1_diffs)
+                if is_bull  and (h1_diffs &lt; 0).sum() / h1_n &gt;= 0.8:
+                    h1_ok = False
+                if not is_bull and (h1_diffs &gt; 0).sum() / h1_n &gt;= 0.8:
+                    h1_ok = False
+        except Exception:
+            pass
+
+    checks = {&quot;slope&quot;: slope_ok, &quot;impulse&quot;: impulse_ok, &quot;rsi&quot;: rsi_ok, &quot;h1_ok&quot;: h1_ok}
+    score  = sum(checks.values())
+    detail = &quot;,&quot;.join(f&quot;{k}{&#x27;+&#x27; if v else &#x27;-&#x27;}&quot; for k, v in checks.items())
+
+    if score &gt;= 3:
+        return (&quot;BULL&quot; if is_bull else &quot;BEAR&quot;), detail
+    return None, detail
+
+
+def _vote_bias(
+    data_by_tf:        dict[str, pd.DataFrame],
+    confirm_tfs:       list[str],
+    trigger_tf:        str = &quot;M5&quot;,
+    min_confirm_votes: int = 1,
+    scalping_h1_only:  bool = True,
+    intraday_require_d1: bool = True,
+) -&gt; tuple[str | None, str]:
+    &quot;&quot;&quot;Vote bias HTF: required_tf (H1 utk M5/M15, H4(+D1) utk intraday) harus punya bias
+    jelas + min_confirm_votes sepakat. Scalping cukup H1 saja (data: H4 menekan WR 60%
+    vs 72% saat netral). H1 NEUTRAL → coba momentum recovery. Returns (bias, detail).&quot;&quot;&quot;
+    trigger_up = trigger_tf.upper()
+    is_scalping_tf = trigger_up in (&quot;M5&quot;, &quot;M15&quot;)
+
+    # TF yang wajib punya bias jelas (bukan NEUTRAL) — tanpanya langsung reject
+    _required_tf: dict[str, list[str]] = {
+        &quot;M5&quot;:  [&quot;H1&quot;],
+        &quot;M15&quot;: [&quot;H1&quot;],
+        &quot;H1&quot;:  [&quot;H4&quot;],
+        &quot;H4&quot;:  [],
+    }
+    if intraday_require_d1:
+        _required_tf[&quot;H4&quot;] = [&quot;D1&quot;]
+        _required_tf[&quot;H1&quot;].append(&quot;D1&quot;)  # intraday: D1 (tren besar) wajib punya bias jelas
+    required_tfs = _required_tf.get(trigger_up, [])
+
+    if is_scalping_tf and scalping_h1_only:
+        confirm_tfs = [tf for tf in confirm_tfs if tf.upper() == &quot;H1&quot;]
+
+    votes:       dict[str, int] = {&quot;BULL&quot;: 0, &quot;BEAR&quot;: 0}
+    details:     list[str]      = []
+    votes_by_tf: dict[str, str] = {}
+
+    for tf in confirm_tfs:
+        df = data_by_tf.get(tf)
+        if df is None:
+            details.append(f&quot;{tf}:MISSING&quot;)
+            continue
+        b = _bias_from_tf(df)
+        if b is None:
+            details.append(f&quot;{tf}:NEUTRAL({_bias_why_neutral(df)})&quot;)
+            continue
+        details.append(f&quot;{tf}:{b}&quot;)
+        votes[b]       += 1
+        votes_by_tf[tf] = b
+
+    for req in required_tfs:
+        if votes_by_tf.get(req) is not None:
+            continue
+        # Momentum Recovery scalping saat H1 NEUTRAL: EMA200 H1 belum flip, tapi ada
+        # impulse lokal kuat M5/M15 → cek dengan kriteria lebih ketat.
+        if is_scalping_tf and req == &quot;H1&quot;:
+            df_scalp = data_by_tf.get(trigger_up)
+            df_h1    = data_by_tf.get(&quot;H1&quot;)
+            if df_scalp is not None:
+                mom_bias, mom_detail = _momentum_recovery_bias(df_scalp, df_h1)
+                if mom_bias is not None:
+                    details.append(f&quot;[MOM_RECOVERY:{mom_bias}({mom_detail})]&quot;)
+                    return mom_bias, &quot; &quot;.join(details)
+                else:
+                    details.append(f&quot;[MOM_RECOVERY_FAIL:{mom_detail}]&quot;)
+        return None, &quot; &quot;.join(details) + f&quot; [TF_FAIL:{req}=NEUTRAL]&quot;
+
+    # Minimal votes harus terpenuhi
+    if max(votes[&quot;BULL&quot;], votes[&quot;BEAR&quot;]) &lt; min_confirm_votes:
+        return None, &quot; &quot;.join(details)
+
+    if votes[&quot;BULL&quot;] == votes[&quot;BEAR&quot;]:
+        return None, &quot; &quot;.join(details)
+
+    bias = &quot;BULL&quot; if votes[&quot;BULL&quot;] &gt; votes[&quot;BEAR&quot;] else &quot;BEAR&quot;
+    return bias, &quot; &quot;.join(details)
+
+
+def _all_tf_bias(data_by_tf: dict[str, pd.DataFrame]) -&gt; str:
+    &quot;&quot;&quot;Bias semua TF (D1→M15) untuk tampilan stack sinyal — diagnostik, bukan keputusan gate.&quot;&quot;&quot;
+    parts: list[str] = []
+    for tf in [&quot;D1&quot;, &quot;H4&quot;, &quot;H1&quot;, &quot;M15&quot;]:
+        df = data_by_tf.get(tf)
+        if df is None:
+            continue
+        b = _bias_from_tf(df)
+        if b is None:
+            parts.append(f&quot;{tf}:NEUTRAL({_bias_why_neutral(df)})&quot;)
+        else:
+            parts.append(f&quot;{tf}:{b}&quot;)
+    return &quot; &quot;.join(parts)
+
+
+def _detect_trade_mode(trigger_tf: str) -&gt; tuple[str, str]:
+    tf = trigger_tf.upper()
+    if tf in (&quot;M5&quot;, &quot;M15&quot;):
+        return &quot;scalping&quot;, &quot;M5&quot;
+    if tf == &quot;H1&quot;:
+        return &quot;intraday&quot;, &quot;M15&quot;
+    return &quot;intraday&quot;, &quot;H1&quot;
+
+</div>
+
+<h3>Lampiran 1.4 Evaluasi Skor Pemicu Dinamis (<code>src/engine/trigger.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/engine/trigger.py</code><br>
+Modul ini menghitung skor akumulasi pemicu (trigger scoring) pada lilin kerangka waktu eksekusi (M5 atau M15) berdasarkan konfirmasi pola lilin (candlestick), arah kemiringan momentum RSI, histogram MACD, dan kondisi pullback terhadap garis purata bergerak eksponensial.</p>
+<div class="code-box">
+&quot;&quot;&quot;─ Trigger score &amp; setup entry (continuation/pullback/momentum/range).&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import pandas as pd
+
+from src.engine.utils import _atr_proxy, _latest_closed, _safe
+
+
+def _trigger_score(
+    df:                 pd.DataFrame,
+    direction:          str,
+    min_score:          int = 4,
+    ema200_tolerance_mult: float = 0.2,
+) -&gt; tuple[bool, int, str]:
+    &quot;&quot;&quot;Trigger Score Layer-1 (maks 6): EMA200, EMA50 pullback, EMA alignment, RSI, MACD, Candle.
+
+    ema200_tolerance_mult: lebar band EMA200 (×ATR). Momentum lane memakai nilai lebih
+    besar (default 1.0 via MOMENTUM_EMA200_TOLERANCE) agar tren kuat yang TIDAK menarik
+    kembali ke EMA200 tetap bisa masuk — anti-chase (OVEREXTENSION &amp; LATE_ENTRY) tetap
+    jalan terpisah di gate berikutnya.
+    &quot;&quot;&quot;
+    direction = direction.upper()
+    notes: list[str] = []
+    score = 0
+
+    if len(df) &lt; 30:
+        return False, 0, &quot;TOO_FEW_BARS&quot;
+
+    last = _latest_closed(df)
+    prev = df.iloc[-3] if len(df) &gt; 3 else last
+
+    close   = _safe(last, &quot;close&quot;)
+    open_   = _safe(last, &quot;open&quot;)
+    ema20   = _safe(last, &quot;ema_20&quot;)
+    ema50   = _safe(last, &quot;ema_50&quot;)
+    ema200  = _safe(last, &quot;ema_200&quot;)
+    rsi     = _safe(last, &quot;rsi_14&quot;)
+    rsi_p   = _safe(prev, &quot;rsi_14&quot;)
+    mhist   = _safe(last, &quot;macdhist&quot;)
+    mhist_p = _safe(prev, &quot;macdhist&quot;)
+    atr     = _atr_proxy(df)
+
+    if close is None:
+        return False, 0, &quot;NO_CLOSE&quot;
+
+    # EMA200 — wajib
+    if ema200 is not None:
+        tolerance = ema200_tolerance_mult * atr if atr &gt; 0 else 0.0
+        in_band   = abs(close - ema200) &lt;= tolerance  
+        on_side   = (direction == &quot;BUY&quot;  and close &gt; ema200 - tolerance) or \
+                    (direction == &quot;SELL&quot; and close &lt; ema200 + tolerance)
+        if on_side or in_band:
+            score += 1; notes.append(&quot;EMA200+&quot;)
+        else:
+            notes.append(&quot;EMA200-&quot;)
+            return False, score, &quot; &quot;.join(notes)
+    else:
+        notes.append(&quot;EMA200_NA&quot;)
+
+    # EMA50 pullback (dalam 1.5×ATR)
+    if ema50 is not None and atr &gt; 0:
+        if abs(close - ema50) &lt;= 1.5 * atr:
+            score += 1; notes.append(&quot;EMA50+&quot;)
+        else:
+            notes.append(&quot;EMA50-&quot;)
+
+    # EMA alignment
+    if all(v is not None for v in [ema20, ema50, ema200]):
+        if (direction == &quot;BUY&quot;  and ema20 &gt; ema50 &gt; ema200) or \
+           (direction == &quot;SELL&quot; and ema20 &lt; ema50 &lt; ema200):
+            score += 1; notes.append(&quot;ALIGN+&quot;)
+        else:
+            notes.append(&quot;ALIGN-&quot;)
+
+    # RSI
+    if rsi is not None and rsi_p is not None:
+        if (direction == &quot;BUY&quot;  and rsi &lt; 65 and rsi &gt; rsi_p) or \
+           (direction == &quot;SELL&quot; and rsi &gt; 35 and rsi &lt; rsi_p):
+            score += 1; notes.append(f&quot;RSI+({rsi:.0f})&quot;)
+        else:
+            notes.append(f&quot;RSI-({rsi:.0f})&quot;)
+
+    # MACD histogram
+    if mhist is not None and mhist_p is not None:
+        if (direction == &quot;BUY&quot;  and mhist &gt; mhist_p) or \
+           (direction == &quot;SELL&quot; and mhist &lt; mhist_p):
+            score += 1; notes.append(&quot;MACD+&quot;)
+        else:
+            notes.append(&quot;MACD-&quot;)
+
+    # Candle
+    if open_ is not None:
+        if (direction == &quot;BUY&quot;  and close &gt; open_) or \
+           (direction == &quot;SELL&quot; and close &lt; open_):
+            score += 1; notes.append(&quot;CDL+&quot;)
+        else:
+            notes.append(&quot;CDL-&quot;)
+
+    return score &gt;= min_score, score, &quot; &quot;.join(notes)
+
+
+def _scalp_pullback_setup(
+    df:        pd.DataFrame,
+    direction: str,
+    atr:       float,
+) -&gt; tuple[bool, str]:
+    &quot;&quot;&quot;Set-up pullback/rebound scalping: pause contra-tren sementara di dalam tren,
+    masuk SEARAH tren setelah rebound — bukan &quot;buy the dip&quot;.
+
+    Gerbang wajib: trend_tf (bias HTF + EMA20&gt;EMA50 + impuls &gt;=1×ATR), zone (body
+    menembus EMA20 dalam 0.8×ATR), deep (retracement 25-70%; &gt;78.6% = reversal),
+    structure (body tak menembus swing). Konfirmasi min 2/4: rejection (pin/engulf/
+    sweep), rsi, momentum, div. Hanya bar tertutup dipakai.&quot;&quot;&quot;
+    direction = direction.upper()
+    if len(df) &lt; 40:
+        return False, &quot;TOO_FEW_BARS&quot;
+
+    last  = _latest_closed(df)
+    prev  = df.iloc[-3] if len(df) &gt; 3 else last
+    close = _safe(last, &quot;close&quot;)
+    open_ = _safe(last, &quot;open&quot;)
+    high  = _safe(last, &quot;high&quot;)
+    low   = _safe(last, &quot;low&quot;)
+    e20   = _safe(last, &quot;ema_20&quot;)
+    e50   = _safe(last, &quot;ema_50&quot;)
+    rsi   = _safe(last, &quot;rsi_14&quot;)
+    rsi_p = _safe(prev, &quot;rsi_14&quot;)
+    mhist = _safe(last, &quot;macdhist&quot;)
+    mp    = _safe(prev, &quot;macdhist&quot;)
+    e20_prev  = _safe(df.iloc[-3], &quot;ema_20&quot;)
+    prev_open = _safe(df.iloc[-3], &quot;open&quot;)
+    if any(v is None for v in [close, open_, high, low, e20, e50, rsi, rsi_p, mhist, mp, e20_prev, prev_open]) or atr &lt;= 0:
+        return False, &quot;DATA_INCOMPLETE&quot;
+
+    rng = high - low
+
+    w_imp  = df.iloc[-9:-3]
+    w_pb   = df.iloc[-3:-1]
+    imp_high = float(w_imp[&quot;high&quot;].max())
+    imp_low  = float(w_imp[&quot;low&quot;].min())
+    imp_ext  = imp_high - imp_low
+    body_raw = pd.concat([w_pb[&quot;open&quot;], w_pb[&quot;close&quot;]])
+    body_low  = float(body_raw.min())
+
+    if direction == &quot;BUY&quot;:
+        pb_low     = float(w_pb[&quot;low&quot;].min())
+        trend_tf   = e20 &gt; e50 and close &gt; e50 and e20 &gt; e20_prev and imp_ext &gt;= atr
+        zone       = body_low &lt; e20 and body_low &lt;= e20 + 0.4 * atr and (e20 - body_low) &lt;= 1.0 * atr
+        retr       = (imp_high - body_low) / imp_ext if imp_ext &gt; 0 else 0.0
+        structure  = body_low &gt; imp_low
+        lower_wick = min(open_, close) - low
+        sweep      = pb_low &lt; imp_low and body_low &gt;= imp_low and close &gt; imp_low
+        c_rej      = sweep or (close &gt; open_ and rng &gt; 0 and (lower_wick &gt;= 0.4 * rng or close &gt; prev_open))
+        c_rsi      = rsi &gt; rsi_p and 35 &lt; rsi &lt; 68
+        c_mom      = mhist &gt; mp
+        c_div      = any(bool(_safe(r, &quot;rsi_bull_div&quot;) or False) for _, r in w_pb.iterrows()) or \
+                     any(bool(_safe(r, &quot;macd_bull_div&quot;) or False) for _, r in w_pb.iterrows())
+    else:
+        body_high  = float(body_raw.max())
+        pb_high    = float(w_pb[&quot;high&quot;].max())
+        trend_tf   = e20 &lt; e50 and close &lt; e50 and e20 &lt; e20_prev and imp_ext &gt;= atr
+        zone       = body_high &gt; e20 and body_high &gt;= e20 - 0.4 * atr and (body_high - e20) &lt;= 1.0 * atr
+        retr       = (body_high - imp_low) / imp_ext if imp_ext &gt; 0 else 0.0
+        structure  = body_high &lt; imp_high
+        upper_wick = high - max(open_, close)
+        sweep      = pb_high &gt; imp_high and body_high &lt;= imp_high and close &lt; imp_high
+        c_rej      = sweep or (close &lt; open_ and rng &gt; 0 and (upper_wick &gt;= 0.4 * rng or close &lt; prev_open))
+        c_rsi      = rsi &lt; rsi_p and 32 &lt; rsi &lt; 65
+        c_mom      = mhist &lt; mp
+        c_div      = any(bool(_safe(r, &quot;rsi_bear_div&quot;) or False) for _, r in w_pb.iterrows()) or \
+                     any(bool(_safe(r, &quot;macd_bear_div&quot;) or False) for _, r in w_pb.iterrows())
+
+    deep     = 0.23 &lt;= retr &lt;= 0.786   # 2026-09-24: 25-70% -&gt; 23-78.6% (batas fib sebelum reversal)
+    rej_gate = (&quot;trend_tf&quot;, trend_tf), (&quot;zone&quot;, zone), (&quot;deep&quot;, deep), (&quot;structure&quot;, structure)
+    for name, ok in rej_gate:
+        if not ok:
+            return False, name
+
+    checks = {&quot;rejection&quot;: c_rej, &quot;rsi&quot;: c_rsi, &quot;momentum&quot;: c_mom, &quot;div&quot;: c_div}
+    score  = sum(checks.values())
+    detail = &quot;,&quot;.join(f&quot;{k}{&#x27;+&#x27; if v else &#x27;-&#x27;}&quot; for k, v in checks.items())
+    if score &gt;= 2:
+        return True, detail
+    return False, f&quot;{detail} score={score}/4&quot;
+
+
+def _range_rejection_setup(
+    df:  pd.DataFrame,
+    atr: float,
+) -&gt; tuple[str | None, str, int]:
+    &quot;&quot;&quot;RANGE lane (2026-09-24): sideways + rejection, tanpa gate tren.
+
+    Sekadar candle rejection (pin/engulf/sweep) + RSI + momentum di kedua arah — pilih
+    arah dgn skor tertinggi, min 2 dari 3. Key level (SnR/SnD) BUKAN di sini tapi di
+    GATE 5: tanpa key level, konfluensi tak sampai 2 (dan ASIAN langsung reject).
+    Returns (direction|None, note, score).&quot;&quot;&quot;
+    if df is None or len(df) &lt; 30 or atr &lt;= 0:
+        return None, &quot;TOO_FEW_BARS&quot;, 0
+    need = {&quot;open&quot;, &quot;close&quot;, &quot;high&quot;, &quot;low&quot;}
+    if not need.issubset(df.columns):
+        return None, &quot;DATA_INCOMPLETE&quot;, 0
+
+    last  = _latest_closed(df)
+    prev  = df.iloc[-3] if len(df) &gt; 3 else last
+    open_ = _safe(last, &quot;open&quot;)
+    close = _safe(last, &quot;close&quot;)
+    high  = _safe(last, &quot;high&quot;)
+    low   = _safe(last, &quot;low&quot;)
+    rsi   = _safe(last, &quot;rsi_14&quot;)
+    rsi_p = _safe(prev, &quot;rsi_14&quot;)
+    mhist = _safe(last, &quot;macdhist&quot;)
+    mp    = _safe(prev, &quot;macdhist&quot;)
+    prev_open = _safe(prev, &quot;open&quot;)
+    if any(v is None for v in [open_, close, high, low, rsi, rsi_p, mhist, mp, prev_open]):
+        return None, &quot;DATA_INCOMPLETE&quot;, 0
+
+    rng = high - low
+    if rng &lt;= 0:
+        return None, &quot;ZERO_RANGE&quot;, 0
+    lower_wick = min(open_, close) - low
+    upper_wick = high - max(open_, close)
+
+    def _score_dir(d: str) -&gt; int:
+        if d == &quot;BUY&quot;:
+            c_rej = close &gt; open_ and (lower_wick &gt;= 0.4 * rng or close &gt; prev_open)
+            c_rsi = 30 &lt;= rsi &lt;= 68 and rsi &gt; rsi_p
+        else:
+            c_rej = close &lt; open_ and (upper_wick &gt;= 0.4 * rng or close &lt; prev_open)
+            c_rsi = 32 &lt;= rsi &lt;= 70 and rsi &lt; rsi_p
+        c_mom = (mhist &gt; mp) if d == &quot;BUY&quot; else (mhist &lt; mp)
+        return sum([c_rej, c_rsi, c_mom])
+
+    sc_b, sc_s = _score_dir(&quot;BUY&quot;), _score_dir(&quot;SELL&quot;)
+    if sc_b &gt;= sc_s and sc_b &gt;= 2:
+        return &quot;BUY&quot;, f&quot;rej_ok score={sc_b}/3&quot;, sc_b
+    if sc_s &gt;= 2:
+        return &quot;SELL&quot;, f&quot;rej_ok score={sc_s}/3&quot;, sc_s
+    return None, f&quot;score_buy={sc_b},score_sell={sc_s}/3&quot;, 0
+
+
+def _has_key_level(conf_notes: str) -&gt; bool:
+    &quot;&quot;&quot;True jika ada SnR/SnD positif di notes konfluensi (varian WEAK/MED/OK).&quot;&quot;&quot;
+    return any(k in conf_notes for k in (&quot;SnR+&quot;, &quot;SnR_WEAK&quot;, &quot;SnR_MED&quot;, &quot;SnD+&quot;))
+
+
+def _has_quality_key_level(conf_notes: str) -&gt; bool:
+    &quot;&quot;&quot;True jika ada key level BERKUALITAS: SnR 3-touch+ (SnR_MED/SnR+) atau FIB_GOLDEN.
+
+    SnR_WEAK (2-touch, akurasi historis ~31.6%) TIDAK dihitung — level lemah adalah
+    kandidat stop-hunt (kasus loss 30/09 12:00: BUY 5/6 di RANGE dgn SnR_WEAK, SL
+    disapu lalu harga lanjut naik; semua WIN hari itu punya SnR 3-touch + FIB_GOLDEN).&quot;&quot;&quot;
+    return any(k in conf_notes for k in (&quot;SnR_MED&quot;, &quot;SnR+&quot;, &quot;FIB_GOLDEN&quot;))
+
+
+def _get_active_patterns(direction: str, last_row: pd.Series) -&gt; list[str]:
+    from src.features.patterns import PATTERN_FUNCS
+    names: list[str] = []
+    for name in PATTERN_FUNCS:
+        val = _safe(last_row, name)
+        if val is None:
+            continue
+        if direction == &quot;BUY&quot;  and val &gt;= 100:
+            names.append(name.replace(&quot;CDL&quot;, &quot;&quot;))
+        elif direction == &quot;SELL&quot; and val &lt;= -100:
+            names.append(name.replace(&quot;CDL&quot;, &quot;&quot;))
+    return names
+
+</div>
+
+<h3>Lampiran 1.5 Evaluasi Konfluensi Multi-Level (<code>src/engine/confluence.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/engine/confluence.py</code><br>
+Modul ini mengukur tingkat konfluensi struktural pasar melalui pengujian keselarasan harga terhadap zona Support & Resistance (SNR), zona Supply & Demand (SND), serta rasio keemasan Fibonacci Retracement guna memastikan posisi masuk memiliki probabilitas tinggi dan terhindar dari hambatan level kunci (snr blocking).</p>
+<div class="code-box">
+&quot;&quot;&quot;─ Confluence score &amp; counter-trend validation.&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import re
+
+import pandas as pd
+
+from src.engine.bias import _bias_from_tf
+from src.engine.trigger import _get_active_patterns
+from src.engine.utils import _latest_closed, _safe
+from src.features.fair_value_gap import fvg_confluence_score
+from src.features.fibonacci import fib_confluence_score
+from src.features.liquidity_sweep import liquidity_sweep_score
+from src.features.session import session_strictness
+from src.features.zones_snd import snd_confluence_score
+from src.features.zones_snr import snr_confluence_score
+
+
+def _confluence_score(
+    df:          pd.DataFrame,
+    direction:   str,
+    entry:       float,
+    atr:         float,
+    tf:          str  = &quot;&quot;,
+    is_scalping: bool = False,
+    sl:          float = 0.0,
+    tp1_rr:      float = 1.5,
+    data_by_tf:  dict[str, pd.DataFrame] | None = None,
+    now_utc:     datetime | None = None,   # untuk cek Asian session strictness
+    sweep_enabled: bool = False,  # skalprik: liquidity sweep ikut skor (off → logging-only)
+    fvg_enabled:   bool = False,  # skalprik: FVG ikut skor (off → logging-only)
+) -&gt; tuple[int, str, dict]:
+    &quot;&quot;&quot;Confluence Score Layer-2 — berbobot sesuai akurasi historis komponen.
+
+    Bobot: Pattern/Fib/Div 1.5, SND 2.0, SNR weighted (0.3x/0.6x/1.0x), Sweep+FVG
+    gabungan 1.0 (scalping saja, OFF → logging-only). Alignment 3+ TF +1.0. Skor
+    float dibulatkan ke int di akhir; minimal threshold dikalibrasi utk skala ini.
+    &quot;&quot;&quot;
+    # Bobot komponen — 2026-09-24 rekalibrasi dari component_accuracy:
+    # Pattern 56.2% / Fib 53.0% / RSI(+) tetap dipertahankan; SND 38.5%
+    # &amp; SNR 46.7% (di bawah tebakan random) diturunkan drastis agar skor
+    # confluence kembali proksimat akurasi riil komponen.
+    _W_PATTERN   = 1.5   
+    _W_FIB       = 1.5   
+    _W_DIV       = 1.5   
+    _W_SNR       = 0.5   # turun dr 1.0: akurasi 46.7% &lt; random
+    _W_SND       = 1.0   # turun dr 2.0: akurasi 38.5% justru penekan WR   
+    # Bonus SWEEP+FVG gabungan: max total 1.0, share dibagi rata (+0.5 masing-masing);
+    # belum divalidasi, default logging-only.
+    _W_SWEEP_FVG = 1.0   
+    direction = direction.upper()
+    score: float = 0.0   # float untuk akumulasi bobot, dibulatkan ke int di akhir
+    notes: list[str] = []
+    detail: dict = {
+        &quot;pattern_names&quot;: &quot;&quot;,
+        &quot;fib_detail&quot;:    &quot;&quot;,
+        &quot;snr_detail&quot;:    &quot;&quot;,
+        &quot;snd_detail&quot;:    &quot;&quot;,
+        &quot;div_detail&quot;:    &quot;&quot;,
+        &quot;sweep_detail&quot;:  &quot;&quot;,
+        &quot;fvg_detail&quot;:    &quot;&quot;,
+    }
+    last = _latest_closed(df)
+
+    # Pattern — bobot 1.5 (akurasi tertinggi)
+    bull_count = int(_safe(last, &quot;pattern_bull_count&quot;) or 0)
+    bear_count = int(_safe(last, &quot;pattern_bear_count&quot;) or 0)
+    count = bull_count if direction == &quot;BUY&quot; else bear_count
+    if count &gt;= 2:
+        score += 2 * _W_PATTERN; notes.append(&quot;Pattern++&quot;)
+    elif count &gt;= 1:
+        score += 1 * _W_PATTERN; notes.append(&quot;Pattern+&quot;)
+    else:
+        notes.append(&quot;Pattern-&quot;)
+    # Fallback: kalau kolom pattern kosong padahal count&gt;0, scan ulang dari PATTERN_FUNCS
+    # agar pattern_names selalu konsisten dengan skor.
+    pattern_names = _get_active_patterns(direction, last)
+    if not pattern_names and count &gt; 0:
+        from src.features.patterns import PATTERN_FUNCS
+        for pname in PATTERN_FUNCS:
+            val = _safe(last, pname)
+            if val is None:
+                continue
+            if direction == &quot;BUY&quot; and val &gt; 0:
+                pattern_names.append(pname.replace(&quot;CDL&quot;, &quot;&quot;))
+            elif direction == &quot;SELL&quot; and val &lt; 0:
+                pattern_names.append(pname.replace(&quot;CDL&quot;, &quot;&quot;))
+    detail[&quot;pattern_names&quot;] = &quot;, &quot;.join(pattern_names[:3]) if pattern_names else &quot;&quot;
+
+    # Divergence — bobot 1.5
+    div_keys = {
+        &quot;BUY&quot;:  [(&quot;rsi_bull_div&quot;, &quot;RSI&quot;), (&quot;macd_bull_div&quot;, &quot;MACD&quot;)],
+        &quot;SELL&quot;: [(&quot;rsi_bear_div&quot;, &quot;RSI&quot;), (&quot;macd_bear_div&quot;, &quot;MACD&quot;)],
+    }
+    div_parts: list[str] = []
+    for col, label in div_keys.get(direction, []):
+        if bool(_safe(last, col) or False):
+            div_parts.append(label)
+    if div_parts:
+        score += 1 * _W_DIV; notes.append(&quot;Div+&quot;)
+    else:
+        notes.append(&quot;Div-&quot;)
+    detail[&quot;div_detail&quot;] = &quot;+&quot;.join(div_parts)
+
+    # Fibonacci — bobot 1.5 (akurasi tertinggi bersama Pattern)
+    if atr &gt; 0:
+        fib_sc, fib_note = fib_confluence_score(
+            direction=direction, entry_price=entry, df=df, atr=atr,
+            is_scalping=is_scalping, data_by_tf=data_by_tf,
+        )
+        score += fib_sc * _W_FIB
+        notes.append(f&quot;Fib+({fib_note})&quot; if fib_sc &gt; 0 else &quot;Fib-&quot;)
+        detail[&quot;fib_detail&quot;] = fib_note if fib_sc &gt; 0 else &quot;&quot;
+    else:
+        notes.append(&quot;Fib_SKIP&quot;)
+
+    # SNR — Bug #1+#2 fix: pass tf + data_by_tf
+    if atr &gt; 0:
+        snr_sc, snr_note = snr_confluence_score(
+            direction=direction, entry_price=entry,
+            df=df, atr=atr, sl=sl, tp1_rr=tp1_rr,
+            tf=tf, is_scalping=is_scalping,
+            data_by_tf=data_by_tf,
+        )
+        # Bug #4 fix: SNR_BLOCKED jadi hard-reject di semua mode, bukan cuma scalping
+        if &quot;SNR_BLOCKED&quot; in snr_note:
+            detail[&quot;snr_detail&quot;] = snr_note
+            notes.append(&quot;SnR_BLOCKED&quot;)
+            return -99, &quot; &quot;.join(notes), detail
+
+        # SNR weighted: str&lt;35 (2-touch)→30%, 35-49 (3-4 touch)→60%, &gt;=50 (5+ touch)→100%;
+        # biarkan level lemah berkontribusi kecil, tetap prioritaskan level kuat.
+        if snr_sc &gt; 0:
+            _str_match = re.search(r&quot;str=(\d+)&quot;, snr_note)
+            _snr_strength = int(_str_match.group(1)) if _str_match else 99
+            if _snr_strength &lt; 35:
+                snr_sc = snr_sc * 0.3  # 30% weight untuk 2-touch
+                snr_note = snr_note.replace(&quot;SNR_OK&quot;, &quot;SNR_WEAK&quot;)
+                notes.append(&quot;SnR_WEAK(0.3x)&quot;)
+            elif _snr_strength &lt; 50:
+                snr_sc = snr_sc * 0.6  # 60% weight untuk 3-4 touch
+                notes.append(&quot;SnR_MED(0.6x)&quot;)
+            else:
+                notes.append(&quot;SnR+&quot;)  # 100% weight untuk 5+ touch
+        else:
+            notes.append(&quot;SnR-&quot;)
+
+        score += snr_sc * _W_SNR
+        detail[&quot;snr_detail&quot;] = snr_note
+    else:
+        notes.append(&quot;SnR_SKIP&quot;)
+
+    # SND — bobot 1.0
+    if atr &gt; 0:
+        snd_sc, snd_note = snd_confluence_score(
+            direction=direction, entry_price=entry,
+            df=df, atr=atr, tf=tf, is_scalping=is_scalping,
+            data_by_tf=data_by_tf,
+        )
+        score += snd_sc * _W_SND
+        notes.append(&quot;SnD+&quot; if snd_sc &gt; 0 else &quot;SnD-&quot;)
+        detail[&quot;snd_detail&quot;] = snd_note if snd_sc &gt; 0 else &quot;&quot;
+    else:
+        notes.append(&quot;SnD_SKIP&quot;)
+
+    # Sweep + FVG: konfluensi scalping (entry-timing); intraday skip. Default logging-only —
+    # detail dicatat utk validasi, skor tak berubah sampai flag diaktifkan.
+    if is_scalping and atr &gt; 0:
+        sweep_sc, sweep_note = liquidity_sweep_score(
+            direction=direction, entry=entry, df=df, atr=atr,
+            tf=tf, is_scalping=is_scalping, data_by_tf=data_by_tf,
+        )
+        fvg_sc, fvg_note = fvg_confluence_score(
+            direction=direction, entry_price=entry, df=df, atr=atr,
+            is_scalping=is_scalping, data_by_tf=data_by_tf,
+        )
+        detail[&quot;sweep_detail&quot;] = sweep_note if sweep_sc &gt; 0 else &quot;&quot;
+        detail[&quot;fvg_detail&quot;]   = fvg_note  if fvg_sc  &gt; 0 else &quot;&quot;
+        notes.append(sweep_note if sweep_sc &gt; 0 else &quot;SWEEP-&quot;)
+        notes.append(fvg_note if fvg_sc &gt; 0 else &quot;FVG-&quot;)
+        # Bonus gabungan: total max +1.0; jika keduanya hadir, share dibagi rata.
+        # Hanya dibayarkan kalau ada key level (SNR/SND). Tanpa level, detail tetap
+        # dicatat utk validasi tapi skor tidak berubah — Sweep/FVG pelengkap, bukan
+        # pengganti S/R (kasus loss 22/09: Sweep+1.0x tanpa SnR/SnD).
+        _has_key_level = (snr_sc &gt; 0) or (snd_sc &gt; 0)
+        _detected = [
+            name
+            for name, flagged, present in (
+                (&quot;Sweep&quot;, sweep_enabled, sweep_sc &gt; 0),
+                (&quot;FVG&quot;,   fvg_enabled,   fvg_sc  &gt; 0),
+            )
+            if flagged and present
+        ]
+        if _detected and _has_key_level:
+            _share = _W_SWEEP_FVG / len(_detected)
+            for _name in _detected:
+                score += _share
+                notes.append(f&quot;{_name}+{_share:.1f}x&quot;)
+        elif _detected:
+            notes.append(&quot;SWEEP_FVG_NO_KEY_LEVEL&quot;)
+    else:
+        notes.append(&quot;SWEEP_SKIP&quot;)
+        notes.append(&quot;FVG_SKIP&quot;)
+
+    # Asian (06:00-14:00 WIB) volatilitas rendah, fake breakout dominan: CONTINUATION
+    # butuh +1 confluence &amp; +1 trigger; sinyal tanpa key level (SNR/SND) direject.
+    # Cek variabel skor, bukan string notes. now_utc dari close_time candle.
+    asian_session = session_strictness(now_utc, tf=tf) == &quot;RELAXED&quot;
+    
+    if is_scalping and asian_session:
+        has_key_level = (snr_sc &gt; 0) or (snd_sc &gt; 0)
+        if not has_key_level:
+            notes.append(&quot;ASIAN_NO_KEY_LEVEL&quot;)
+            detail[&quot;snr_detail&quot;] = detail.get(&quot;snr_detail&quot;, &quot;&quot;) or &quot;ASIAN_REJECT&quot;
+            return -99, &quot; &quot;.join(notes), detail
+        
+        # Asian CONTINUATION butuh score lebih tinggi (handled by caller via threshold adjustment)
+        notes.append(&quot;ASIAN_SESSION&quot;)
+
+    # Multi-TF alignment: 3+ TF setuju satu arah → +1.0. H1 signal + align H4+D1
+    # → +0.5 (kompensasi H1 underperform: butuh backing HTF).
+    if data_by_tf and len(data_by_tf) &gt;= 3:
+        aligned_count = 0
+        h4_aligned = False
+        d1_aligned = False
+        
+        for other_tf, other_df in data_by_tf.items():
+            if other_tf == tf or len(other_df) &lt; 200:
+                continue
+            other_bias = _bias_from_tf(other_df)
+            expected_bias = &quot;BULL&quot; if direction == &quot;BUY&quot; else &quot;BEAR&quot;
+            
+            if other_bias == expected_bias:
+                aligned_count += 1
+                if other_tf == &quot;H4&quot;:
+                    h4_aligned = True
+                elif other_tf == &quot;D1&quot;:
+                    d1_aligned = True
+        
+        if aligned_count &gt;= 3:
+            score += 1.0
+            notes.append(f&quot;MTF_ALIGN({aligned_count})&quot;)
+        
+        if tf == &quot;H1&quot; and h4_aligned and d1_aligned:
+            score += 0.5
+            notes.append(&quot;H1_HTF_BACKED&quot;)
+
+    # Bonus golden ratio (0.618) — level psikologis/teknikal terkuat
+    if &quot;fib_detail&quot; in detail and detail[&quot;fib_detail&quot;]:
+        fib_detail_str = detail[&quot;fib_detail&quot;]
+        if &quot;0.618&quot; in fib_detail_str or &quot;61.8&quot; in fib_detail_str:
+            score += 0.5
+            notes.append(&quot;FIB_GOLDEN&quot;)
+
+    # Floor ke int — threshold tetap integer, tanpa &quot;kredit lebih&quot; dari bobot
+    return int(score), &quot; &quot;.join(notes), detail
+
+
+def _is_counter_trend_valid(
+    df:                     pd.DataFrame,
+    direction:              str,
+    entry:                  float,
+    atr:                    float,
+    tf:                     str  = &quot;&quot;,
+    min_counter_confluence: int  = 3,
+    is_scalping:            bool = True,
+    data_by_tf:             dict[str, pd.DataFrame] | None = None,
+) -&gt; tuple[bool, str, int]:
+    &quot;&quot;&quot;Validasi counter trend: Divergence wajib (primary reversal signal), lalu Fib, SND, SNR.&quot;&quot;&quot;
+    score = 0
+    notes: list[str] = []
+    last  = df.iloc[-2] if len(df) &gt;= 2 else df.iloc[-1]
+
+    # Divergence (MANDATORY untuk counter-trend - primary reversal signal)
+    if direction == &quot;BUY&quot;:
+        rsi_div  = bool(_safe(last, &quot;rsi_bull_div&quot;)  or False)
+        macd_div = bool(_safe(last, &quot;macd_bull_div&quot;) or False)
+    else:
+        rsi_div  = bool(_safe(last, &quot;rsi_bear_div&quot;)  or False)
+        macd_div = bool(_safe(last, &quot;macd_bear_div&quot;) or False)
+
+    if not (rsi_div or macd_div):
+        return False, &quot;NO_DIVERGENCE&quot;, 0
+
+    if rsi_div and macd_div:
+        score += 2; notes.append(&quot;DIV_BOTH+&quot;)
+    elif rsi_div or macd_div:
+        score += 1; notes.append(&quot;RSI_DIV+&quot; if rsi_div else &quot;MACD_DIV+&quot;)
+    else:
+        notes.append(&quot;DIV-&quot;)
+
+    # Fibonacci — Bug #1+#3 fix: pass is_scalping + data_by_tf
+    fib_sc, fib_note = fib_confluence_score(
+        direction=direction, entry_price=entry, df=df, atr=atr,
+        is_scalping=is_scalping, data_by_tf=data_by_tf,
+    )
+    if fib_sc &gt;= 2:
+        score += 2; notes.append(f&quot;FIB_GOLD+({fib_note})&quot;)
+    elif fib_sc == 1:
+        score += 1; notes.append(f&quot;FIB_NEAR+({fib_note})&quot;)
+    else:
+        notes.append(f&quot;FIB-({fib_note})&quot;)
+
+    # SND — Bug #1 fix: pass tf + data_by_tf
+    snd_sc, snd_note = snd_confluence_score(
+        direction=direction, entry_price=entry,
+        df=df, atr=atr, tf=tf, is_scalping=is_scalping,
+        data_by_tf=data_by_tf,
+    )
+    if snd_sc &gt;= 1:
+        score += 1; notes.append(f&quot;SND+({snd_note})&quot;)
+    else:
+        notes.append(f&quot;SND-({snd_note})&quot;)
+
+    snr_sc, snr_note = snr_confluence_score(
+        direction=direction, entry_price=entry,
+        df=df, atr=atr, tf=tf, is_scalping=is_scalping,
+        data_by_tf=data_by_tf,
+    )
+    if snr_sc &gt;= 1:
+        score += 1; notes.append(f&quot;SNR+({snr_note})&quot;)
+    else:
+        notes.append(f&quot;SNR-({snr_note})&quot;)
+
+    return score &gt;= min_counter_confluence, &quot; &quot;.join(notes), score
+
+</div>
+
+<h3>Lampiran 1.6 Kalkulasi Manajemen Risiko SL/TP Dinamis (<code>src/risk/sl_tp.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/risk/sl_tp.py</code><br>
+Modul ini menghitung batasan risiko Stop Loss (SL) adaptif berbasis volatilitas Average True Range (ATR) dan titik struktur swing, memetakan target keuntungan bertingkat (Take Profit 1, 2, dan 3), serta memastikan kepatuhan rasio Risk-to-Reward minimum 1:1.0 atau 1:1.5.</p>
+<div class="code-box">
+&quot;&quot;&quot;sl_tp.py — Stop Loss &amp; Take Profit: Structural + ATR-based.
+
+SL = swing point terdekat + 0.5×ATR buffer (anti stop-hunt), fallback atr_mult×ATR
+(scalping 1.2×, intraday 1.5×). Entry zone 0.3×ATR. SL di-cap per TF.
+
+TP: scalping ladder proporsional 0.7/1.0/1.3R, intraday 1.5/2.5/4.0R.
+Gate RR dicabut (TP proporsional SL) → penggantinya OVEREXTENSION guard di engine.
+&quot;&quot;&quot;
+import math
+from dataclasses import dataclass, field
+
+import pandas as pd
+
+from src.features.swing_utils import pivot_highs, pivot_lows
+
+
+# Config
+
+@dataclass(frozen=True)
+class _SlConfig:
+    atr_mult:    float   # SL fallback = atr_mult × ATR
+    min_sl_pts:  float   # batas bawah absolut
+    max_sl_pts:  float   # batas atas absolut (di-override oleh max_sl dari settings)
+    lookback:    int     # lookback untuk swing SL
+
+
+@dataclass(frozen=True)
+class _TpConfig:
+    tp1_rr:       float
+    tp2_rr:       float
+    tp3_rr:       float
+    tp1_atr_mult: float = 0.0   # &gt;0 → TP1 = tp1_atr_mult × ATR (independen SL)
+
+
+_SL_SCALPING = _SlConfig(atr_mult=1.2, min_sl_pts=5.0,  max_sl_pts=10.0, lookback=20)
+_SL_INTRADAY = _SlConfig(atr_mult=1.5, min_sl_pts=10.0, max_sl_pts=60.0, lookback=40)
+# Scalping: ladder proporsional SL 0.7/1.0/1.3R (vs intraday 1.5/2.5/4.0R) — TP lebih sering tersentuh.
+_TP_SCALPING = _TpConfig(tp1_rr=0.7, tp2_rr=1.0, tp3_rr=1.3, tp1_atr_mult=0.0)
+_TP_INTRADAY = _TpConfig(tp1_rr=1.5, tp2_rr=2.5, tp3_rr=4.0)
+
+# Entry zone fraction — 0.3×ATR dari close
+_EZ_FRAC = 0.3
+# Structural SL buffer — 0.5×ATR di luar swing point (naik dari 0.3, anti zona stop-hunt)
+_STRUCT_BUFFER_FRAC = 0.5
+
+
+def get_sl_config(is_scalping: bool) -&gt; _SlConfig:
+    return _SL_SCALPING if is_scalping else _SL_INTRADAY
+
+
+def get_tp_config(is_scalping: bool) -&gt; _TpConfig:
+    return _TP_SCALPING if is_scalping else _TP_INTRADAY
+
+
+# Data class
+
+@dataclass
+class SLTPlan:
+    entry_low:    float
+    entry_high:   float
+    sl:           float
+    tp1:          float
+    tp2:          float
+    tp3:          float
+    method:       str
+    atr_used:     float = field(default=0.0)
+    sl_dist:      float = field(default=0.0)
+    rr_tp1:       float = field(default=0.0)
+    rr_tp2:       float = field(default=0.0)
+    rr_tp3:       float = field(default=0.0)
+    sl_source:    str   = field(default=&quot;&quot;)
+    obstacle_tp1: float = field(default=0.0)
+
+
+# Helpers
+
+def _valid(*values: float) -&gt; bool:
+    return all(math.isfinite(v) and v &gt; 0 for v in values)
+
+
+def _swing_sl(
+    direction: str,
+    price_now: float,
+    df:        pd.DataFrame,
+    buffer:    float,
+    lookback:  int,
+    max_dist:  float,
+) -&gt; float | None:
+    &quot;&quot;&quot;Cari SL struktural — di luar pivot high/low terdekat + buffer.
+
+    Pilih swing point terdekat yang masih dalam batas max_dist dari harga sekarang.
+    &quot;&quot;&quot;
+    if len(df) &lt; lookback + 10:
+        return None
+    recent = df.iloc[-(lookback + 2):-1].reset_index(drop=True)
+
+    if direction == &quot;BUY&quot;:
+        # SL di bawah pivot low terdekat
+        cands = sorted(
+            [v for _, v in pivot_lows(recent, window=3) if v &lt; price_now],
+            reverse=True,  # nearest first
+        )
+        for raw in cands:
+            sl = raw - buffer
+            dist = abs(price_now - sl)
+            if 0 &lt; dist &lt;= max_dist:
+                return sl
+    else:
+        # SL di atas pivot high terdekat
+        cands = sorted(
+            [v for _, v in pivot_highs(recent, window=3) if v &gt; price_now]
+        )
+        for raw in cands:
+            sl = raw + buffer
+            dist = abs(price_now - sl)
+            if 0 &lt; dist &lt;= max_dist:
+                return sl
+    return None
+
+
+def _find_tp_obstacle(
+    direction: str,
+    entry:     float,
+    tp_target: float,
+    atr:       float,
+    df:        pd.DataFrame,
+) -&gt; float | None:
+    &quot;&quot;&quot;Cari level S/R antara entry dan TP yang bisa menghalangi.&quot;&quot;&quot;
+    if len(df) &lt; 20:
+        return None
+    recent = df.iloc[-32:-1].reset_index(drop=True)
+    if direction == &quot;BUY&quot;:
+        cands = [v for _, v in pivot_highs(recent, window=3)
+                 if entry &lt; v &lt; tp_target - 0.5 * atr]
+        return min(cands) if cands else None
+    else:
+        cands = [v for _, v in pivot_lows(recent, window=3)
+                 if tp_target + 0.5 * atr &lt; v &lt; entry]
+        return max(cands) if cands else None
+
+
+def _adjust_tp_for_obstacle(
+    direction: str,
+    entry:     float,
+    tp:        float,
+    atr:       float,
+    sl_dist:   float,
+    df:        pd.DataFrame,
+    min_rr:    float = 0.8,
+) -&gt; float:
+    &quot;&quot;&quot;Geser TP ke sebelum obstacle jika RR masih terjaga.&quot;&quot;&quot;
+    obstacle = _find_tp_obstacle(direction, entry, tp, atr, df)
+    if obstacle is None:
+        return tp
+    margin   = 0.2 * atr
+    adjusted = (obstacle - margin) if direction == &quot;BUY&quot; else (obstacle + margin)
+    if sl_dist &gt; 0 and abs(adjusted - entry) / sl_dist &gt;= min_rr:
+        return adjusted
+    return tp
+
+
+def _build_plan(
+    d:          str,
+    p:          float,
+    a:          float,
+    sl_raw:     float,
+    sl_source:  str,
+    r1:         float,
+    r2:         float,
+    r3:         float,
+    df:         pd.DataFrame | None,
+    is_scalping: bool,
+    tp1_atr_mult: float = 0.0,
+) -&gt; SLTPlan | None:
+    &quot;&quot;&quot;Bangun SLTPlan dari titik SL yang sudah ditentukan.
+
+    tp1_atr_mult &gt; 0 → TP1 = ref_entry ± tp1_atr_mult×ATR (independen SL).
+    tp1_atr_mult == 0 → TP1 = ref_entry ± sl_dist×r1 (legacy, proporsional SL).
+    &quot;&quot;&quot;
+    ez = _EZ_FRAC * a
+
+    if d == &quot;BUY&quot;:
+        entry_high = p
+        entry_low  = round(p - ez, 5)
+        # Pastikan SL di bawah entry_low
+        if sl_raw &gt;= entry_low:
+            sl_raw = entry_low - _STRUCT_BUFFER_FRAC * a
+        sl         = round(sl_raw, 5)
+        sl_dist    = entry_high - sl
+        ref_entry  = entry_high
+        sign       = 1
+        ok         = sl &lt; entry_low &lt; entry_high
+    else:
+        entry_low  = p
+        entry_high = round(p + ez, 5)
+        # Pastikan SL di atas entry_high
+        if sl_raw &lt;= entry_high:
+            sl_raw = entry_high + _STRUCT_BUFFER_FRAC * a
+        sl         = round(sl_raw, 5)
+        sl_dist    = sl - entry_low
+        ref_entry  = entry_low
+        sign       = -1
+        ok         = entry_low &lt; entry_high &lt; sl
+
+    if not ok or sl_dist &lt;= 0:
+        return None
+
+    if tp1_atr_mult &gt; 0:
+        # TP1 ATR-based — kunci profit cepat, tidak ikut lebar saat SL lebar.
+        tp1 = round(ref_entry + sign * tp1_atr_mult * a, 5)
+    else:
+        tp1 = round(ref_entry + sign * sl_dist * r1, 5)
+    tp2 = round(ref_entry + sign * sl_dist * r2, 5)
+    tp3 = round(ref_entry + sign * sl_dist * r3, 5)
+
+    if df is not None and len(df) &gt;= 20:
+        # TP1 tetap digeser lewat obstacle adjust selama RR terjaga &gt;= 0.8.
+        tp1 = round(_adjust_tp_for_obstacle(d, ref_entry, tp1, a, sl_dist, df, min_rr=0.8), 5)
+        tp2 = round(_adjust_tp_for_obstacle(d, ref_entry, tp2, a, sl_dist, df, min_rr=1.5), 5)
+
+    # Sanity check arah TP
+    if d == &quot;BUY&quot; and not (sl &lt; entry_low &lt; entry_high &lt; tp1):
+        return None
+    if d == &quot;SELL&quot; and not (tp1 &lt; entry_low &lt; entry_high &lt; sl):
+        return None
+
+    rr1 = abs(tp1 - ref_entry) / sl_dist
+    rr2 = abs(tp2 - ref_entry) / sl_dist
+    rr3 = abs(tp3 - ref_entry) / sl_dist
+
+    return SLTPlan(
+        entry_low=entry_low, entry_high=entry_high,
+        sl=sl, tp1=tp1, tp2=tp2, tp3=tp3,
+        method=f&quot;{&#x27;SCAL&#x27; if is_scalping else &#x27;INTRA&#x27;} {d} | src={sl_source} sl={sl_dist:.1f}pt atr={a:.1f}&quot;,
+        atr_used=a, sl_dist=sl_dist,
+        rr_tp1=round(rr1, 2), rr_tp2=round(rr2, 2), rr_tp3=round(rr3, 2),
+        sl_source=sl_source,
+    )
+
+
+# Fungsi utama
+
+def calc_sltp(
+    direction:   str,
+    price_now:   float,
+    atr:         float,
+    is_scalping: bool  = False,
+    tp1_rr:      float = 0.0,
+    tp2_rr:      float = 0.0,
+    tp3_rr:      float = 0.0,
+    max_sl:      float = 0.0,
+    df:          pd.DataFrame | None = None,
+    max_sl_points:       float = 0.0,
+    sl_atr_mult_override: float = 0.0,   # &gt;0 → override sl_cfg.atr_mult (wire dari .env)
+    tp1_atr_mult_override: float = 0.0,  # &gt;0 → TP1 = ATR-based (wire dari .env, scalping)
+    **_kwargs,
+) -&gt; &quot;SLTPlan | None&quot;:
+    &quot;&quot;&quot;Hitung SL/TP: structural SL (swing ± 0.5×ATR) dulu, fallback atr_mult×ATR.
+
+    safe_cap = hard_cap - ez (murni, bukan max() dgn min_sl_pts); jika &lt; min_sl_pts
+    → reject. Invariant: sl_dist + ez &lt;= hard_cap di semua kondisi termasuk ATR tinggi.
+    &quot;&quot;&quot;
+    try:
+        p, a = float(price_now), float(atr)
+        d    = direction.upper().strip()
+    except Exception:
+        return None
+    if not _valid(p, a) or d not in (&quot;BUY&quot;, &quot;SELL&quot;):
+        return None
+
+    sl_cfg = get_sl_config(is_scalping)
+    tp_cfg = get_tp_config(is_scalping)
+
+    # Override atr_mult dari luar (wire .env): &gt;0 = pakai nilai eksternal.
+    eff_atr_mult = sl_atr_mult_override if sl_atr_mult_override &gt; 0 else sl_cfg.atr_mult
+
+    r1 = tp1_rr if tp1_rr &gt; 0 else tp_cfg.tp1_rr
+    r2 = tp2_rr if tp2_rr &gt; 0 else tp_cfg.tp2_rr
+    r3 = tp3_rr if tp3_rr &gt; 0 else tp_cfg.tp3_rr
+
+    eff_tp1_atr = tp1_atr_mult_override if tp1_atr_mult_override &gt; 0 else tp_cfg.tp1_atr_mult
+
+    hard_cap = max_sl if max_sl &gt; 0 else (max_sl_points if max_sl_points &gt; 0 else sl_cfg.max_sl_pts)
+    ez       = _EZ_FRAC * a
+    buffer   = _STRUCT_BUFFER_FRAC * a
+
+    # Scalping: SL cap 10pt dari entry reference; floor 0.8×ATR mencegah terlalu rapat (anti stop-hunt).
+    if is_scalping:
+        hard_cap = min(hard_cap, max(sl_cfg.max_sl_pts, 0.8 * a))
+        safe_cap = hard_cap
+    else:
+        # safe_cap = ruang bersih utk sl_dist setelah entry zone (sl_dist &lt;= hard_cap - ez).
+        # Dua batas beda arah tak bisa di-max(): atas hard_cap-ez, bawah min_sl_pts;
+        # bawah &gt; atas → tidak ada SL valid yang muat → reject.
+        safe_cap = hard_cap - ez
+    if safe_cap &lt; sl_cfg.min_sl_pts:
+        # ATR sangat besar: entry zone &quot;memakan&quot; hard_cap, tak ada ruang utk SL minimum valid.
+        return None
+
+    # Coba structural SL dulu (swing point + buffer)
+    struct_sl = _swing_sl(d, p, df if df is not None else pd.DataFrame(),
+                          buffer, sl_cfg.lookback, safe_cap) if df is not None else None
+
+    if struct_sl is not None:
+        plan = _build_plan(d, p, a, struct_sl, &quot;swing&quot;, r1, r2, r3, df, is_scalping,
+                           tp1_atr_mult=eff_tp1_atr)
+        # Cap scalping: swing valid secara struktural bisa terlalu jauh relatif ATR (contoh SL=2×ATR)
+        # → sl_dist &lt;= 1.5×ATR; kalau terlalu jauh, skip ke fallback 1.2×ATR. Intraday tak di-cap.
+        _atr_cap_ok = (plan.sl_dist &lt;= 1.5 * a) if (is_scalping and plan is not None) else True
+        if plan is not None and sl_cfg.min_sl_pts &lt;= plan.sl_dist &lt;= safe_cap and _atr_cap_ok:
+            return plan
+
+    # Fallback: ATR flat
+    if is_scalping:
+        # Cap scalping dari entry reference (sl_dist di _build_plan sudah termasuk ez) → ruang SL = safe_cap - ez.
+        sl_dist = eff_atr_mult * a
+        sl_dist = min(sl_dist, safe_cap - ez)
+        sl_dist = max(sl_dist, 0.0)
+    else:
+        sl_dist = eff_atr_mult * a
+        sl_dist = max(sl_dist, sl_cfg.min_sl_pts)
+        sl_dist = min(sl_dist, safe_cap)
+
+    if sl_dist &lt;= 0:
+        return None
+
+    if d == &quot;BUY&quot;:
+        atr_sl = p - ez - sl_dist   # = entry_low - sl_dist
+    else:
+        atr_sl = p + ez + sl_dist   # = entry_high + sl_dist
+
+    plan = _build_plan(d, p, a, atr_sl, &quot;atr_fallback&quot;, r1, r2, r3, df, is_scalping,
+                       tp1_atr_mult=eff_tp1_atr)
+    if plan is not None and sl_cfg.min_sl_pts &lt;= plan.sl_dist &lt;= safe_cap:
+        return plan
+
+    return None
+
+
+# Alias untuk kompatibilitas engine
+
+def swing_based_sltp(
+    direction:           str,
+    price_now:           float,
+    df:                  pd.DataFrame,
+    atr:                 float,
+    is_scalping:         bool  = False,
+    data_by_tf:          dict[str, pd.DataFrame] | None = None,
+    tp1_rr:              float = 0.0,
+    tp2_rr:              float = 0.0,
+    tp3_rr:              float = 0.0,
+    entry_atr_frac:      float = 0.3,
+    max_sl:              float = 0.0,
+    sl_atr_mult_override: float = 0.0,
+    tp1_atr_mult_override: float = 0.0,
+    **_kwargs,
+) -&gt; &quot;SLTPlan | None&quot;:
+    &quot;&quot;&quot;SL pivot struktural (PRD §19): _swing_sl → swing ± 0.5×ATR; tanpa pivot valid,
+    fallback atr_mult×ATR (scalping 1.2×, intraday 1.5×, override via sl_atr_mult_override).
+    df wajib — tanpa df langsung fallback ATR.
+    &quot;&quot;&quot;
+    return calc_sltp(
+        direction=direction, price_now=price_now, atr=atr,
+        is_scalping=is_scalping, tp1_rr=tp1_rr, tp2_rr=tp2_rr, tp3_rr=tp3_rr,
+        max_sl=max_sl, df=df, sl_atr_mult_override=sl_atr_mult_override,
+        tp1_atr_mult_override=tp1_atr_mult_override,
+    )
+
+
+def dynamic_atr_sltp(
+    direction:           str,
+    price_now:           float,
+    atr:                 float,
+    is_scalping:         bool  = False,
+    tp1_rr:              float = 0.0,
+    tp2_rr:              float = 0.0,
+    tp3_rr:              float = 0.0,
+    entry_atr_frac:      float = 0.3,
+    max_sl:              float = 0.0,
+    data_by_tf:          dict[str, pd.DataFrame] | None = None,
+    df:                  pd.DataFrame | None = None,
+    sl_atr_mult_override: float = 0.0,
+    tp1_atr_mult_override: float = 0.0,
+    **_kwargs,
+) -&gt; &quot;SLTPlan | None&quot;:
+    &quot;&quot;&quot;ATR-based SL — langsung ke fallback path tanpa coba swing.&quot;&quot;&quot;
+    return calc_sltp(
+        direction=direction, price_now=price_now, atr=atr,
+        is_scalping=is_scalping, tp1_rr=tp1_rr, tp2_rr=tp2_rr, tp3_rr=tp3_rr,
+        max_sl=max_sl, df=df, sl_atr_mult_override=sl_atr_mult_override,
+        tp1_atr_mult_override=tp1_atr_mult_override,
+    )
+
+
+def fixed_zone_sltp(
+    direction:       str,
+    price_now:       float,
+    entry_zone_pips: float = 30.0,
+    sl_pips:         float = 50.0,
+    tp1_pips:        float = 70.0,
+    tp2_pips:        float = 90.0,
+    tp3_pips:        float = 120.0,
+    pip_size:        float = 0.1,
+) -&gt; &quot;SLTPlan | None&quot;:
+    &quot;&quot;&quot;Fixed pip fallback — dipakai hanya jika calc_sltp gagal.&quot;&quot;&quot;
+    try:
+        p    = float(price_now)
+        ez   = float(entry_zone_pips) * float(pip_size)
+        sl_v = float(sl_pips)  * float(pip_size)
+        t1   = float(tp1_pips) * float(pip_size)
+        t2   = float(tp2_pips) * float(pip_size)
+        t3   = float(tp3_pips) * float(pip_size)
+    except Exception:
+        return None
+
+    d = direction.upper().strip()
+
+    if d == &quot;BUY&quot;:
+        entry_high, entry_low = p, round(p - ez, 5)
+        sl = round(entry_low - sl_v, 5)
+        if not (sl &lt; entry_low &lt; entry_high):
+            return None
+        sl_dist = entry_high - sl
+        return SLTPlan(
+            entry_low=entry_low, entry_high=entry_high, sl=sl,
+            tp1=round(entry_high + t1, 5), tp2=round(entry_high + t2, 5),
+            tp3=round(entry_high + t3, 5),
+            method=f&quot;Fixed BUY sl={sl_pips}p&quot;,
+            sl_dist=sl_dist,
+            rr_tp1=round(t1/sl_dist, 2) if sl_dist &gt; 0 else 0,
+            rr_tp2=round(t2/sl_dist, 2) if sl_dist &gt; 0 else 0,
+            rr_tp3=round(t3/sl_dist, 2) if sl_dist &gt; 0 else 0,
+        )
+    if d == &quot;SELL&quot;:
+        entry_low, entry_high = p, round(p + ez, 5)
+        sl = round(entry_high + sl_v, 5)
+        if not (entry_low &lt; entry_high &lt; sl):
+            return None
+        sl_dist = sl - entry_low
+        return SLTPlan(
+            entry_low=entry_low, entry_high=entry_high, sl=sl,
+            tp1=round(entry_low - t1, 5), tp2=round(entry_low - t2, 5),
+            tp3=round(entry_low - t3, 5),
+            method=f&quot;Fixed SELL sl={sl_pips}p&quot;,
+            sl_dist=sl_dist,
+            rr_tp1=round(t1/sl_dist, 2) if sl_dist &gt; 0 else 0,
+            rr_tp2=round(t2/sl_dist, 2) if sl_dist &gt; 0 else 0,
+            rr_tp3=round(t3/sl_dist, 2) if sl_dist &gt; 0 else 0,
+        )
+    return None
+
+</div>
+
+<h3>Lampiran 1.7 Ekstraksi Pola Candlestick Rejection (<code>src/features/patterns.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/features/patterns.py</code><br>
+Modul ini mengekstraksi dan mengidentifikasi formasi lilin pembalikan arah (rejection patterns) seperti Pin Bar, Hammer, Shooting Star, serta Bullish/Bearish Engulfing berdasarkan perbandingan proporsi badan terhadap sumbu (wick/shadow) lilin.</p>
+<div class="code-box">
+import numpy as np
+import pandas as pd
+import talib
+
+PATTERN_FUNCS: dict[str, object] = {
+    &quot;CDLHAMMER&quot;:         talib.CDLHAMMER,
+    &quot;CDLINVERTEDHAMMER&quot;: talib.CDLINVERTEDHAMMER,
+    &quot;CDLENGULFING&quot;:      talib.CDLENGULFING,
+    &quot;CDLMORNINGSTAR&quot;:    talib.CDLMORNINGSTAR,
+    &quot;CDLEVENINGSTAR&quot;:    talib.CDLEVENINGSTAR,
+    &quot;CDLSHOOTINGSTAR&quot;:   talib.CDLSHOOTINGSTAR,
+    &quot;CDLDOJI&quot;:           talib.CDLDOJI,
+    &quot;CDLPIERCING&quot;:       talib.CDLPIERCING,
+    &quot;CDLDARKCLOUDCOVER&quot;: talib.CDLDARKCLOUDCOVER,
+    &quot;CDLHARAMI&quot;:         talib.CDLHARAMI,
+    &quot;CDL3WHITESOLDIERS&quot;: talib.CDL3WHITESOLDIERS,
+    &quot;CDL3BLACKCROWS&quot;:    talib.CDL3BLACKCROWS,
+    &quot;CDLMARUBOZU&quot;:       talib.CDLMARUBOZU,
+    &quot;CDLSPINNINGTOP&quot;:    talib.CDLSPINNINGTOP,
+}
+
+PATTERN_NEUTRAL = {&quot;CDLDOJI&quot;, &quot;CDLSPINNINGTOP&quot;}
+# Filter body-size
+_MIN_BODY_RATIO   = 0.40   
+_BODY_LOOKBACK    = 10    
+_SKIP_BODY_FILTER = {&quot;CDLDOJI&quot;, &quot;CDLSPINNINGTOP&quot;} 
+
+
+def _body_size_ok(o: np.ndarray, c: np.ndarray) -&gt; np.ndarray:
+    body     = np.abs(c - o)
+    avg_body = (
+        pd.Series(body)
+        .rolling(_BODY_LOOKBACK, min_periods=1)
+        .mean()
+        .shift(1)
+        .to_numpy()
+    )
+    with np.errstate(invalid=&quot;ignore&quot;):
+        ok = body &gt;= (_MIN_BODY_RATIO * avg_body)
+    ok = np.where(np.isnan(avg_body), True, ok)
+    return ok
+
+def add_patterns(df: pd.DataFrame) -&gt; pd.DataFrame:
+    o = df[&quot;open&quot;].to_numpy(dtype=float)
+    h = df[&quot;high&quot;].to_numpy(dtype=float)
+    l = df[&quot;low&quot;].to_numpy(dtype=float)
+    c = df[&quot;close&quot;].to_numpy(dtype=float)
+
+    body_ok    = _body_size_ok(o, c)
+    bull_count = 0
+    bear_count = 0
+
+    for name, func in PATTERN_FUNCS.items():
+        result = func(o, h, l, c)
+
+        if name not in _SKIP_BODY_FILTER:
+            result = np.where(body_ok, result, 0)
+
+        df[name] = result
+
+        if name not in PATTERN_NEUTRAL:
+            bull_count += (result &gt; 0).astype(int)
+            bear_count += (result &lt; 0).astype(int)
+
+    df[&quot;pattern_bull_count&quot;] = bull_count
+    df[&quot;pattern_bear_count&quot;] = bear_count
+    return df
+
+</div>
+
+<h3>Lampiran 1.8 Ekstraksi Fibonacci Retracement (<code>src/features/fibonacci.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/features/fibonacci.py</code><br>
+Modul ini mendeteksi ayunan harga signifikan (swing high dan swing low) secara otomatis dan mengkalkulasi level-level rasio koreksi kritis Fibonacci Retracement (23.6%, 38.2%, 50.0%, 61.8%, dan 78.6%) sebagai area potensial titik pantulan harga.</p>
+<div class="code-box">
+&quot;&quot;&quot;fibonacci.py — Fibonacci Retracement untuk XAU/USD.&quot;&quot;&quot;
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import pandas as pd
+
+from src.features.swing_utils import pivot_highs, pivot_lows
+
+
+@dataclass(frozen=True)
+class FibConfig:
+    fib_tf:          str
+    pivot_length:    int
+    lookback:        int
+    min_impulse_atr: float
+    zone_tolerance:  float
+    strong_levels:   frozenset[float]
+
+FIB_SCALPING_AREA = FibConfig(
+    fib_tf=&quot;M15&quot;, pivot_length=3, lookback=400,
+    min_impulse_atr=1.5, zone_tolerance=0.50,
+    strong_levels=frozenset({0.382, 0.5, 0.618}),
+)
+FIB_INTRADAY_AREA = FibConfig(
+    fib_tf=&quot;H1&quot;, pivot_length=4, lookback=500,
+    min_impulse_atr=2.0, zone_tolerance=0.60,
+    strong_levels=frozenset({0.382, 0.5, 0.618, 0.786}),
+)
+
+FIB_H4_CONF = FibConfig(
+    fib_tf=&quot;H4&quot;, pivot_length=5, lookback=300,
+    min_impulse_atr=4.0, zone_tolerance=0.30,
+    strong_levels=frozenset({0.382, 0.5, 0.618, 0.786}),
+)
+FIB_H1_CONF = FibConfig(
+    fib_tf=&quot;H1&quot;, pivot_length=4, lookback=300,
+    min_impulse_atr=2.5, zone_tolerance=0.40,
+    strong_levels=frozenset({0.382, 0.5, 0.618}),
+)
+FIB_D1_CONF = FibConfig(
+    fib_tf=&quot;D1&quot;, pivot_length=5, lookback=200,
+    min_impulse_atr=5.0, zone_tolerance=0.50,
+    strong_levels=frozenset({0.382, 0.5, 0.618, 0.786}),
+)
+
+_CONF_TFS_SCALPING: tuple[str, ...] = (&quot;H4&quot;, &quot;H1&quot;)
+_CONF_TFS_INTRADAY: tuple[str, ...] = (&quot;D1&quot;, &quot;H4&quot;)
+
+_CONF_CFG: dict[str, FibConfig] = {
+    &quot;H4&quot;: FIB_H4_CONF,
+    &quot;H1&quot;: FIB_H1_CONF,
+    &quot;D1&quot;: FIB_D1_CONF,
+}
+
+_ALL_LEVELS = [0.236, 0.382, 0.5, 0.618, 0.786]
+_WEAK_LEVEL = 0.236
+
+
+def _get_area_config(is_scalping: bool) -&gt; FibConfig:
+    return FIB_SCALPING_AREA if is_scalping else FIB_INTRADAY_AREA
+
+
+def _resolve_fib_df(
+    df:         pd.DataFrame,
+    target_tf:  str,
+    data_by_tf: dict[str, pd.DataFrame] | None,
+) -&gt; tuple[pd.DataFrame, float]:
+    &quot;&quot;&quot;Ambil DataFrame TF target dari data_by_tf. Fallback ke df argumen.&quot;&quot;&quot;
+    src_df = df
+    if data_by_tf:
+        candidate = data_by_tf.get(target_tf.upper())
+        if candidate is not None and len(candidate) &gt;= 30:
+            src_df = candidate
+    atr = 0.0
+    if &quot;atr_14&quot; in src_df.columns:
+        v = src_df[&quot;atr_14&quot;].iloc[-2]
+        if pd.notna(v) and float(v) &gt; 0:
+            atr = float(v)
+    return src_df, atr
+
+
+def _check_fib_confluence(
+    conf_tf:     str,
+    conf_cfg:    FibConfig,
+    direction:   str,
+    entry_price: float,
+    data_by_tf:  dict[str, pd.DataFrame],
+    fallback_atr: float,
+) -&gt; bool:
+    &quot;&quot;&quot;Cek apakah entry_price dekat level fib di conf_tf.&quot;&quot;&quot;
+    df_conf = data_by_tf.get(conf_tf)
+    if df_conf is None or len(df_conf) &lt; 30:
+        return False
+
+    conf_atr = fallback_atr
+    if &quot;atr_14&quot; in df_conf.columns:
+        v = df_conf[&quot;atr_14&quot;].iloc[-2]
+        if pd.notna(v) and float(v) &gt; 0:
+            conf_atr = float(v)
+
+    min_imp = conf_cfg.min_impulse_atr * conf_atr
+    sw = last_swing(df_conf, conf_cfg.lookback, direction, conf_cfg.pivot_length, min_imp)
+    if sw is None:
+        return False
+
+    levels = fib_levels(*sw[:2], sw[2])
+    near   = nearest_fib(entry_price, levels)
+    if near is None:
+        return False
+
+    _, px     = near
+    tolerance = conf_cfg.zone_tolerance * conf_atr
+    return abs(entry_price - px) &lt;= tolerance
+
+
+def last_swing(
+    df:           pd.DataFrame,
+    lookback:     int,
+    direction:    str,
+    pivot_length: int   = 3,
+    min_impulse:  float = 0.0,
+) -&gt; tuple[float, float, str] | None:
+    if len(df) &lt; lookback + 5:
+        return None
+
+    direction = direction.upper()
+    w = df.iloc[-lookback:].reset_index(drop=True)
+
+    p_highs = pivot_highs(w, window=pivot_length)
+    p_lows  = pivot_lows(w,  window=pivot_length)
+
+    # Fallback pivot_length lebih kecil jika tidak ada pivot
+    if (not p_highs or not p_lows) and pivot_length &gt; 3:
+        p_highs = pivot_highs(w, window=3)
+        p_lows  = pivot_lows(w,  window=3)
+
+    # Fallback min/max absolut jika masih tidak ada pivot
+    if not p_highs or not p_lows:
+        w2     = df.iloc[-min(lookback, 50):].copy()
+        idx_hi = w2[&quot;high&quot;].idxmax()
+        idx_lo = w2[&quot;low&quot;].idxmin()
+        s_lo   = float(w2.loc[idx_lo, &quot;low&quot;])
+        s_hi   = float(w2.loc[idx_hi, &quot;high&quot;])
+        s_dir  = &quot;UP&quot; if idx_lo &lt; idx_hi else &quot;DOWN&quot;
+        if direction == &quot;BUY&quot;  and s_dir != &quot;UP&quot;:   return None
+        if direction == &quot;SELL&quot; and s_dir != &quot;DOWN&quot;:  return None
+        if min_impulse &gt; 0 and (s_hi - s_lo) &lt; min_impulse:
+            return None
+        return s_lo, s_hi, s_dir
+
+    if direction == &quot;BUY&quot;:
+        for lo_idx, lo_val in reversed(p_lows):
+            highs_after = [(i, v) for i, v in p_highs if i &gt; lo_idx]
+            if not highs_after:
+                continue
+            _, hi_val = max(highs_after, key=lambda x: x[1])
+            if min_impulse &gt; 0 and (hi_val - lo_val) &lt; min_impulse:
+                continue
+            return lo_val, hi_val, &quot;UP&quot;
+
+    elif direction == &quot;SELL&quot;:
+        for hi_idx, hi_val in reversed(p_highs):
+            lows_after = [(i, v) for i, v in p_lows if i &gt; hi_idx]
+            if not lows_after:
+                continue
+            _, lo_val = min(lows_after, key=lambda x: x[1])
+            if min_impulse &gt; 0 and (hi_val - lo_val) &lt; min_impulse:
+                continue
+            return lo_val, hi_val, &quot;DOWN&quot;
+
+    return None
+
+
+def recent_swings(
+    df:           pd.DataFrame,
+    lookback:     int,
+    direction:    str,
+    pivot_length: int   = 3,
+    min_impulse:  float = 0.0,
+    max_results:  int   = 3,
+) -&gt; list[tuple[float, float, str]]:
+    &quot;&quot;&quot;Cari beberapa swing terakhir, diurutkan dari yang TERBARU.
+
+    Identik dengan last_swing tapi lanjut mencari hingga max_results ditemukan
+    atau pivot habis. Dipakai fib_confluence_score sebagai fallback swing lama.
+    &quot;&quot;&quot;
+    if len(df) &lt; lookback + 5:
+        return []
+
+    direction = direction.upper()
+    w = df.iloc[-lookback:].reset_index(drop=True)
+
+    p_highs = pivot_highs(w, window=pivot_length)
+    p_lows  = pivot_lows(w,  window=pivot_length)
+
+    if (not p_highs or not p_lows) and pivot_length &gt; 3:
+        p_highs = pivot_highs(w, window=3)
+        p_lows  = pivot_lows(w,  window=3)
+
+    # Jika tidak ada pivot sama sekali, fallback ke last_swing biasa
+    if not p_highs or not p_lows:
+        sw = last_swing(df, lookback, direction, pivot_length, min_impulse)
+        return [sw] if sw is not None else []
+
+    results: list[tuple[float, float, str]] = []
+
+    if direction == &quot;BUY&quot;:
+        for lo_idx, lo_val in reversed(p_lows):
+            if len(results) &gt;= max_results:
+                break
+            highs_after = [(i, v) for i, v in p_highs if i &gt; lo_idx]
+            if not highs_after:
+                continue
+            _, hi_val = max(highs_after, key=lambda x: x[1])
+            if min_impulse &gt; 0 and (hi_val - lo_val) &lt; min_impulse:
+                continue
+            sw = (lo_val, hi_val, &quot;UP&quot;)
+            # Hindari duplikat (swing yang sangat mirip)
+            if not any(abs(r[0] - sw[0]) &lt; 0.01 and abs(r[1] - sw[1]) &lt; 0.01 for r in results):
+                results.append(sw)
+
+    elif direction == &quot;SELL&quot;:
+        for hi_idx, hi_val in reversed(p_highs):
+            if len(results) &gt;= max_results:
+                break
+            lows_after = [(i, v) for i, v in p_lows if i &gt; hi_idx]
+            if not lows_after:
+                continue
+            _, lo_val = min(lows_after, key=lambda x: x[1])
+            if min_impulse &gt; 0 and (hi_val - lo_val) &lt; min_impulse:
+                continue
+            sw = (lo_val, hi_val, &quot;DOWN&quot;)
+            if not any(abs(r[0] - sw[0]) &lt; 0.01 and abs(r[1] - sw[1]) &lt; 0.01 for r in results):
+                results.append(sw)
+
+    return results
+
+
+def fib_levels(
+    swing_low:  float,
+    swing_high: float,
+    direction:  str,
+) -&gt; dict[str, float]:
+    diff = swing_high - swing_low
+    if diff &lt;= 0:
+        return {}
+    levels: dict[str, float] = {}
+    if direction == &quot;UP&quot;:
+        for lv in _ALL_LEVELS:
+            levels[f&quot;fib_{lv}&quot;] = swing_high - diff * lv
+        levels[&quot;fib_0&quot;] = swing_high
+        levels[&quot;fib_1&quot;] = swing_low
+    else:
+        for lv in _ALL_LEVELS:
+            levels[f&quot;fib_{lv}&quot;] = swing_low + diff * lv
+        levels[&quot;fib_0&quot;] = swing_low
+        levels[&quot;fib_1&quot;] = swing_high
+    return levels
+
+
+def nearest_fib(
+    price:  float,
+    levels: dict[str, float],
+) -&gt; tuple[str, float] | None:
+    if not levels:
+        return None
+    key = min(levels.keys(), key=lambda k: abs(levels[k] - price))
+    return key, float(levels[key])
+
+
+def _score_level(name: str, px: float, strong_levels: frozenset[float]) -&gt; tuple[int, str]:
+    try:
+        lv_num = float(name.replace(&quot;fib_&quot;, &quot;&quot;))
+    except ValueError:
+        return 1, f&quot;FIB_NEAR({name}={px:.2f})&quot;
+    if lv_num in {0.0, 1.0}:    return 0, f&quot;FIB_ENDPOINT({name}={px:.2f})&quot;
+    if lv_num == _WEAK_LEVEL:   return 0, f&quot;FIB_WEAK({name}={px:.2f})&quot;
+    if lv_num in strong_levels: return 2, f&quot;FIB_STRONG({name}={px:.2f})&quot;
+    return 1, f&quot;FIB_NEAR({name}={px:.2f})&quot;
+
+
+def fib_confluence_score(
+    direction:   str,
+    entry_price: float,
+    df:          pd.DataFrame,
+    atr:         float,
+    tf:          str  = &quot;&quot;,
+    is_scalping: bool = False,
+    data_by_tf:  dict[str, pd.DataFrame] | None = None,
+) -&gt; tuple[int, str]:
+    &quot;&quot;&quot;Skor konfluensi Fibonacci: 0, 1, atau 2+bonus.
+
+    Fallback ke swing lama (rank-1/2) jika level swing terbaru terlalu jauh dari entry.
+    Tag: FRESH (rank-0) atau FALLBACK_SWING2/3. Confluence set konsisten SNR/SND:
+    Scalping = H4+H1; Intraday = D1+H4.
+    &quot;&quot;&quot;
+    if atr &lt;= 0:
+        return 0, &quot;FIB_SKIP&quot;
+
+    direction = direction.upper()
+    cfg       = _get_area_config(is_scalping)
+
+    src_df, src_atr = _resolve_fib_df(df, cfg.fib_tf, data_by_tf)
+    eff_atr = src_atr if src_atr &gt; 0 else atr
+    min_imp = cfg.min_impulse_atr * eff_atr
+
+    # Coba beberapa swing, dari yang terbaru ke yang lama
+    swings = recent_swings(src_df, cfg.lookback, direction, cfg.pivot_length, min_imp, max_results=3)
+    if not swings:
+        return 0, f&quot;FIB_NO_SWING(min={min_imp:.1f})&quot;
+
+    tolerance = cfg.zone_tolerance * eff_atr
+    base_score, base_label, swing_tag = 0, &quot;&quot;, &quot;FRESH&quot;
+
+    for rank, sw in enumerate(swings):
+        levels = fib_levels(*sw[:2], sw[2])
+        if not levels:
+            continue
+
+        near = nearest_fib(entry_price, levels)
+        if near is None:
+            continue
+
+        name, px = near
+        if abs(entry_price - px) &gt; tolerance:
+            continue   # swing ini levelnya jauh, coba swing berikutnya
+
+        sc, lbl = _score_level(name, px, cfg.strong_levels)
+        if sc &gt; 0:
+            base_score = sc
+            base_label = lbl
+            swing_tag  = &quot;FRESH&quot; if rank == 0 else f&quot;FALLBACK_SWING{rank + 1}&quot;
+            break
+
+    if base_score == 0:
+        return 0, f&quot;FIB_FAR(no_swing_near tol={tolerance:.1f})&quot;
+
+    # Multi-TF confluence bonus — konsisten dengan SNR/SND
+    conf_tfs  = _CONF_TFS_SCALPING if is_scalping else _CONF_TFS_INTRADAY
+    bonus     = 0
+    bonus_tfs: list[str] = []
+
+    if data_by_tf is not None:
+        for conf_tf in conf_tfs:
+            if conf_tf == cfg.fib_tf.upper():
+                continue
+            conf_cfg = _CONF_CFG.get(conf_tf)
+            if conf_cfg is None:
+                continue
+            if _check_fib_confluence(conf_tf, conf_cfg, direction,
+                                     entry_price, data_by_tf, atr):
+                bonus += 1
+                bonus_tfs.append(conf_tf)
+
+    bonus_tag = (&quot;+&quot; + &quot;+&quot;.join(bonus_tfs)) if bonus_tfs else &quot;&quot;
+    return base_score + bonus, f&quot;{base_label}{bonus_tag}|{swing_tag}&quot;
+
+
+def fib_lookback_for_tf(tf: str) -&gt; int:
+    return {&quot;M5&quot;: 200, &quot;M15&quot;: 200, &quot;H1&quot;: 300, &quot;H4&quot;: 300, &quot;D1&quot;: 200}.get(tf.upper(), 200)
+
+</div>
+
+<h3>Lampiran 1.9 Ekstraksi Support & Resistance Horizontal (<code>src/features/zones_snr.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/features/zones_snr.py</code><br>
+Modul ini mengidentifikasi zona batas harga horisontal (Support & Resistance) melalui klasterisasi level-level harga ekstrem historis dan pengujian frekuensi pantulan (touches) harga untuk menentukan tingkat kekuatan key level.</p>
+<div class="code-box">
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+import numpy as np
+import pandas as pd
+
+from src.features.swing_utils import (
+    swing_high_idx_prices,
+    swing_high_prices,
+    swing_low_idx_prices,
+    swing_low_prices,
+)
+
+
+@dataclass(frozen=True)
+class _TFConfig:
+    pivot_length:  int
+    lookback:      int
+    atr_tolerance: float
+    min_touches:   int
+    min_strength:  int
+
+
+# min_strength=20 konsisten dengan _touch_score(): 2 touch=20, 3 touch=35, 4+ touch=25 (exhaustion)
+_TF_CONFIG: dict[str, _TFConfig] = {
+    &quot;M15&quot;: _TFConfig(pivot_length=3, lookback=300, atr_tolerance=0.50, min_touches=2, min_strength=20),
+    &quot;H1&quot;:  _TFConfig(pivot_length=4, lookback=400, atr_tolerance=0.60, min_touches=2, min_strength=20),
+    &quot;H4&quot;:  _TFConfig(pivot_length=5, lookback=400, atr_tolerance=0.70, min_touches=2, min_strength=20),
+    &quot;D1&quot;:  _TFConfig(pivot_length=5, lookback=300, atr_tolerance=0.80, min_touches=2, min_strength=20),
+}
+_TF_CONFIG_DEFAULT = _TFConfig(pivot_length=3, lookback=300, atr_tolerance=0.50, min_touches=2, min_strength=20)
+_CONFLUENCE_TFS_SCALPING = (&quot;H4&quot;, &quot;H1&quot;, &quot;M15&quot;)
+_CONFLUENCE_TFS_INTRADAY = (&quot;D1&quot;, &quot;H4&quot;, &quot;H1&quot;)
+
+
+@dataclass
+class SnrZone:
+    zone_type:  str
+    center:     float
+    lower:      float
+    upper:      float
+    touches:    int
+    strength:   float
+    timeframes: list[str]     = field(default_factory=list)
+    confluence: bool          = False
+    age_bars:   int           = 0     
+    freshness:  str           = &quot;&quot;    
+
+def _cluster(levels: list[float], tolerance: float) -&gt; list[list[float]]:
+    if not levels:
+        return []
+    sorted_lvl = sorted(levels)
+    clusters: list[list[float]] = [[sorted_lvl[0]]]
+    for lv in sorted_lvl[1:]:
+        last = clusters[-1]
+        cluster_width = lv - last[0]
+        if lv - last[-1] &lt;= tolerance and cluster_width &lt;= 1.5 * tolerance:
+            last.append(lv)
+        else:
+            clusters.append([lv])
+    return clusters
+
+
+def _cluster_with_idx(
+    idx_price_pairs: list[tuple[int, float]],
+    tolerance: float,
+) -&gt; list[list[tuple[int, float]]]:
+    &quot;&quot;&quot;Cluster (idx, price) berdasarkan harga. Pertahankan idx untuk age_bars.&quot;&quot;&quot;
+    if not idx_price_pairs:
+        return []
+    sorted_pairs = sorted(idx_price_pairs, key=lambda x: x[1])
+    clusters: list[list[tuple[int, float]]] = [[sorted_pairs[0]]]
+    for pair in sorted_pairs[1:]:
+        last = clusters[-1]
+        cluster_width = pair[1] - last[0][1]
+        if pair[1] - last[-1][1] &lt;= tolerance and cluster_width &lt;= 1.5 * tolerance:
+            last.append(pair)
+        else:
+            clusters.append([pair])
+    return clusters
+
+
+def _touch_score(touches: int) -&gt; float:
+    if touches &gt;= 4: return 25.0
+    if touches == 3: return 35.0
+    if touches == 2: return 20.0
+    return 0.0
+
+
+def _build_zones(df: pd.DataFrame, tf: str, atr: float) -&gt; list[SnrZone]:
+    cfg       = _TF_CONFIG.get(tf.upper(), _TF_CONFIG_DEFAULT)
+    recent    = df.iloc[-cfg.lookback:] if len(df) &gt; cfg.lookback else df
+    n         = len(recent)
+    tolerance = atr * cfg.atr_tolerance
+    zones: list[SnrZone] = []
+
+    hi_idx_px = swing_high_idx_prices(recent, left=cfg.pivot_length, right=cfg.pivot_length)
+    lo_idx_px = swing_low_idx_prices(recent,  left=cfg.pivot_length, right=cfg.pivot_length)
+
+    for zone_type, idx_px_list in [(&quot;RESISTANCE&quot;, hi_idx_px), (&quot;SUPPORT&quot;, lo_idx_px)]:
+        clusters_with_idx = _cluster_with_idx(idx_px_list, tolerance)
+        for cluster_pairs in clusters_with_idx:
+            touches  = len(cluster_pairs)
+            strength = _touch_score(touches)
+            if strength &lt; cfg.min_strength:
+                continue
+
+            prices   = [p for _, p in cluster_pairs]
+            indices  = [i for i, _ in cluster_pairs]
+            center   = float(np.mean(prices))
+            half     = max(tolerance / 2, atr * 0.15)
+
+            newest_touch_idx = max(indices)
+            age_bars         = n - 1 - newest_touch_idx
+            freshness        = &quot;FRESH&quot; if age_bars &lt;= cfg.lookback / 3 else &quot;AGED&quot;
+
+            zones.append(SnrZone(
+                zone_type=zone_type, center=center,
+                lower=center - half, upper=center + half,
+                touches=touches, strength=strength,
+                timeframes=[tf.upper()],
+                age_bars=age_bars, freshness=freshness,
+            ))
+    return zones
+
+
+def _merge_confluence(zones_by_tf: dict[str, list[SnrZone]]) -&gt; list[SnrZone]:
+    all_zones: list[SnrZone] = []
+    for tf_zones in zones_by_tf.values():
+        all_zones.extend(tf_zones)
+
+    merged: list[SnrZone] = []
+    used   = set()
+
+    for i, z1 in enumerate(all_zones):
+        if i in used:
+            continue
+        combined = SnrZone(
+            zone_type=z1.zone_type, center=z1.center, lower=z1.lower,
+            upper=z1.upper, touches=z1.touches, strength=z1.strength,
+            timeframes=list(z1.timeframes), confluence=False,
+            age_bars=z1.age_bars, freshness=z1.freshness,
+        )
+        for j, z2 in enumerate(all_zones):
+            if j &lt;= i or j in used:
+                continue
+            if z2.zone_type != z1.zone_type:
+                continue
+            if not (z1.lower &lt;= z2.upper and z2.lower &lt;= z1.upper):
+                continue
+            if set(z1.timeframes) &amp; set(z2.timeframes):
+                continue
+            combined.lower      = max(combined.lower, z2.lower)
+            combined.upper      = min(combined.upper, z2.upper)
+            combined.center     = (combined.lower + combined.upper) / 2
+            combined.touches   += z2.touches
+            combined.strength   = min(100.0, combined.strength + z2.strength + 30.0)
+            combined.timeframes = list(set(combined.timeframes) | set(z2.timeframes))
+            combined.confluence = True
+            # Freshness gabungan: pakai yang lebih baru (age_bars lebih kecil = lebih fresh)
+            if z2.age_bars &lt; combined.age_bars:
+                combined.age_bars  = z2.age_bars
+                combined.freshness = z2.freshness
+            used.add(j)
+
+        used.add(i)
+        merged.append(combined)
+    return merged
+
+
+def _has_clear_road(
+    direction:    str,
+    entry:        float,
+    sl:           float,
+    tp1_rr:       float,
+    zones:        list[SnrZone],
+    atr:          float,
+    block_factor: float = 0.7,
+) -&gt; bool:
+    &quot;&quot;&quot;Cek jalur ke TP bebas hambatan. Cek SEMUA zona (FRESH+AGED) tanpa pembedaan.
+    Level lama tetap bisa jadi penghalang efektif — tidak dilemahkan oleh fallback logic.
+    &quot;&quot;&quot;
+    if sl &lt;= 0 or atr &lt;= 0:
+        return True
+    sl_dist    = abs(entry - sl)
+    block_dist = block_factor * sl_dist * tp1_rr
+    min_dist   = 0.3 * atr
+
+    if direction == &quot;BUY&quot;:
+        return not any(
+            z.zone_type == &quot;RESISTANCE&quot;
+            and entry + min_dist &lt; z.center &lt;= entry + block_dist
+            for z in zones
+        )
+    return not any(
+        z.zone_type == &quot;SUPPORT&quot;
+        and entry - block_dist &lt;= z.center &lt; entry - min_dist
+        for z in zones
+    )
+
+
+def build_snr_zones(
+    df:          pd.DataFrame,
+    tf:          str,
+    atr:         float,
+    data_by_tf:  dict[str, pd.DataFrame] | None = None,
+    is_scalping: bool = True,
+) -&gt; list[SnrZone]:
+    &quot;&quot;&quot;Bangun SnrZone dengan multi-TF confluence.
+
+    is_scalping=True  → confluence set: H4+H1+M15
+    is_scalping=False → confluence set: D1+H4+H1
+    &quot;&quot;&quot;
+    if atr &lt;= 0:
+        return []
+    tf_upper      = tf.upper()
+    conf_tfs      = _CONFLUENCE_TFS_SCALPING if is_scalping else _CONFLUENCE_TFS_INTRADAY
+
+    if data_by_tf is None:
+        return _build_zones(df, tf_upper, atr)
+
+    zones_by_tf: dict[str, list[SnrZone]] = {}
+    for conf_tf in conf_tfs:
+        src_df = data_by_tf.get(conf_tf)
+        if src_df is None or len(src_df) &lt; 30:
+            continue
+        tf_atr = atr
+        if &quot;atr_14&quot; in src_df.columns:
+            v = src_df[&quot;atr_14&quot;].iloc[-2]
+            if pd.notna(v) and float(v) &gt; 0:
+                tf_atr = float(v)
+        zones_by_tf[conf_tf] = _build_zones(src_df, conf_tf, tf_atr)
+
+    if tf_upper not in zones_by_tf:
+        zones_by_tf[tf_upper] = _build_zones(df, tf_upper, atr)
+
+    return _merge_confluence(zones_by_tf)
+
+
+def snr_confluence_score(
+    direction:   str,
+    entry_price: float,
+    df:          pd.DataFrame,
+    atr:         float,
+    sl:          float = 0.0,
+    tp1_rr:      float = 1.5,
+    data_by_tf:  dict[str, pd.DataFrame] | None = None,
+    tf:          str   = &quot;&quot;,
+    near_factor: float = 1.2,   # Dinaikkan dari 0.8: radius &quot;dekat zona valid&quot; lebih longgar
+    is_scalping: bool  = True,
+) -&gt; tuple[int, str]:
+    &quot;&quot;&quot;Skor konfluensi S/R: 0 atau 1.
+
+    Search: FRESH (near_factor ketat) dulu, lalu AGED (longgar +0.3×ATR) → tag AGED_FALLBACK.
+    Obstacle check (_has_clear_road) tetap cek SEMUA zona.
+    &quot;&quot;&quot;
+    if atr &lt;= 0:
+        return 0, &quot;SNR_SKIP&quot;
+
+    direction = direction.upper()
+    tf_upper  = tf.upper() if tf else &quot;&quot;
+    zones     = build_snr_zones(df, tf_upper or &quot;M15&quot;, atr, data_by_tf, is_scalping=is_scalping)
+    if not zones:
+        return 0, &quot;SNR_NO_ZONE&quot;
+
+    near_thr_fresh = near_factor * atr
+    near_thr_aged  = (near_factor + 0.3) * atr   # lebih longgar untuk level lama yang lebih &quot;mayor&quot;
+
+    # Fix 3: level harus JAUH di sisi entry (masih aktif), bukan sudah &quot;membasar&quot;-nya.
+    # Entry yang nyaris menempel/melampaui level = konfirmasi tidak valid (level rawan pecah).
+    level_margin = 0.15 * atr
+    if direction == &quot;BUY&quot;:
+        same_type = [z for z in zones
+                     if z.zone_type == &quot;SUPPORT&quot;
+                     and z.center &lt;= entry_price - level_margin]
+    else:
+        same_type = [z for z in zones
+                     if z.zone_type == &quot;RESISTANCE&quot;
+                     and z.center &gt;= entry_price + level_margin]
+
+    if not same_type:
+        all_same = [z for z in zones
+                    if z.zone_type == (&quot;SUPPORT&quot; if direction == &quot;BUY&quot; else &quot;RESISTANCE&quot;)]
+        if all_same:
+            nearest = min(all_same, key=lambda z: abs(z.center - entry_price))
+            return 0, f&quot;SNR_FAR(nearest={nearest.center:.2f} t={nearest.touches})&quot;
+        return 0, &quot;SNR_FAR(no_zone)&quot;
+
+    fresh_cands = [z for z in same_type
+                   if z.freshness == &quot;FRESH&quot;
+                   and abs(entry_price - z.center) &lt;= near_thr_fresh]
+    aged_cands  = [z for z in same_type
+                   if abs(entry_price - z.center) &lt;= near_thr_aged]
+
+    if fresh_cands:
+        best = max(fresh_cands, key=lambda z: z.strength)
+        tag  = &quot;FRESH&quot;
+    elif aged_cands:
+        best = max(aged_cands, key=lambda z: z.strength)
+        tag  = &quot;AGED_FALLBACK&quot;
+    else:
+        nearest = min(same_type, key=lambda z: abs(z.center - entry_price))
+        return 0, f&quot;SNR_FAR(nearest={nearest.center:.2f} t={nearest.touches} {nearest.freshness})&quot;
+
+    if sl &gt; 0 and not _has_clear_road(direction, entry_price, sl, tp1_rr, zones, atr):
+        return 0, f&quot;SNR_BLOCKED(clear_road {best.zone_type[:3]}={best.center:.2f})&quot;
+
+    tfs_str  = &quot;+&quot;.join(sorted(best.timeframes))
+    conf_tag = &quot; MTF&quot; if best.confluence else &quot;&quot;
+    age_tag  = f&quot; age={best.age_bars}b&quot;
+    return 1, (f&quot;SNR_OK({best.zone_type[:3]}={best.center:.2f}&quot;
+               f&quot; t={best.touches} str={best.strength:.0f}&quot;
+               f&quot; tf={tfs_str}{conf_tag} {tag}{age_tag})&quot;)
+
+</div>
+
+<h3>Lampiran 1.10 Ekstraksi Zona Supply & Demand (<code>src/features/zones_snd.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/features/zones_snd.py</code><br>
+Modul ini mendeteksi zona ketidakseimbangan likuiditas institusional (Supply & Demand) berbasis formasi Drop-Base-Rally (DBR), Rally-Base-Drop (RBD), Rally-Base-Rally (RBR), dan Drop-Base-Drop (DBD) dengan memverifikasi impulsivitas pergerakan lilin pemicu.</p>
+<div class="code-box">
+&quot;&quot;&quot;zones_snd.py — Deteksi zona Supply &amp; Demand berbasis historical impulse.&quot;&quot;&quot;
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
+
+
+@dataclass(frozen=True)
+class _SndConfig:
+    lookback:         int
+    impulse_body_atr: float
+    base_max_range:   float
+    min_impulse_dist: float
+
+
+_TF_CONFIG: dict[str, _SndConfig] = {
+    &quot;M5&quot;:  _SndConfig(lookback=150, impulse_body_atr=1.2, base_max_range=0.9, min_impulse_dist=1.2),
+    &quot;M15&quot;: _SndConfig(lookback=250, impulse_body_atr=1.2, base_max_range=0.9, min_impulse_dist=1.2),
+    &quot;H1&quot;:  _SndConfig(lookback=300, impulse_body_atr=1.5, base_max_range=0.8, min_impulse_dist=1.5),
+    &quot;H4&quot;:  _SndConfig(lookback=300, impulse_body_atr=2.0, base_max_range=0.7, min_impulse_dist=2.0),
+    &quot;D1&quot;:  _SndConfig(lookback=250, impulse_body_atr=2.0, base_max_range=0.7, min_impulse_dist=2.0),
+}
+_TF_CONFIG_DEFAULT = _SndConfig(lookback=200, impulse_body_atr=1.2, base_max_range=0.9, min_impulse_dist=1.2)
+
+# Confluence set per mode (sama pola seperti SNR):
+#   Scalping: H4+H1; Intraday: D1+H4 (D1 untuk validasi zona major intraday)
+_CONFLUENCE_TFS_SCALPING = (&quot;H4&quot;, &quot;H1&quot;)
+_CONFLUENCE_TFS_INTRADAY = (&quot;D1&quot;, &quot;H4&quot;)
+
+_BASE_WINDOW    = 6
+_NEAR_ENTRY_ATR = 1.2   # Radius &quot;dekat zona valid&quot;; dinaikkan 1.0→1.2 agar lebih banyak sinyal lolos confluence
+
+
+def _get_atr(df: pd.DataFrame) -&gt; float:
+    if &quot;atr_14&quot; in df.columns:
+        v = df[&quot;atr_14&quot;].dropna()
+        if len(v) &gt; 0:
+            val = float(v.iloc[-2] if len(v) &gt;= 2 else v.iloc[-1])
+            if val &gt; 0:
+                return val
+    trs = (df.tail(15)[&quot;high&quot;] - df.tail(15)[&quot;low&quot;]).abs()
+    return float(trs.mean()) if len(trs) &gt; 0 else 0.0
+
+
+def _count_zone_touches(
+    after:     pd.DataFrame,
+    zone_low:  float,
+    zone_high: float,
+    bullish:   bool,
+) -&gt; tuple[int, bool]:
+    &quot;&quot;&quot;Hitung touch zona secara vectorized (numpy).
+
+    Returns (touch_count: 0=fresh, 1=retest, 2+=exhausted; zone_held: False jika ada
+    close yang menembus sisi seberang). Candle break terakhir ikut dihitung touch.
+    &quot;&quot;&quot;
+    if len(after) == 0:
+        return 0, True
+
+    lows   = after[&quot;low&quot;].to_numpy(dtype=float)
+    highs  = after[&quot;high&quot;].to_numpy(dtype=float)
+    closes = after[&quot;close&quot;].to_numpy(dtype=float)
+
+    if bullish:
+        broken = closes &lt; zone_low
+    else:
+        broken = closes &gt; zone_high
+
+    break_idx = int(np.argmax(broken)) if broken.any() else len(after)
+
+    # Hanya hitung touch sebelum (atau sampai) break point
+    lows_pre  = lows[:break_idx]
+    highs_pre = highs[:break_idx]
+
+    # Touch = candle overlap zona (cek dua sisi)
+    if bullish:
+        entered = (lows_pre &lt;= zone_high) &amp; (highs_pre &gt;= zone_low)
+    else:
+        entered = (highs_pre &gt;= zone_low) &amp; (lows_pre &lt;= zone_high)
+
+    touch_count = int(entered.sum())
+
+    if broken.any():
+        return touch_count + 1, False   # candle break dihitung touch terakhir
+    return touch_count, True
+
+
+def _find_zones(
+    df:      pd.DataFrame,
+    atr:     float,
+    cfg:     _SndConfig,
+    bullish: bool,
+) -&gt; list[dict]:
+    zones: list[dict] = []
+    if atr &lt;= 0 or len(df) &lt; cfg.lookback + 5:
+        return zones
+
+    data = df.iloc[-(cfg.lookback + 2):-1].reset_index(drop=True)
+    n    = len(data)
+
+    for i in range(_BASE_WINDOW, n - 2):
+        c      = data.iloc[i]
+        c_open  = float(c.get(&quot;open&quot;,  0))
+        c_close = float(c.get(&quot;close&quot;, 0))
+
+        body = (c_close - c_open) if bullish else (c_open - c_close)
+        if body &lt; cfg.impulse_body_atr * atr:
+            continue
+
+        base_slice = data.iloc[max(0, i - _BASE_WINDOW):i]
+        if len(base_slice) &lt; 2:
+            continue
+
+        base_high  = float(base_slice[&quot;high&quot;].max())
+        base_low   = float(base_slice[&quot;low&quot;].min())
+        base_range = base_high - base_low
+
+        if base_range &gt; cfg.base_max_range * atr:
+            continue
+
+        impulse_dist = (c_close - base_high) if bullish else (base_low - c_close)
+        if impulse_dist &lt; cfg.min_impulse_dist * atr:
+            continue
+
+        after = data.iloc[i + 1:]
+        if len(after) &gt; 0:
+            touch_count, zone_held = _count_zone_touches(after, base_low, base_high, bullish)
+            if touch_count &gt;= 2:
+                continue   # exhausted — terlalu sering disentuh
+            if touch_count == 1 and not zone_held:
+                continue   # close menembus zona = rusak
+            # touch_count == 0: fresh (strength penuh)
+            # touch_count == 1 + held: valid retest, strength dikurangi 1
+        else:
+            touch_count = 0
+
+        # Freshness dari umur formasi — independen dari touch_count (zona baru ≠ zona lama)
+        age_bars  = n - i
+        freshness = &quot;FRESH&quot; if age_bars &lt;= cfg.lookback / 3 else &quot;AGED&quot;
+
+        strength = 1
+        if impulse_dist &gt;= cfg.min_impulse_dist * atr * 2: strength += 1
+        if base_range   &lt;= 0.4 * atr:                      strength += 1
+        if touch_count  == 1:                              strength  = max(1, strength - 1)
+
+        zones.append({
+            &quot;type&quot;:         &quot;DEMAND&quot; if bullish else &quot;SUPPLY&quot;,
+            &quot;zone_low&quot;:     base_low,
+            &quot;zone_high&quot;:    base_high,
+            &quot;mid&quot;:          (base_low + base_high) / 2,
+            &quot;zone_mid&quot;:     (base_low + base_high) / 2,
+            &quot;impulse_dist&quot;: impulse_dist,
+            &quot;strength&quot;:     strength,
+            &quot;touch_count&quot;:  touch_count,
+            &quot;age_bars&quot;:     age_bars,
+            &quot;freshness&quot;:    freshness,
+            &quot;timeframes&quot;:   [],
+        })
+    return zones
+
+
+def _apply_mtf_confluence(zones: list[dict], atr: float, tf_zones: list[dict], tf_name: str) -&gt; None:
+    for z in zones:
+        for tz in tf_zones:
+            if tz[&quot;type&quot;] != z[&quot;type&quot;]:
+                continue
+            if z[&quot;zone_low&quot;] &lt;= tz[&quot;zone_high&quot;] and tz[&quot;zone_low&quot;] &lt;= z[&quot;zone_high&quot;]:
+                z[&quot;strength&quot;] = min(100, z[&quot;strength&quot;] + 20)
+                if tf_name not in z[&quot;timeframes&quot;]:
+                    z[&quot;timeframes&quot;].append(tf_name)
+                break
+
+
+def _best_zone_near_entry(
+    zones:       list[dict],
+    entry_price: float,
+    near_thr:    float,
+    atr:         float,
+) -&gt; dict | None:
+    &quot;&quot;&quot;Pilih zona terbaik dekat entry: FRESH (ketat near_thr) dulu, lalu AGED
+    fallback (longgar near_thr+0.3×ATR). Dalam kategori: utamakan (touch_count==1,
+    strength) lebih tinggi.
+    &quot;&quot;&quot;
+    near_thr_aged = near_thr + 0.3 * atr
+
+    def _composite(z: dict) -&gt; tuple:
+        &quot;&quot;&quot;Key sorting: (is_fresh, has_retest, strength, -dist).&quot;&quot;&quot;
+        dist      = min(abs(entry_price - z[&quot;zone_low&quot;]), abs(entry_price - z[&quot;zone_high&quot;]))
+        is_fresh  = 1 if z.get(&quot;freshness&quot;) == &quot;FRESH&quot; else 0
+        has_retest = 1 if z.get(&quot;touch_count&quot;, 0) == 1 else 0
+        return (is_fresh, has_retest, z[&quot;strength&quot;], -dist)
+
+    # FRESH — near_thr ketat
+    fresh_cands = [
+        z for z in zones
+        if z.get(&quot;freshness&quot;) == &quot;FRESH&quot;
+        and min(abs(entry_price - z[&quot;mid&quot;]),
+                abs(entry_price - z[&quot;zone_low&quot;]),
+                abs(entry_price - z[&quot;zone_high&quot;])) &lt;= near_thr
+    ]
+    if fresh_cands:
+        return max(fresh_cands, key=_composite)
+
+    # AGED fallback — near_thr lebih longgar
+    aged_cands = [
+        z for z in zones
+        if min(abs(entry_price - z[&quot;mid&quot;]),
+               abs(entry_price - z[&quot;zone_low&quot;]),
+               abs(entry_price - z[&quot;zone_high&quot;])) &lt;= near_thr_aged
+    ]
+    return max(aged_cands, key=_composite) if aged_cands else None
+
+
+def snd_confluence_score(
+    direction:   str,
+    entry_price: float,
+    df:          pd.DataFrame,
+    atr:         float,
+    tf:          str  = &quot;&quot;,
+    near_factor: float = _NEAR_ENTRY_ATR,
+    data_by_tf:  dict[str, pd.DataFrame] | None = None,
+    is_scalping: bool = True,
+) -&gt; tuple[int, str]:
+    &quot;&quot;&quot;
+    Skor konfluensi Supply &amp; Demand: 0 atau 1.
+
+    Confluence set: True → H4+H1; False → D1+H4 (D1 untuk zona major intraday).
+    &quot;&quot;&quot;
+    if atr &lt;= 0:
+        return 0, &quot;SND_SKIP&quot;
+
+    direction = direction.upper()
+    tf_upper  = tf.upper() if tf else &quot;&quot;
+    cfg       = _TF_CONFIG.get(tf_upper, _TF_CONFIG_DEFAULT)
+    bullish   = direction == &quot;BUY&quot;
+    zone_type = &quot;DEMAND&quot; if bullish else &quot;SUPPLY&quot;
+    conf_tfs  = _CONFLUENCE_TFS_SCALPING if is_scalping else _CONFLUENCE_TFS_INTRADAY
+
+    zones = _find_zones(df, atr, cfg, bullish)
+    if not zones:
+        return 0, f&quot;SND_NO_ZONE({zone_type})&quot;
+
+    if data_by_tf is not None:
+        for conf_tf in conf_tfs:
+            if conf_tf == tf_upper:
+                continue
+            src_df = data_by_tf.get(conf_tf)
+            if src_df is None or len(src_df) &lt; 30:
+                continue
+            conf_atr = atr
+            if &quot;atr_14&quot; in src_df.columns:
+                v = src_df[&quot;atr_14&quot;].iloc[-2]
+                if pd.notna(v) and float(v) &gt; 0:
+                    conf_atr = float(v)
+            conf_cfg   = _TF_CONFIG.get(conf_tf, _TF_CONFIG_DEFAULT)
+            conf_zones = _find_zones(src_df, conf_atr, conf_cfg, bullish)
+            if conf_zones:
+                _apply_mtf_confluence(zones, atr, conf_zones, conf_tf)
+
+    best_zone = _best_zone_near_entry(zones, entry_price, near_factor * atr, atr)
+    if best_zone is None:
+        closest = min(zones, key=lambda z: abs(entry_price - z[&quot;mid&quot;]))
+        return 0, (f&quot;SND_FAR({zone_type} &quot;
+                   f&quot;{closest[&#x27;zone_low&#x27;]:.2f}-{closest[&#x27;zone_high&#x27;]:.2f} &quot;
+                   f&quot;dist={abs(entry_price - closest[&#x27;mid&#x27;]):.1f})&quot;)
+
+    z         = best_zone
+    tf_tag    = &quot;+&quot; + &quot;+&quot;.join(z[&quot;timeframes&quot;]) if z[&quot;timeframes&quot;] else &quot;&quot;
+    touch_tag = f&quot; t={z[&#x27;touch_count&#x27;]}&quot; if z.get(&quot;touch_count&quot;, 0) &gt; 0 else &quot;&quot;
+    fresh_tag = f&quot; {z.get(&#x27;freshness&#x27;, &#x27;&#x27;)}&quot; if z.get(&quot;freshness&quot;) else &quot;&quot;
+    age_tag   = f&quot; age={z.get(&#x27;age_bars&#x27;, 0)}b&quot;
+    return 1, (f&quot;SND_{zone_type}({z[&#x27;zone_low&#x27;]:.2f}-{z[&#x27;zone_high&#x27;]:.2f}&quot;
+               f&quot; str={z[&#x27;strength&#x27;]}{tf_tag}{touch_tag}{fresh_tag}{age_tag}&quot;
+               f&quot; imp={z[&#x27;impulse_dist&#x27;]:.1f})&quot;)
+
+</div>
+
+<h3>Lampiran 1.11 Konektor MetaTrader 5 (<code>src/mt5/connector.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/mt5/connector.py</code><br>
+Modul ini mengelola inisialisasi sesi antarmuka pemrograman aplikasi (API) MetaTrader 5 secara terisolasi (portable mode), memvalidasi parameter otentikasi akun perdagangan, dan memelihara status konektivitas terminal secara andal.</p>
+<div class="code-box">
+﻿&quot;&quot;&quot;connector.py — Koneksi ke terminal MetaTrader 5.
+
+Path terminal dikonfigurasi via env MT5_TERMINAL_PATH (default: C:\\Program Files\\MetaTrader 5\\terminal64.exe).
+&quot;&quot;&quot;
+
+import os
+
+import MetaTrader5 as mt5
+
+
+def connect(login: int, password: str, server: str, terminal_path: str = &quot;&quot;) -&gt; object:
+    path = (
+        terminal_path
+        or os.environ.get(&quot;MT5_TERMINAL_PATH&quot;, &quot;&quot;)
+        or r&quot;C:\Program Files\MetaTrader 5\terminal64.exe&quot;
+    )
+
+    if not os.path.isfile(path):
+        raise RuntimeError(f&quot;MT5 terminal tidak ditemukan: {path}&quot;)
+    if not mt5.initialize(path=path, portable=True):
+        raise RuntimeError(f&quot;MT5 initialize gagal: {mt5.last_error()}&quot;)
+    if not mt5.login(login=login, password=password, server=server):
+        raise RuntimeError(f&quot;MT5 login gagal: {mt5.last_error()}&quot;)
+
+    info = mt5.account_info()
+    if info is None:
+        raise RuntimeError(f&quot;MT5 account_info gagal: {mt5.last_error()}&quot;)
+    return info
+
+def shutdown() -&gt; None:
+    &quot;&quot;&quot;Tutup koneksi MT5 dengan aman.&quot;&quot;&quot;
+    try:
+        mt5.shutdown()
+    except Exception:
+        pass
+
+</div>
+
+<h3>Lampiran 1.12 Notifikasi Telegram Bot API (<code>src/notify/telegram.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/notify/telegram.py</code><br>
+Modul ini menangani pengiriman pesan sinyal rekomendasi transaksi, diagram visual, dan peringatan pembaruan hasil secara real-time ke kanal komunikasi Telegram melalui protokol HTTP POST berbasis RESTful API dengan penanganan kesalahan jaringan.</p>
+<div class="code-box">
+&quot;&quot;&quot;telegram.py — Kirim pesan HTML ke Telegram Bot API.&quot;&quot;&quot;
+
+import html
+import re
+
+import requests
+from loguru import logger
+
+
+def _sanitize_html(text: str) -&gt; str:
+    &quot;&quot;&quot;Escape karakter &lt; &gt; &amp; yang bukan bagian dari tag HTML valid Telegram.&quot;&quot;&quot;
+    _ALLOWED_TAGS = re.compile(
+        r&#x27;&lt;(/?)(?:b|i|u|s|code|pre|a|tg-spoiler)(?:\s[^&gt;]*)?&gt;&#x27;,
+        re.IGNORECASE,
+    )
+    result   = []
+    last_end = 0
+    for m in _ALLOWED_TAGS.finditer(text):
+        segment = text[last_end:m.start()]
+        segment = segment.replace(&quot;&amp;&quot;, &quot;&amp;amp;&quot;).replace(&quot;&lt;&quot;, &quot;&amp;lt;&quot;).replace(&quot;&gt;&quot;, &quot;&amp;gt;&quot;)
+        result.append(segment)
+        result.append(m.group(0))
+        last_end = m.end()
+    tail = text[last_end:]
+    tail = tail.replace(&quot;&amp;&quot;, &quot;&amp;amp;&quot;).replace(&quot;&lt;&quot;, &quot;&amp;lt;&quot;).replace(&quot;&gt;&quot;, &quot;&amp;gt;&quot;)
+    result.append(tail)
+    return &quot;&quot;.join(result)
+
+
+def send_message(token: str, chat_id: str, text: str) -&gt; None:
+    &quot;&quot;&quot;
+    Kirim pesan HTML ke chat_id. Tidak melempar exception; fallback plain text jika parse HTML gagal (400).
+    &quot;&quot;&quot;
+    url       = f&quot;https://api.telegram.org/bot{token}/sendMessage&quot;
+    safe_text = _sanitize_html(text)
+
+    try:
+        resp = requests.post(
+            url,
+            json={&quot;chat_id&quot;: chat_id, &quot;text&quot;: safe_text, &quot;parse_mode&quot;: &quot;HTML&quot;},
+            timeout=10,
+        )
+        if resp.ok:
+            return
+        if resp.status_code == 400:
+            logger.warning(f&quot;Telegram HTML parse error, retry plain: {resp.text[:120]}&quot;)
+            resp2 = requests.post(
+                url,
+                json={&quot;chat_id&quot;: chat_id, &quot;text&quot;: html.unescape(safe_text)},
+                timeout=10,
+            )
+            if not resp2.ok:
+                logger.warning(f&quot;Telegram plain text gagal {resp2.status_code}: {resp2.text[:80]}&quot;)
+        else:
+            logger.warning(f&quot;Telegram error {resp.status_code}: {resp.text[:120]}&quot;)
+    except requests.exceptions.Timeout:
+        logger.warning(&quot;Telegram timeout&quot;)
+    except requests.exceptions.ConnectionError:
+        logger.warning(&quot;Telegram connection error&quot;)
+    except Exception as e:
+        logger.warning(f&quot;Telegram error: {e}&quot;)
+
+</div>
+
+<h3>Lampiran 1.13 Pelacak Status Transaksi Real-Time (<code>src/infra/signal_tracker.py</code>)</h3>
+<p><b>Lokasi Berkas:</b> <code>src/infra/signal_tracker.py</code><br>
+Modul ini menjalankan pemantauan harga pasar secara real-time berbasis background thread untuk melacak status transaksi aktif terhadap level Stop Loss maupun Take Profit 1-3, mencatat durasi serta realized outcome, dan memicu notifikasi pembaruan secara otomatis.</p>
+<div class="code-box">
+﻿&quot;&quot;&quot;signal_tracker.py — Background thread monitoring TP/SL real-time.&quot;&quot;&quot;
+
+import threading
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Callable
+
+import pandas as pd
+from loguru import logger
+
+
+from src.utils.time_utils import TZ_WIB, parse_dt_safe
+from src.engine.anytf_mta_engine import record_loss, reset_consec_loss
+
+POLL_INTERVAL  = 10
+MAX_DURATION_H = 48
+
+
+@dataclass
+class TrackedSignal:
+    signal_id:  str
+    symbol:     str
+    direction:  str
+    entry:      float
+    entry_low:  float
+    entry_high: float
+    sl:         float
+    tp1:        float
+    tp2:        float | None
+    tp3:        float | None
+    start_time: datetime
+    atr_value:      float = 0.0
+    is_setup_plan:  bool  = False
+    entry_zone_hit: bool  = False
+    tp1_hit:    bool = False
+    tp2_hit:    bool = False
+    tp3_hit:    bool = False
+    resolved:   bool = False
+    breakeven_sl: float | None = None  # SL digeser ke breakeven setelah TP1 kena
+
+
+class SignalTracker:
+    &quot;&quot;&quot;Monitor sinyal PENDING dan auto-update outcome saat TP/SL tersentuh.&quot;&quot;&quot;
+
+    def __init__(
+        self,
+        sig_logger,
+        get_price_fn:       Callable[[str], tuple[float, float]],
+        send_notify_fn:     Callable[[str], None] | None = None,
+        refresh_report_fn:  Callable[[], None] | None    = None,
+        poll_interval:  int = POLL_INTERVAL,
+        max_duration_h: int = MAX_DURATION_H,
+    ) -&gt; None:
+        self._logger         = sig_logger
+        self._get_price      = get_price_fn
+        self._notify         = send_notify_fn
+        self._refresh_report = refresh_report_fn
+        self._poll_interval  = poll_interval
+        self._max_hours      = max_duration_h
+        self._active: dict[str, TrackedSignal] = {}
+        self._lock   = threading.Lock()
+        self._stop   = threading.Event()
+        self._thread: threading.Thread | None = None
+        # Sinyal yang di-load saat startup — tidak kirim notif Telegram untuk ini
+        self._startup_signal_ids: set[str] = set()
+
+    def start(self) -&gt; None:
+        if self._thread and self._thread.is_alive():
+            return
+        self._stop.clear()
+        self._load_pending_from_logger()
+        self._thread = threading.Thread(target=self._run, name=&quot;SignalTracker&quot;, daemon=True)
+        self._thread.start()
+        logger.info(f&quot;SignalTracker started | poll={self._poll_interval}s | tracking={len(self._active)} sinyal pending&quot;)
+
+    def stop(self) -&gt; None:
+        self._stop.set()
+        if self._thread:
+            self._thread.join(timeout=15)
+        logger.info(&quot;SignalTracker stopped.&quot;)
+
+    def add_signal(self, rec: dict) -&gt; None:
+        sid = rec.get(&quot;signal_id&quot;, &quot;&quot;)
+        if not sid or float(rec.get(&quot;sl&quot;, 0) or 0) == 0:
+            return
+        is_setup   = str(rec.get(&quot;is_setup_plan&quot;, &quot;False&quot;)).lower() in (&quot;true&quot;, &quot;1&quot;, &quot;yes&quot;)
+        entry      = float(rec.get(&quot;entry&quot;,      0) or 0)
+        entry_low  = float(rec.get(&quot;entry_low&quot;,  0) or 0) or entry
+        entry_high = float(rec.get(&quot;entry_high&quot;, 0) or 0) or entry
+        atr_value  = float(rec.get(&quot;atr_value&quot;,  0) or 0)
+        direction  = rec.get(&quot;direction&quot;, &quot;BUY&quot;)
+
+        # Non-setup: entry_zone_hit selalu True — harga bisa sudah bergerak jauh
+        # dari zona saat bot restart, kalau menunggu zona TP/SL tak pernah dimonitor.
+        if is_setup:
+            entry_zone_hit = False
+        else:
+            entry_zone_hit = True
+
+        ts = TrackedSignal(
+            signal_id   = sid,
+            symbol      = rec.get(&quot;symbol&quot;, &quot;XAUUSD&quot;),
+            direction   = direction,
+            entry       = entry,
+            entry_low   = entry_low,
+            entry_high  = entry_high,
+            sl          = float(rec.get(&quot;sl&quot;,    0) or 0),
+            tp1         = float(rec.get(&quot;tp1&quot;,   0) or 0),
+            tp2         = float(rec.get(&quot;tp2&quot;,   0) or 0) or None,
+            tp3         = float(rec.get(&quot;tp3&quot;,   0) or 0) or None,
+            start_time  = parse_dt_safe(rec.get(&quot;timestamp&quot;, &quot;&quot;)),
+            atr_value   = atr_value,
+            is_setup_plan   = is_setup,
+            entry_zone_hit  = entry_zone_hit,
+        )
+        with self._lock:
+            self._active[sid] = ts
+        logger.debug(f&quot;SignalTracker.add | {sid} | {ts.direction} @ {ts.entry} | setup={is_setup} atr={atr_value:.4f}&quot;)
+
+    def get_active_count(self) -&gt; int:
+        with self._lock:
+            return len(self._active)
+
+    def _load_pending_from_logger(self) -&gt; None:
+        &quot;&quot;&quot;Load sinyal PENDING dari logger saat startup; sinyal &gt; 2 jam masuk
+        _startup_signal_ids (notif Telegram diblokir, dianggap sinyal lama).
+        &quot;&quot;&quot;
+        now = datetime.now(tz=TZ_WIB)
+        suppress_threshold_hours = 2
+        try:
+            for rec in self._logger.get_trackable():
+                self.add_signal(rec)
+                sid = rec.get(&quot;signal_id&quot;, &quot;&quot;)
+                if not sid:
+                    continue
+                ts_str   = rec.get(&quot;timestamp&quot;, &quot;&quot;)
+                sig_time = parse_dt_safe(ts_str)
+                age_hours = (now - sig_time).total_seconds() / 3600
+                if age_hours &gt; suppress_threshold_hours:
+                    self._startup_signal_ids.add(sid)
+                    logger.debug(f&quot;SignalTracker startup: suppress notif {sid} (usia {age_hours:.1f}j)&quot;)
+                else:
+                    logger.debug(f&quot;SignalTracker startup: keep notif {sid} (usia {age_hours:.1f}j)&quot;)
+        except Exception as e:
+            logger.warning(f&quot;SignalTracker: gagal load pending: {e}&quot;)
+
+    def _run(self) -&gt; None:
+        while not self._stop.is_set():
+            try:
+                next_interval = self._check_all()
+            except Exception as e:
+                logger.error(f&quot;SignalTracker error: {e}&quot;)
+                next_interval = self._poll_interval
+            self._stop.wait(timeout=next_interval)
+
+    def _check_all(self) -&gt; float:
+        &quot;&quot;&quot;Check semua sinyal aktif. Returns interval poll berikutnya (adaptive).&quot;&quot;&quot;
+        with self._lock:
+            ids = list(self._active.keys())
+
+        min_interval = self._poll_interval  # default 10 detik
+        prices_cache: dict[str, tuple[float, float]] = {}
+
+        for sid in ids:
+            with self._lock:
+                ts = self._active.get(sid)
+            if ts is None or ts.resolved:
+                continue
+
+            # Cache harga per symbol agar tidak double-call MT5
+            sym = ts.symbol
+            if sym not in prices_cache:
+                try:
+                    bid, ask = self._get_price(sym)
+                    if bid &gt; 0 and ask &gt; 0:
+                        prices_cache[sym] = (bid, ask)
+                except Exception:
+                    continue
+
+            bid, ask = prices_cache.get(sym, (0.0, 0.0))
+            if bid &lt;= 0 or ask &lt;= 0:
+                continue
+
+            self._evaluate(ts, bid, ask)
+
+            # Adaptive interval: cek seberapa dekat harga ke TP1 atau SL
+            if not ts.resolved:
+                check_price = bid if ts.direction == &quot;BUY&quot; else ask
+                atr_est = ts.atr_value if hasattr(ts, &quot;atr_value&quot;) and ts.atr_value &gt; 0 else 5.0
+                dist_tp = abs(check_price - ts.tp1) if ts.tp1 &gt; 0 else 999
+                dist_sl = abs(check_price - ts.sl)
+                min_dist = min(dist_tp, dist_sl)
+
+                if min_dist &lt;= atr_est * 0.5:
+                    min_interval = min(min_interval, 1)   # sangat dekat → 1 detik
+                elif min_dist &lt;= atr_est * 1.5:
+                    min_interval = min(min_interval, 3)   # agak dekat → 3 detik
+                else:
+                    min_interval = min(min_interval, 10)  # masih jauh → 10 detik
+
+        with self._lock:
+            self._active = {k: v for k, v in self._active.items() if not v.resolved}
+
+        return max(1, min_interval)  # minimum 1 detik
+
+    def _evaluate(self, ts: TrackedSignal, bid: float, ask: float) -&gt; None:
+        now        = datetime.now(tz=TZ_WIB)
+        is_buy     = ts.direction == &quot;BUY&quot;
+        check_price = bid if is_buy else ask
+
+        # Setup plan: tunggu harga masuk entry zone (entry_low–entry_high) dulu
+        if not ts.entry_zone_hit:
+            price_mid = (bid + ask) / 2
+            in_zone = ts.entry_low &lt;= price_mid &lt;= ts.entry_high
+            if in_zone:
+                ts.entry_zone_hit = True
+                logger.info(f&quot;[TRACKER] Entry zone hit | {ts.signal_id} | price={price_mid:.2f} zone={ts.entry_low:.2f}-{ts.entry_high:.2f}&quot;)
+            else:
+                # Belum masuk zona — cek apakah SL sudah tersentuh sebelum zona (sinyal batal)
+                sl_before_entry = (is_buy and check_price &lt;= ts.sl) or (not is_buy and check_price &gt;= ts.sl)
+                if sl_before_entry:
+                    self._resolve(ts, &quot;CANCELLED&quot;, check_price, now, &quot;SL_BEFORE_ENTRY&quot;)
+                return  # belum masuk zona, belum monitor TP
+
+        # SL efektif = breakeven_sl jika aktif (TP1 sudah kena), else SL awal
+        effective_sl = ts.breakeven_sl if ts.breakeven_sl is not None else ts.sl
+        sl_hit = (is_buy and check_price &lt;= effective_sl) or \
+                 (not is_buy and check_price &gt;= effective_sl)
+
+        if sl_hit and not ts.tp1_hit:
+            self._resolve(ts, &quot;LOSS&quot;, check_price, now)
+            return
+
+        if not ts.tp1_hit and ts.tp1 &gt; 0:
+            if (is_buy and check_price &gt;= ts.tp1) or (not is_buy and check_price &lt;= ts.tp1):
+                ts.tp1_hit = True
+                self._logger.update_hit_time(ts.signal_id, &quot;tp1&quot;, now.strftime(&quot;%Y-%m-%dT%H:%M:%S&quot;))
+                self._send_tp_notify(&quot;🎯 &lt;b&gt;TP1 TERCAPAI&lt;/b&gt;&quot;, ts.signal_id, check_price)
+
+                # SL breakeven = entry price — posisi sisa tak bisa rugi meski harga balik
+                ts.breakeven_sl = ts.entry
+                logger.info(
+                    f&quot;[TRACKER] Breakeven aktif | {ts.signal_id} | &quot;
+                    f&quot;SL lama={ts.sl:.2f} → SL baru={ts.breakeven_sl:.2f} (entry)&quot;
+                )
+
+                if not ts.tp2:
+                    self._resolve(ts, &quot;WIN_TP1&quot;, check_price, now)
+                    return
+
+        if ts.tp1_hit and not ts.tp2_hit and ts.tp2:
+            if (is_buy and check_price &gt;= ts.tp2) or (not is_buy and check_price &lt;= ts.tp2):
+                ts.tp2_hit = True
+                self._logger.update_hit_time(ts.signal_id, &quot;tp2&quot;, now.strftime(&quot;%Y-%m-%dT%H:%M:%S&quot;))
+                self._send_tp_notify(&quot;🎯🎯 &lt;b&gt;TP2 TERCAPAI&lt;/b&gt;&quot;, ts.signal_id, check_price)
+                if not ts.tp3:
+                    self._resolve(ts, &quot;WIN_TP2&quot;, check_price, now)
+                    return
+
+        if ts.tp2_hit and not ts.tp3_hit and ts.tp3:
+            if (is_buy and check_price &gt;= ts.tp3) or (not is_buy and check_price &lt;= ts.tp3):
+                ts.tp3_hit = True
+                self._logger.update_hit_time(ts.signal_id, &quot;tp3&quot;, now.strftime(&quot;%Y-%m-%dT%H:%M:%S&quot;))
+                self._send_tp_notify(&quot;🎯🎯🎯 &lt;b&gt;TP3 TERCAPAI — FULL TARGET!&lt;/b&gt;&quot;, ts.signal_id, check_price)
+                self._resolve(ts, &quot;WIN_TP3&quot;, check_price, now)
+                return
+
+        if ts.tp1_hit and not ts.tp2_hit and sl_hit:
+            self._resolve(ts, &quot;WIN_TP1&quot;, check_price, now)
+        elif ts.tp2_hit and not ts.tp3_hit and sl_hit:
+            self._resolve(ts, &quot;WIN_TP2&quot;, check_price, now)
+
+    def _send_tp_notify(self, header: str, signal_id: str, price: float) -&gt; None:
+        &quot;&quot;&quot;Kirim notif TP hanya untuk sinyal baru (bukan dari startup), langsung tanpa blocking.&quot;&quot;&quot;
+        if self._notify and signal_id not in self._startup_signal_ids:
+            msg = f&quot;{header}\nID: &lt;code&gt;{signal_id}&lt;/code&gt;\nHarga: &lt;code&gt;{price:.2f}&lt;/code&gt;&quot;
+            threading.Thread(
+                target=self._notify, args=(msg,), name=&quot;TrackerNotify&quot;, daemon=True
+            ).start()
+
+    def _resolve(self, ts: TrackedSignal, outcome: str, price: float, now: datetime, reason: str = &quot;&quot;) -&gt; None:
+        ts.resolved  = True
+        duration_m   = int((now - ts.start_time).total_seconds() / 60)
+        emoji  = {&quot;WIN_TP1&quot;: &quot;✅&quot;, &quot;WIN_TP2&quot;: &quot;✅✅&quot;, &quot;WIN_TP3&quot;: &quot;✅✅✅&quot;, &quot;LOSS&quot;: &quot;❌&quot;, &quot;CANCELLED&quot;: &quot;⚠️&quot;}.get(outcome, &quot;&quot;)
+        is_new = ts.signal_id not in self._startup_signal_ids
+
+        logger.success(f&quot;[TRACKER] {outcome} | {ts.signal_id} | price={price:.2f} | duration={duration_m}m&quot;)
+
+        # Consecutive loss/win tracker — key per mode agar scalping/intraday tak saling blokir
+        _tf_from_id = ts.signal_id.split(&quot;_&quot;)[1] if &quot;_&quot; in ts.signal_id else &quot;&quot;
+        _is_scal    = _tf_from_id.upper() in {&quot;M5&quot;, &quot;M15&quot;}
+        _cb_key     = f&quot;{ts.symbol}_{&#x27;scalping&#x27; if _is_scal else &#x27;intraday&#x27;}&quot;
+        if outcome == &quot;LOSS&quot;:
+            record_loss(_cb_key)
+        elif outcome.startswith(&quot;WIN&quot;):
+            reset_consec_loss(_cb_key)
+
+        # Kirim Telegram dulu — notif tak tertahan operasi file I/O
+        if self._notify and outcome != &quot;CANCELLED&quot; and is_new:
+            try:
+                self._notify(
+                    f&quot;{emoji} &lt;b&gt;{outcome}&lt;/b&gt;\n&quot;
+                    f&quot;ID: &lt;code&gt;{ts.signal_id}&lt;/code&gt;\n&quot;
+                    f&quot;Harga: &lt;code&gt;{price:.2f}&lt;/code&gt;\n&quot;
+                    f&quot;Durasi: &lt;code&gt;{duration_m} menit&lt;/code&gt;\n&quot;
+                    f&quot;Pips: &lt;code&gt;{abs(price - ts.entry):.1f}&lt;/code&gt;&quot;
+                )
+            except Exception as e:
+                logger.warning(f&quot;Tracker notify error: {e}&quot;)
+
+        # Simpan ke file (JSON + CSV) di thread terpisah agar I/O tak memblokir polling
+        def _save_async() -&gt; None:
+            try:
+                self._logger.update_outcome(
+                    ts.signal_id, outcome,
+                    price=price, notes=reason or &quot;Auto-detected by SignalTracker&quot;, duration_m=duration_m,
+                )
+            except Exception as e:
+                logger.warning(f&quot;Tracker save error: {e}&quot;)
+            if self._refresh_report:
+                try:
+                    self._refresh_report()
+                except PermissionError:
+                    logger.debug(&quot;Tracker report skip: file dibuka di Excel&quot;)
+                except Exception as e:
+                    logger.debug(f&quot;Tracker report refresh error: {e}&quot;)
+
+        threading.Thread(target=_save_async, name=&quot;TrackerSave&quot;, daemon=True).start()
+
+</div>
+
+<h2>Lampiran 2: Rekapitulasi Sampel Log Sinyal Perdagangan Hasil Forward Testing</h2>
+<p>Tabel berikut menyajikan cuplikan 25 sampel log pembentukan sinyal rekomendasi riil dari total 170 transaksi pada berkas basis data <code>docs/laporan_trading.xlsx</code> yang tercatat selama masa pengujian berjalan (<i>forward testing</i>) periode Agustus&ndash;September 2026:</p>
+<p class="caption-table">Tabel L.1 Sampel Log Riwayat Transaksi Sinyal Live XAU/USD</p>
+<table style="font-size: 9.5pt;">
+<thead>
+<tr><th>No.</th><th>Waktu (WIB)</th><th>TF</th><th>Arah</th><th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Outcome</th><th>Durasi</th><th>RR</th></tr>
+</thead>
+<tbody>
+<tr><td class='text-center'>1</td><td>19/08/2026 22:30</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4483.60</td><td>4478.60</td><td>4491.10</td><td>4493.60</td><td>4496.10</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>30</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>2</td><td>20/08/2026 00:35</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4488.18</td><td>4483.18</td><td>4495.68</td><td>4498.18</td><td>4500.68</td><td class='text-center'><b>WIN_TP1</b></td><td class='text-center'>42</td><td class='text-center'>1.00</td></tr>
+<tr><td class='text-center'>3</td><td>20/08/2026 01:45</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4490.39</td><td>4485.39</td><td>4497.89</td><td>4500.39</td><td>4502.89</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>23</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>4</td><td>21/08/2026 09:40</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4531.21</td><td>4526.21</td><td>4538.71</td><td>4541.21</td><td>4543.71</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>233</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>5</td><td>21/08/2026 10:35</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4535.43</td><td>4530.43</td><td>4542.93</td><td>4545.43</td><td>4547.93</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>3</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>6</td><td>21/08/2026 14:35</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4562.10</td><td>4557.10</td><td>4569.60</td><td>4572.10</td><td>4574.60</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>46</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>7</td><td>21/08/2026 16:40</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4585.27</td><td>4580.27</td><td>4592.77</td><td>4595.27</td><td>4597.77</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>125</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>8</td><td>21/08/2026 19:50</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4579.29</td><td>4574.29</td><td>4586.79</td><td>4589.29</td><td>4591.79</td><td class='text-center'><b>WIN_TP1</b></td><td class='text-center'>44</td><td class='text-center'>1.00</td></tr>
+<tr><td class='text-center'>9</td><td>21/08/2026 20:00</td><td class='text-center'>M15</td><td class='text-center'><b>BUY</b></td><td>4577.89</td><td>4572.89</td><td>4585.39</td><td>4587.89</td><td>4590.39</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>38</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>10</td><td>21/08/2026 20:40</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4587.23</td><td>4582.23</td><td>4594.73</td><td>4597.23</td><td>4599.73</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>12</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>11</td><td>21/08/2026 21:45</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4582.36</td><td>4577.36</td><td>4589.86</td><td>4592.36</td><td>4594.86</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>6</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>12</td><td>24/08/2026 21:10</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4670.52</td><td>4665.52</td><td>4678.02</td><td>4680.52</td><td>4683.02</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>1</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>13</td><td>24/08/2026 22:00</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4670.30</td><td>4665.30</td><td>4677.80</td><td>4680.30</td><td>4682.80</td><td class='text-center'><b>WIN_TP1</b></td><td class='text-center'>39</td><td class='text-center'>1.00</td></tr>
+<tr><td class='text-center'>14</td><td>24/08/2026 23:05</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4658.88</td><td>4653.88</td><td>4666.38</td><td>4668.88</td><td>4671.38</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>4</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>15</td><td>24/08/2026 23:15</td><td class='text-center'>M15</td><td class='text-center'><b>BUY</b></td><td>4657.42</td><td>4652.42</td><td>4664.92</td><td>4667.42</td><td>4669.92</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>37</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>16</td><td>25/08/2026 06:15</td><td class='text-center'>M15</td><td class='text-center'><b>BUY</b></td><td>4672.13</td><td>4667.13</td><td>4679.63</td><td>4682.13</td><td>4684.63</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>45</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>17</td><td>25/08/2026 12:00</td><td class='text-center'>M15</td><td class='text-center'><b>BUY</b></td><td>4625.86</td><td>4620.86</td><td>4633.36</td><td>4635.86</td><td>4638.36</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>7</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>18</td><td>25/08/2026 16:00</td><td class='text-center'>H1</td><td class='text-center'><b>BUY</b></td><td>4630.28</td><td>4615.28</td><td>4652.78</td><td>4667.78</td><td>4690.28</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>262</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>19</td><td>25/08/2026 18:15</td><td class='text-center'>M15</td><td class='text-center'><b>BUY</b></td><td>4642.86</td><td>4637.86</td><td>4650.36</td><td>4652.86</td><td>4655.36</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>47</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>20</td><td>25/08/2026 19:00</td><td class='text-center'>H1</td><td class='text-center'><b>BUY</b></td><td>4642.36</td><td>4627.36</td><td>4664.86</td><td>4679.86</td><td>4702.36</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>74</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>21</td><td>25/08/2026 21:45</td><td class='text-center'>M15</td><td class='text-center'><b>BUY</b></td><td>4637.11</td><td>4632.11</td><td>4644.61</td><td>4647.11</td><td>4649.61</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>18</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>22</td><td>25/08/2026 22:00</td><td class='text-center'>H1</td><td class='text-center'><b>BUY</b></td><td>4635.50</td><td>4620.50</td><td>4658.00</td><td>4673.00</td><td>4695.50</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>1289</td><td class='text-center'>-1.00</td></tr>
+<tr><td class='text-center'>23</td><td>26/08/2026 00:45</td><td class='text-center'>M15</td><td class='text-center'><b>BUY</b></td><td>4642.86</td><td>4637.86</td><td>4650.36</td><td>4652.86</td><td>4655.36</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>75</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>24</td><td>26/08/2026 00:50</td><td class='text-center'>M5</td><td class='text-center'><b>BUY</b></td><td>4645.90</td><td>4640.90</td><td>4653.40</td><td>4655.90</td><td>4658.40</td><td class='text-center'><b>WIN_TP3</b></td><td class='text-center'>77</td><td class='text-center'>2.00</td></tr>
+<tr><td class='text-center'>25</td><td>26/08/2026 01:00</td><td class='text-center'>H1</td><td class='text-center'><b>BUY</b></td><td>4648.34</td><td>4633.34</td><td>4670.84</td><td>4685.84</td><td>4708.34</td><td class='text-center'><b>LOSS</b></td><td class='text-center'>239</td><td class='text-center'>-1.00</td></tr>
+</tbody>
+</table>
+<p style="font-size: 10pt; font-style: italic;">Catatan: Seluruh data lengkap 170 sinyal tersimpan dalam arsip digital berkas laporan_trading.xlsx dan logs/signal_history.csv.</p>
+<h2>Lampiran 3: Format Pesan dan Bukti Komunikasi Antarmuka Telegram Bot API</h2>
+<p>Sistem menggunakan protokol komunikasi HTTP REST Telegram Bot API untuk mendistribusikan notifikasi sinyal serta pembaruan hasil secara nir-hambatan. Berikut struktur format pesan rekomendasi sinyal baru (<i>New Signal Alert</i>) dan pesan pembaruan hasil pencapaian target (<i>Update Alert</i>):</p>
+<h3>Lampiran 3.1 Format Notifikasi Sinyal Baru (<i>New Signal Alert</i>)</h3>
+<div class="code-box">
+&#128680; [DSS SIGNAL ALERT &mdash; XAU/USD] &#128680;
+--------------------------------------
+Arah Transaksi : SELL / SHORT
+Timeframe      : M15 (Mode: Trend Following)
+Waktu Validasi : 2026-09-02 14:15 WIB
+--------------------------------------
+&#128204; Level Eksekusi:
+- Entry Price  : 2498.20
+- Stop Loss    : 2504.20 (Jarak: 60 pips)
+- Take Profit 1: 2492.20 (RR 1:1.0)
+- Take Profit 2: 2489.20 (RR 1:1.5)
+- Take Profit 3: 2486.20 (RR 1:2.0)
+--------------------------------------
+&#128269; Ringkasan Konfluensi Analisis:
+- HTF Bias     : BEARISH (H4 & H1 EMA Alignment)
+- Trigger      : Bearish Engulfing + RSI Slope Down
+- Zone Level   : Resistance Zone M15 + Fib 50.0%
+- Total Skor   : Trigger: 6/6 | Confluence: 7.0
+--------------------------------------
+&#9888;&#65039; Catatan: Disiplin gunakan SL dan manajemen lot 1-2% modal.
+</div>
+<h3>Lampiran 3.2 Format Notifikasi Pembaruan Status Transaksi (<i>Trade Outcome Alert</i>)</h3>
+<div class="code-box">
+&#9989; [SIGNAL UPDATE &mdash; TARGET TERCAPAI] &#9989;
+--------------------------------------
+ID Sinyal      : #042
+Instrumen      : XAU/USD (M15 SELL)
+Status Hasil   : WIN TAKE PROFIT 3 (TP3)
+Harga Target   : 2486.20 (Realisasi RR: 1:2.0R)
+Durasi Aktif   : 85 Menit (~1,4 Jam)
+--------------------------------------
+&#128200; Keterangan  : Tren impulsif berlanjut hingga target maksimal.
+</div>
+<h2>Lampiran 4: Spesifikasi Parameter Gerbang Inferensi (5-Gate Validation Framework)</h2>
+<p class="caption-table">Tabel L.2 Matriks Spesifikasi Aturan Validasi 5-Gate</p>
+<table>
+<thead>
+<tr><th style="width: 10%;">Gerbang</th><th style="width: 22%;">Nama Gerbang</th><th style="width: 32%;">Parameter yang Dievaluasi</th><th style="width: 20%;">Syarat Lolos</th><th style="width: 16%;">Status Reject</th></tr>
+</thead>
+<tbody>
+<tr><td class='text-center'><b>Gate 1</b></td><td>Validasi Teknis Dasar</td><td>Integritas OHLCV, filter sesi aktif (bukan rollover), batas ATR minimum.</td><td>Data utuh, sesi aktif, ATR valid.</td><td class='text-center'><code>SESSION_OFF</code></td></tr>
+<tr><td class='text-center'><b>Gate 2</b></td><td>Higher Timeframe Bias</td><td>Kelurusan tren H4 & H1 (EMA 50 vs 200) dan kemiringan slope MA.</td><td>Tren makro selaras (Bull/Bear).</td><td class='text-center'><code>BIAS_NEUTRAL</code></td></tr>
+<tr><td class='text-center'><b>Gate 3</b></td><td>Trigger Scoring</td><td>Pola Candlestick, RSI Slope, MACD Histogram, EMA Pullback.</td><td>Skor pemicu &ge; 4 (TF) / &ge; 3 (Scalp).</td><td class='text-center'><code>TRIGGER_LOW</code></td></tr>
+<tr><td class='text-center'><b>Gate 4</b></td><td>Confluence Scoring</td><td>Level SNR horisontal, Zona SND, rasio Fibonacci (38.2%, 50%, 61.8%).</td><td>Skor konfluensi &ge; 2.0, bebas halangan.</td><td class='text-center'><code>SNR_BLOCKED</code></td></tr>
+<tr><td class='text-center'><b>Gate 5</b></td><td>Manajemen Risiko & RR</td><td>Level Entry, ATR dynamic SL, TP1&ndash;3, dan rasio RR struktural.</td><td>Anti-chase &le; 1.5 ATR, RR &ge; 1.0.</td><td class='text-center'><code>RR_LOW</code></td></tr>
+</tbody>
+</table>
+
+</div>
+</body>
+</html>

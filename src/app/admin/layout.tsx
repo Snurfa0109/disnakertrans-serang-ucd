@@ -82,7 +82,6 @@ const NAV_SECTIONS: NavSection[] = [
       { label: "Audit Log", href: "/admin/audit-log", icon: ClipboardList, roles: ["superadmin"] },
       { label: "Chatbot Monitor", href: "/admin/chatbot", icon: Bot, roles: ["superadmin", "website"] },
       { label: "Statistik Pengunjung", href: "/admin/analytics", icon: TrendingUp, roles: ["superadmin", "website"] },
-      { label: "Scraper Berita", href: "/admin/scraper", icon: RefreshCw, roles: ["superadmin"] },
     ],
   },
 ];

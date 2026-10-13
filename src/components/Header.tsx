@@ -15,7 +15,6 @@ import DarkModeToggle from "@/components/DarkModeToggle";
 const navLinks = [
     { name: "Beranda", href: "/" },
     { name: "Profil", href: "/profil" },
-    { name: "Peluang & Agenda", href: "/peluang" },
     { name: "Informasi Publik", href: "/informasi-publik" },
     { name: "Layanan Publik", href: "/layanan-publik" },
     { name: "Pengaduan", href: "/pengaduan" },

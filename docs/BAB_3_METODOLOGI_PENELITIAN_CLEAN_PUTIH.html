@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAB III - METODOLOGI PENELITIAN</title>
+<style>
+  @page {
+    size: A4;
+    margin: 3cm 3cm 3cm 4cm; /* Atas 3cm, Kanan 3cm, Bawah 3cm, Kiri 4cm (Pedoman UNTIRTA 2025) */
+    mso-page-orientation: portrait;
+  }
+  @page Section1 {
+    size: 21cm 29.7cm;
+    margin: 3cm 3cm 3cm 4cm;
+    mso-header-margin: 1.5cm;
+    mso-footer-margin: 1.5cm;
+    mso-paper-source: 0;
+  }
+  div.Section1 {
+    page: Section1;
+  }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    background-color: #fff;
+    margin: 0;
+    padding: 0;
+    text-align: justify;
+  }
+  h1.bab-title {
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    margin-top: 0;
+    margin-bottom: 24pt;
+    line-height: 1.5;
+  }
+  h2 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 18pt;
+    margin-bottom: 6pt;
+    text-align: left;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 12pt;
+    margin-bottom: 6pt;
+    text-align: left;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 12pt;
+    font-weight: bold;
+    font-style: italic;
+    margin-top: 10pt;
+    margin-bottom: 4pt;
+    text-align: left;
+    page-break-after: avoid;
+  }
+  p {
+    margin-top: 0;
+    margin-bottom: 8pt;
+    text-indent: 1.25cm; /* Indentasi awal alinea standar pedoman */
+    text-align: justify;
+  }
+  p.no-indent {
+    text-indent: 0;
+  }
+  ol, ul {
+    margin-top: 0;
+    margin-bottom: 8pt;
+    padding-left: 1.25cm;
+  }
+  li {
+    margin-bottom: 4pt;
+    text-align: justify;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10pt;
+    margin-bottom: 12pt;
+    font-size: 11pt;
+    line-height: 1.3;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1pt solid #000;
+    padding: 6pt 8pt;
+    vertical-align: middle;
+  }
+  th {
+    background-color: #ffffff;
+    font-weight: bold;
+    text-align: center;
+  }
+  .caption-table {
+    font-size: 11pt;
+    font-weight: bold;
+    text-align: left;
+    margin-bottom: 4pt;
+    margin-top: 12pt;
+    page-break-after: avoid;
+    text-indent: 0;
+  }
+  .caption-figure {
+    font-size: 11pt;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 6pt;
+    margin-bottom: 14pt;
+    page-break-before: avoid;
+    text-indent: 0;
+  }
+  .figure-container {
+    text-align: center;
+    margin-top: 12pt;
+    margin-bottom: 14pt;
+    page-break-inside: avoid;
+  }
+  .figure-container img {
+    max-width: 85%;
+    height: auto;
+    border: none;
+    display: inline-block;
+  }
+  .diagram-box {
+    border: 1pt solid #000;
+    background-color: #ffffff;
+    padding: 12pt;
+    margin: 12pt 0;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 10pt;
+    line-height: 1.3;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .formula-box {
+    text-align: center;
+    margin: 10pt 0;
+    font-style: italic;
+    font-size: 11.5pt;
+    text-indent: 0;
+  }
+  .table-schedule td {
+    text-align: center;
+  }
+  .table-schedule td.text-left {
+    text-align: left;
+  }
+</style>
+</head>
+<body>
+<div class="Section1">
+
+<h1 class="bab-title">BAB III<br>METODOLOGI PENELITIAN</h1>
+
+<h2>3.1 Jenis Penelitian</h2>
+<p>
+Penelitian ini merupakan penelitian rekayasa perangkat lunak terapan yang berfokus pada perancangan, pembangunan, dan implementasi Sistem Pendukung Keputusan (<i>Decision Support System</i> &ndash; DSS) berbasis aturan cerdas (<i>rule-based intelligent system</i>) untuk menghasilkan rekomendasi sinyal <i>trading forex</i> pada pasangan instrumen XAU/USD. Karena penelitian ini bertujuan membangun artefak perangkat lunak yang andal dan terstruktur, pendekatan pengembangan sistem mengadopsi model sekuensial linier <i>Waterfall</i>.
+</p>
+
+<div class="figure-container">
+  <img src="Skripsi%20Benji%20(1)_files/image002.png" alt="Model Waterfall" style="max-width: 65%;" />
+  <p class="caption-figure">Gambar 3.1 Model Waterfall</p>
+</div>
+
+<p>
+Model <i>Waterfall</i> dipilih karena kebutuhan sistem telah didefinisikan secara komprehensif sejak awal penelitian. Tahapan pengembangan dilakukan secara berurutan dan terstruktur, meliputi analisis kebutuhan sistem, perancangan arsitektur dan logika inferensi, implementasi kode program, demonstrasi dan pengujian operasional, hingga dokumentasi dan evaluasi performa sistem.
+</p>
+
+<h2>3.2 Objek Penelitian</h2>
+<p>
+Objek dalam penelitian ini adalah Sistem Pendukung Keputusan (<i>Decision Support System</i> &ndash; DSS) yang dirancang untuk menghasilkan rekomendasi sinyal <i>trading</i> pada instrumen XAU/USD melalui pendekatan <i>multi-timeframe</i> dan multi-analisis teknikal berbasis aturan (<i>rule-based</i>). Sistem ini dibangun menggunakan bahasa pemrograman Python serta terintegrasi langsung dengan MetaTrader 5 API sebagai sumber umpan data pasar dan Telegram Bot API sebagai media distribusi sinyal otomatis ke pengguna.
+</p>
+<p>
+Objek penelitian secara spesifik mencakup dua komponen utama:
+</p>
+<ol>
+  <li>
+    <b>Sistem DSS Sinyal Trading:</b> Perangkat lunak yang memproses data harga pasar melalui tahapan prapemrosesan data, kalkulasi indikator teknikal (EMA, RSI, MACD, ATR), pengenalan pola pergerakan harga (<i>price action</i>), pemetaan zona pasar (SNR dan SND), serta evaluasi aturan berjenjang oleh <i>rule-based decision engine</i> untuk menghasilkan keputusan rekomendasi transaksi (<i>BUY</i>, <i>SELL</i>, atau <i>NO SIGNAL</i>).
+  </li>
+  <li>
+    <b>Data Deret Waktu Candlestick XAU/USD:</b> Data harga pasar aktual yang mencakup nilai Open, High, Low, Close, dan Volume (OHLCV) pada kerangka waktu M5, M15, H1, H4, dan D1 yang diperoleh secara <i>real-time</i> melalui antarmuka resmi MetaTrader 5 Python API.
+  </li>
+</ol>
+
+<h2>3.3 Metode Pengumpulan Data</h2>
+<p>
+Metode pengumpulan data dilakukan untuk memperoleh informasi teoritis dan data empiris pergerakan pasar secara akurat:
+</p>
+<ol>
+  <li>
+    <b>Studi Literatur (Data Sekunder):</b> Dilakukan dengan menelaah literatur ilmiah berupa jurnal terindeks, prosiding seminar internasional, buku pedoman analisis teknikal, serta dokumentasi resmi pustaka pemrograman (Python, MetaTrader 5 API, dan Telegram Bot API) terkait DSS, sistem pakar berbasis aturan, dan analisis pasar finansial.
+  </li>
+  <li>
+    <b>Pengumpulan Data Pasar (Data Primer):</b> Diperoleh secara langsung dari server broker melalui MetaTrader 5 API berupa data <i>candlestick</i> XAU/USD. Sebanyak 800 bar historis per <i>timeframe</i> ditarik saat inisialisasi awal untuk menjamin kestabilan kalkulasi indikator jangka panjang (khususnya EMA 200). Penarikan data lanjutan disinkronisasi pada setiap penutupan batang (<i>candle close event</i>) guna mencegah bias fluktuasi harga berjalan (<i>repainting</i>).
+  </li>
+</ol>
+
+<h2>3.4 Analisis dan Perancangan Sistem</h2>
+
+<h3>3.4.1 Analisis Kebutuhan Sistem</h3>
+<p class="no-indent">
+Berdasarkan identifikasi masalah yang dihadapi dalam analisis pasar <i>forex</i>, kebutuhan sistem diklasifikasikan menjadi dua:
+</p>
+<p class="no-indent">
+<b>A. Kebutuhan Fungsional (<i>Functional Requirements</i>)</b>
+</p>
+<ol>
+  <li>Sistem harus mampu melakukan inisialisasi koneksi dan verifikasi autentikasi akun ke terminal MetaTrader 5 secara stabil.</li>
+  <li>Sistem harus mampu menarik data bar OHLCV multi-timeframe (M5 s.d. D1) dan melakukan prapemrosesan data secara otomatis.</li>
+  <li>Sistem harus mampu mengalkulasikan indikator teknikal secara presisi: EMA (20, 50, 200), RSI (14), MACD (12, 26, 9), dan ATR (14).</li>
+  <li>Sistem harus mampu mendeteksi pola <i>candlestick</i> pembalikan arah (<i>Engulfing, Pin Bar/Hammer, Inside Bar</i>) serta memetakan level <i>Support & Resistance</i> (SNR), <i>Supply & Demand</i> (SND), dan level <i>Fibonacci Retracement</i>.</li>
+  <li>Sistem harus mampu mengevaluasi kondisi pasar melalui mesin inferensi berjenjang (<i>5-Gate Validation</i>) untuk menerbitkan rekomendasi yang terukur.</li>
+  <li>Sistem harus mampu menghitung titik masuk (<i>Entry</i>), batas proteksi kerugian (<i>Stop Loss</i>), dan target keuntungan bertingkat (TP1, TP2, TP3) berbasis volatilitas dinamis ATR dan struktur pasar dengan memastikan rasio <i>Risk-to-Reward</i> &ge; 1:1.0.</li>
+  <li>Sistem harus mampu mengirimkan rekomendasi sinyal secara instan ke antarmuka bot Telegram serta mencatat riwayat sinyal ke dalam format CSV dan JSON secara aman (<i>thread-safe</i>).</li>
+</ol>
+
+<p class="no-indent">
+<b>B. Kebutuhan Non-Fungsional (<i>Non-Functional Requirements</i>)</b>
+</p>
+<ol>
+  <li><b>Kecepatan Komputasi:</b> Latensi pemrosesan evaluasi sinyal dari penutupan <i>candle</i> hingga pesan terkirim ke Telegram tidak melebihi 2 detik.</li>
+  <li><b>Keandalan Operasional:</b> Sistem dapat beroperasi secara terus-menerus selama hari bursa aktif (24 jam sehari, 5 hari seminggu) pada lingkungan Virtual Private Server (VPS).</li>
+  <li><b>Transparansi Penjelasan (<i>Explainability</i>):</b> Setiap sinyal memuat alasan teknis yang mendasari keputusan, termasuk rincian skor pemicu dan skor konfluensi.</li>
+  <li><b>Integritas Sinyal:</b> Dilengkapi mekanisme filter sesi perdagangan dan interval jeda (<i>cooldown</i>) untuk menghindari sinyal ganda pada kondisi pasar abnormal.</li>
+</ol>
+
+<h3>3.4.2 Kerangka Penelitian</h3>
+<p>
+Kerangka penelitian disusun untuk menggambarkan alur sistematis pelaksanaan penelitian mulai dari identifikasi permasalahan hingga tahap evaluasi performa sistem. Kerangka penelitian disajikan pada Gambar 3.2.
+</p>
+
+<div class="figure-container">
+  <img src="Skripsi%20Benji%20(1)_files/image003.png" alt="Kerangka Penelitian" style="max-width: 75%;" />
+  <p class="caption-figure">Gambar 3.2 Kerangka Penelitian</p>
+</div>
+
+<p>
+Sebagaimana digambarkan pada Gambar 3.2, penelitian berawal dari perumusan latar belakang tingginya volatilitas instrumen XAU/USD dan kelemahan analisis subjektif, dilanjutkan dengan studi kepustakaan, analisis kebutuhan, perancangan arsitektur dan aturan <i>rule-based</i>, implementasi modular, pengujian empiris, hingga analisis hasil laporan performa sinyal.
+</p>
+
+<h3>3.4.3 Perancangan Alur Kerja Awal Sistem DSS</h3>
+<p>
+Perancangan awal sistem DSS dituangkan ke dalam diagram alir (<i>flowchart</i>) untuk memetakan logika kerja sistem dari inisialisasi hingga penerbitan sinyal, sebagaimana disajikan pada Gambar 3.3.
+</p>
+
+<div class="figure-container">
+  <img src="Skripsi%20Benji%20(1)_files/image004.png" alt="Hasil Perancangan Awal Alur Kerja DSS" style="max-width: 80%;" />
+  <p class="caption-figure">Gambar 3.3 Hasil Perancangan Awal Alur Kerja DSS</p>
+</div>
+
+<p>
+Berdasarkan Gambar 3.3, alur sistem dimulai dari inisialisasi parameter konfigurasi, pemeriksaan status konektivitas ke MetaTrader 5 API, penarikan data OHLCV multi-timeframe, penungguan peristiwa penutupan bar (<i>candle close</i>), ekstraksi fitur teknikal, evaluasi aturan <i>decision engine</i>, kalkulasi parameter risiko SL/TP, hingga distribusi sinyal ke Telegram Bot dan pencatatan log histori.
+</p>
+
+<h3>3.4.4 Arsitektur Sistem Modular DSS</h3>
+<p>
+Untuk mempermudah pemeliharaan dan pengujian kode program, sistem dirancang dengan pendekatan modular 6 lapisan (<i>multi-tier architecture</i>), seperti diilustrasikan pada Gambar 3.4.
+</p>
+
+<div class="diagram-box">
++-----------------------------------------------------------------------------------+
+|                            TERMINAL METATRADER 5 (MT5)                            |
+|                     (Penyedia Data Harga & Umpan Pasar XAU/USD)                   |
++-----------------------------------------------------------------------------------+
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+| 1. LAPISAN PENGAMBILAN DATA & PENJADWALAN (DATA INGESTION & SCHEDULER)            |
+|    - mt5/connector.py    : Autentikasi koneksi & pemulihan putus sambung jaringan |
+|    - mt5/market_data.py  : Penarikan data bar OHLCV multi-timeframe (M5 - D1)     |
+|    - infra/scheduler.py  : Pendeteksi event penutupan bar (candle close event)    |
++-----------------------------------------------------------------------------------+
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+| 2. LAPISAN EKSTRAKSI FITUR ANALISIS TEKNIKAL (FEATURE EXTRACTION LAYER)           |
+|    - features/indicators.py : Kalkulasi EMA (20/50/200), RSI, MACD, dan ATR       |
+|    - features/patterns.py   : Pengenalan pola candlestick (Engulfing, Pin Bar)    |
+|    - features/zones_snr.py  : Pemetaan level Support & Resistance horizontal      |
+|    - features/zones_snd.py  : Identifikasi zona Supply & Demand Base              |
+|    - features/fibonacci.py  : Kalkulasi level rasio Fibonacci Retracement         |
+|    - features/session.py    : Filter sesi pasar aktif (Asian, London, New York)   |
++-----------------------------------------------------------------------------------+
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+| 3. MESIN PENALARAN ATURAN CERDAS (RULE-BASED INFERENCE & DECISION ENGINE)         |
+|    (engine/anytf_mta_engine.py)                                                   |
+|    - Gate 1 : Validasi kecukupan data, kelayakan ATR, sesi, dan cooldown          |
+|    - Gate 2 : Penentuan arah tren makro (HTF Bias: H1 / H4 EMA Alignment)         |
+|    - Gate 3 : Evaluasi skor pemicu teknikal (Trigger Score >= Threshold)          |
+|    - Gate 4 : Kalkulasi level harga dinamis (Dynamic Stop Loss & Multi Take Profit|
+|    - Gate 5 : Validasi skor konfluensi terbobot (Confluence Score) & Rasio RR >= 1|
++-----------------------------------------------------------------------------------+
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+| 4. LAPISAN DISTRIBUSI NOTIFIKASI & PELAPORAN (NOTIFICATION & REPORTING LAYER)     |
+|    - notify/telegram.py     : Distribusi sinyal ke bot Telegram secara instan     |
+|    - infra/signal_logger.py : Persistensi riwayat sinyal ke format CSV & JSON     |
+|    - infra/signal_tracker.py: Pemantauan real-time harga terhadap status TP/SL    |
+|    - infra/report/          : Pembuatan laporan performa analitik & kurva ekuitas |
++-----------------------------------------------------------------------------------+
+</div>
+<p class="caption-figure">Gambar 3.4 Arsitektur Modular Sistem Pendukung Keputusan Sinyal Trading</p>
+
+<h3>3.4.5 Logika Pengambilan Keputusan (Mekanisme 5-Gate Validation)</h3>
+<p>
+Proses penentuan sinyal rekomendasi menerapkan logika inferensi aturan bertingkat melalui 5 gerbang validasi (<i>5-Gate Validation</i>) sebagaimana ditunjukkan pada diagram Gambar 3.5.
+</p>
+
+<div class="diagram-box">
+           [Data OHLCV Multi-Timeframe Masuk Saat Candle Close]
+                                   |
+                                   v
+                         +-------------------+
+                         |      GATE 1       | ----(Gagal)----> [Tolak: Log Status Reject]
+                         |   Filter Dasar    |
+                         +-------------------+
+                                   | (Lolos)
+                                   v
+                         +-------------------+
+                         |      GATE 2       | ----(Gagal)----> [Tolak: Tren Makro Netral]
+                         |     HTF Bias      |
+                         +-------------------+
+                                   | (Lolos: Bullish / Bearish)
+                                   v
+                         +-------------------+
+                         |      GATE 3       | ----(Gagal)----> [Tolak: Skor Pemicu Kurang]
+                         |   Trigger Score   |
+                         +-------------------+
+                                   | (Lolos: Skor >= Threshold)
+                                   v
+                         +-------------------+
+                         |      GATE 4       | ----(Gagal)----> [Tolak: SL/TP Tidak Valid]
+                         |  Kalkulasi SL/TP  |
+                         +-------------------+
+                                   | (Lolos)
+                                   v
+                         +-------------------+
+                         |      GATE 5       | ----(Gagal)----> [Tolak: Konfluensi/RR Rendah]
+                         |  Konfluensi & RR  |
+                         +-------------------+
+                                   | (Lolos Seluruh Gate)
+                                   v
+               [Penerbitan Sinyal Rekomendasi BUY / SELL ke Telegram]
+</div>
+<p class="caption-figure">Gambar 3.5 Diagram Alir Mekanisme Inferensi 5-Gate Validation</p>
+
+<p class="no-indent">
+Rincian teknis dari masing-masing gerbang validasi adalah sebagai berikut:
+</p>
+
+<h4>1. Gate 1 &ndash; Filter Validitas Data, Sesi, dan Cooldown</h4>
+<p>
+Memverifikasi kondisi awal data dan lingkungan pasar:
+</p>
+<ul>
+  <li>Ketersediaan data historis minimal 200 bar secara utuh (mencegah galat <i>not_enough_bars</i>).</li>
+  <li>Volatilitas pasar memenuhi kriteria wajar (ATR &gt; ambang minimal).</li>
+  <li>Penyaringan sesi perdagangan aktif dengan mengecualikan periode pergantian hari server (02:00 &ndash; 06:00 WIB).</li>
+  <li>Filter <i>cooldown</i> untuk memastikan jeda waktu minimal sejak sinyal sebelumnya telah terpenuhi.</li>
+</ul>
+
+<h4>2. Gate 2 &ndash; Penentuan Arah Tren Makro (Higher Timeframe Bias)</h4>
+<p>
+Menentukan arah tren utama menggunakan timeframe H1 dan H4:
+</p>
+<ul>
+  <li><b>Bias BULLISH:</b> Harga penutupan di atas EMA 200, garis EMA 50 di atas EMA 200, dan kemiringan EMA 50 bergerak menanjak.</li>
+  <li><b>Bias BEARISH:</b> Harga penutupan di bawah EMA 200, garis EMA 50 di bawah EMA 200, dan kemiringan EMA 50 bergerak menurun.</li>
+  <li><b>Bias NETRAL:</b> Jika terjadi divergensi antar parameter tren, proses pembentukan sinyal tren dibatalkan.</li>
+</ul>
+
+<h4>3. Gate 3 &ndash; Evaluasi Skor Pemicu (Trigger Score)</h4>
+<p>
+Menguji momentum pemicu pada timeframe eksekusi (M5 atau M15). Ambang batas kelulusan ditetapkan minimal skor &ge; 3 (mode <i>scalping</i>) atau &ge; 4 (mode <i>intraday</i>), dengan rincian pembobotan pada Tabel 3.1.
+</p>
+
+<p class="caption-table">Tabel 3.1 Matriks Komponen Penilaian Skor Pemicu (Trigger Score)</p>
+<table>
+  <thead>
+    <tr>
+      <th style="width: 8%;">No</th>
+      <th style="width: 25%;">Komponen Pengujian</th>
+      <th style="width: 30%;">Kondisi Sinyal BUY</th>
+      <th style="width: 30%;">Kondisi Sinyal SELL</th>
+      <th style="width: 7%;">Skor</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center;">1</td>
+      <td><b>EMA 200 (Wajib)</b></td>
+      <td>Close &gt; EMA200 &ndash; (0.2 &times; ATR)</td>
+      <td>Close &lt; EMA200 + (0.2 &times; ATR)</td>
+      <td style="text-align: center;">+1</td>
+    </tr>
+    <tr>
+      <td style="text-align: center;">2</td>
+      <td><b>EMA 50 Pullback</b></td>
+      <td>Jarak Close ke EMA50 &le; 1.5 &times; ATR</td>
+      <td>Jarak Close ke EMA50 &le; 1.5 &times; ATR</td>
+      <td style="text-align: center;">+1</td>
+    </tr>
+    <tr>
+      <td style="text-align: center;">3</td>
+      <td><b>EMA Alignment</b></td>
+      <td>EMA20 &gt; EMA50 &gt; EMA200</td>
+      <td>EMA20 &lt; EMA50 &lt; EMA200</td>
+      <td style="text-align: center;">+1</td>
+    </tr>
+    <tr>
+      <td style="text-align: center;">4</td>
+      <td><b>Konfirmasi RSI</b></td>
+      <td>RSI &lt; 65 dan kemiringan naik</td>
+      <td>RSI &gt; 35 dan kemiringan turun</td>
+      <td style="text-align: center;">+1</td>
+    </tr>
+    <tr>
+      <td style="text-align: center;">5</td>
+      <td><b>MACD Histogram</b></td>
+      <td>Histogram saat ini &gt; bar sebelumnya</td>
+      <td>Histogram saat ini &lt; bar sebelumnya</td>
+      <td style="text-align: center;">+1</td>
+    </tr>
+    <tr>
+      <td style="text-align: center;">6</td>
+      <td><b>Arah Candle</b></td>
+      <td>Close &gt; Open (Candle Bullish)</td>
+      <td>Close &lt; Open (Candle Bearish)</td>
+      <td style="text-align: center;">+1</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>4. Gate 4 &ndash; Perhitungan Parameter Risiko (Stop Loss & Take Profit)</h4>
+<p>
+Mengalkulasikan level proteksi risiko secara adaptif terhadap volatilitas pasar:
+</p>
+<div class="formula-box">
+  SL<sub>BUY</sub> = Entry &ndash; maks(Jarak_Swing_Low, 1.5 &times; ATR)<br>
+  SL<sub>SELL</sub> = Entry + maks(Jarak_Swing_High, 1.5 &times; ATR)
+</div>
+<p>
+Sistem menetapkan target keuntungan bertingkat (<i>multi-target</i>):
+</p>
+<ul>
+  <li><b>Take Profit 1 (TP1):</b> Target rasio 1:1.0 terhadap risiko jarak SL (<i>Target Konservatif</i>).</li>
+  <li><b>Take Profit 2 (TP2):</b> Target rasio 1:1.5 terhadap risiko jarak SL (<i>Target Struktural Utama</i>).</li>
+  <li><b>Take Profit 3 (TP3):</b> Target rasio 1:2.0 terhadap risiko jarak SL (<i>Target Ekstensi Tren</i>).</li>
+</ul>
+
+<h4>5. Gate 5 &ndash; Evaluasi Skor Konfluensi dan Rasio Risk-to-Reward</h4>
+<p>
+Mengevaluasi konfirmasi multianalisis teknikal menggunakan rumus skor konfluensi terbobot:
+</p>
+<div class="formula-box">
+  Skor_Konfluensi = &Sigma; (Bobot<sub>i</sub> &times; Validasi<sub>i</sub>)
+</div>
+<p>
+Pembobotan komponen mencakup: Zona <i>Supply & Demand</i> (Bobot 2.0), Pola <i>Candlestick</i> (Bobot 1.5), Divergensi RSI/MACD (Bobot 1.5), Rasio Emas Fibonacci (Bobot 1.5), dan Level Horizontal SNR (Bobot 1.0). Sinyal dinyatakan lolos jika rasio RR struktural menuju TP2 memenuhi ambang minimal &ge; 1:1.0 serta tidak terhalang batas level harga penting.
+</p>
+
+<h3>3.4.6 Perancangan Antarmuka Notifikasi Telegram Bot</h3>
+<p>
+Sinyal yang berhasil melewati seluruh tahapan validasi didistribusikan ke bot Telegram pengguna dengan format pesan yang terstruktur pada Gambar 3.6.
+</p>
+
+<div class="diagram-box">
+🚨 [DSS SIGNAL ALERT &mdash; XAU/USD] 🚨
+------------------------------------------------------
+Arah Rekomendasi : BUY / LONG
+Kerangka Waktu   : M15 (Mode: Trend Following)
+Waktu Validasi   : 2026-08-25 12:00 WIB
+------------------------------------------------------
+📌 Level Eksekusi Transaksi:
+- Harga Titik Masuk (Entry) : 2514.50
+- Batas Risiko (Stop Loss)  : 2508.50 (Jarak: 60 Pips)
+- Target Profit 1 (TP1)     : 2520.50 (Rasio RR 1:1.0)
+- Target Profit 2 (TP2)     : 2523.50 (Rasio RR 1:1.5)
+- Target Profit 3 (TP3)     : 2526.50 (Rasio RR 1:2.0)
+------------------------------------------------------
+🔍 Ringkasan Konfluensi Analisis:
+- HTF Bias Tren  : BULLISH (H4 & H1 EMA Alignment)
+- Pemicu Entry   : Bullish Engulfing + RSI Slope Up
+- Zona Analisis  : Demand Zone M15 + Fib 61.8%
+- Akumulasi Skor : Trigger: 5/6 | Confluence: 6.5
+------------------------------------------------------
+⚠️ Catatan: Keputusan akhir dan pengelolaan risiko berada
+pada pengguna (Gunakan risiko maks 1-2% per transaksi).
+</div>
+<p class="caption-figure">Gambar 3.6 Format Antarmuka Notifikasi Sinyal Rekomendasi Telegram Bot</p>
+
+<h2>3.5 Metode Pengujian dan Evaluasi</h2>
+
+<h3>3.5.1 Pengujian Fungsional Perangkat Lunak (Black Box Testing)</h3>
+<p>
+Pengujian fungsional bertujuan memastikan bahwa seluruh komponen sistem perangkat lunak berfungsi sesuai rancangan. Skenario pengujian meliputi:
+</p>
+<ol>
+  <li><b>Pengujian Konektor MT5:</b> Menguji kestabilan koneksi, autentikasi akun broker, dan fungsi rekoneksi otomatis.</li>
+  <li><b>Pengujian Data Feeder:</b> Menguji integritas format data bar OHLCV dan sinkronisasi 800 bar data historis.</li>
+  <li><b>Pengujian Modul Analisis:</b> Memvalidasi kebenaran nilai komputasi indikator matematika (EMA, RSI, MACD, ATR, pola candlestick, dan Fibonacci) dengan membandingkannya terhadap platform MT5.</li>
+  <li><b>Pengujian Decision Engine:</b> Memvalidasi alur penyaringan Gate 1 s.d. Gate 5 pada variasi kondisi pasar nyata.</li>
+  <li><b>Pengujian Notifikasi Telegram:</b> Menguji keandalan pengiriman pesan instan dan penanganan pembatasan laju panggilan (<i>rate limiting</i>).</li>
+</ol>
+
+<h3>3.5.2 Pengujian Kinerja Model Keputusan (Forward Testing & Metrik Evaluasi)</h3>
+<p>
+Kinerja sistem diuji menggunakan metode <i>Forward Testing</i> (pengujian berjalan secara langsung pada pergerakan pasar nyata). Setiap sinyal dipantau perkembangannya hingga menyentuh target keuntungan (TP) atau batas proteksi kerugian (SL).
+</p>
+<p>
+Metrik evaluasi kuantitatif yang digunakan meliputi:
+</p>
+<ol>
+  <li>
+    <b>Tingkat Kemenangan (<i>Win Rate</i>):</b>
+    <div class="formula-box">
+      Win Rate (%) = (&Sigma; Sinyal WIN / &Sigma; Total Sinyal Selesai Dievaluasi) &times; 100%
+    </div>
+  </li>
+  <li>
+    <b>Rasio Keuntungan Realisasi Rata-Rata (<i>Average Realized Risk-to-Reward Ratio</i>):</b>
+    <div class="formula-box">
+      Average RR = (1 / N) &times; &Sigma; (|Harga_Outcome<sub>i</sub> &ndash; Harga_Entry<sub>i</sub>| / |Harga_Entry<sub>i</sub> &ndash; Harga_SL<sub>i</sub>|)
+    </div>
+  </li>
+  <li>
+    <b>Tingkat Akurasi Komponen Analisis Teknikal:</b>
+    <div class="formula-box">
+      Akurasi Komponen (%) = (&Sigma; Sinyal WIN dengan Komponen / &Sigma; Total Sinyal dengan Komponen) &times; 100%
+    </div>
+  </li>
+  <li>
+    <b>Kurva Pertumbuhan Ekuitas Kumulatif (<i>Cumulative Equity Curve</i>):</b> Visualisasi akumulasi hasil transaksi secara runut waktu (+1 untuk sinyal WIN dan -1 untuk sinyal LOSS) guna menilai konsistensi sistem.
+  </li>
+</ol>
+
+<h2>3.6 Jadwal Penelitian</h2>
+<p>
+Penelitian ini dilaksanakan dalam rentang waktu tiga bulan, terhitung sejak bulan Oktober hingga Desember 2025, sebagaimana disajikan pada Tabel 3.2.
+</p>
+
+<p class="caption-table">Tabel 3.2 Jadwal Pelaksanaan Penelitian Tugas Akhir</p>
+<table class="table-schedule">
+  <thead>
+    <tr>
+      <th rowspan="2" style="width: 6%;">No</th>
+      <th rowspan="2" style="width: 44%;">Tahapan Kegiatan Penelitian</th>
+      <th colspan="4" style="width: 16%;">Oktober 2025</th>
+      <th colspan="4" style="width: 16%;">November 2025</th>
+      <th colspan="4" style="width: 18%;">Desember 2025</th>
+    </tr>
+    <tr>
+      <th>1</th><th>2</th><th>3</th><th>4</th>
+      <th>1</th><th>2</th><th>3</th><th>4</th>
+      <th>1</th><th>2</th><th>3</th><th>4</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td class="text-left">Identifikasi Masalah & Studi Literatur</td>
+      <td>&#9608;</td><td>&#9608;</td><td></td><td></td>
+      <td></td><td></td><td></td><td></td>
+      <td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td class="text-left">Pengumpulan Data Pasar & Analisis Kebutuhan</td>
+      <td></td><td></td><td>&#9608;</td><td>&#9608;</td>
+      <td></td><td></td><td></td><td></td>
+      <td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td class="text-left">Perancangan Arsitektur & Logika 5-Gate DSS</td>
+      <td></td><td></td><td></td><td></td>
+      <td>&#9608;</td><td>&#9608;</td><td></td><td></td>
+      <td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td class="text-left">Implementasi Perangkat Lunak & Integrasi API</td>
+      <td></td><td></td><td></td><td></td>
+      <td></td><td></td><td>&#9608;</td><td>&#9608;</td>
+      <td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td class="text-left">Pengujian Fungsional & Forward Testing Pasar Live</td>
+      <td></td><td></td><td></td><td></td>
+      <td></td><td></td><td></td><td></td>
+      <td>&#9608;</td><td>&#9608;</td><td></td><td></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td class="text-left">Analisis Hasil Performa & Finalisasi Laporan TA</td>
+      <td></td><td></td><td></td><td></td>
+      <td></td><td></td><td></td><td></td>
+      <td></td><td></td><td>&#9608;</td><td>&#9608;</td>
+    </tr>
+  </tbody>
+</table>
+
+</div>
+</body>
+</html>
