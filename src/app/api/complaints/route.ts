@@ -7,6 +7,8 @@ import {
 import { successResponse, errorResponse } from '@/lib/utils';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/complaints
  * 
@@ -58,6 +60,7 @@ export async function GET(request: Request) {
  * POST /api/complaints
  * 
  * Submit a new complaint. Sends email notifications.
+ */
 function simpleHash(str: string): string {
   let hash = 5381;
   for (let i = 0; i < str.length; i++) {

@@ -7,6 +7,8 @@ import {
 import { successResponse, errorResponse } from '@/lib/utils';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/pengaduan
  * 
