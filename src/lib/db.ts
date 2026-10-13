@@ -31,6 +31,7 @@ const pool =
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
+    connectTimeout: 5000,
     multipleStatements: true,
     ssl: useSsl ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
   });

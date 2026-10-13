@@ -125,12 +125,31 @@ function PengaduanForm() {
                 }),
             });
 
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                throw new Error(data.message || 'Gagal mengirim pengaduan');
+            // Safe parsing to prevent "Unexpected end of JSON input"
+            const text = await res.text();
+            let data: any = null;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch {
+                data = null;
             }
 
-            setTicketId(data.data?.ticketNumber || `#PKD-${String(data.data?.id).padStart(5, '0')}`);
+            if (!res.ok) {
+                if (res.status === 413) {
+                    throw new Error('Ukuran lampiran atau data pengaduan terlalu besar.');
+                }
+                if (res.status === 504 || res.status === 408) {
+                    throw new Error('Koneksi ke server timeout. Silakan periksa koneksi dan coba beberapa saat lagi.');
+                }
+                throw new Error(data?.message || data?.error || `Gagal mengirim pengaduan (Status: ${res.status}).`);
+            }
+
+            if (!data || (data.status !== 'success' && !data.success)) {
+                throw new Error(data?.message || 'Gagal memproses pengaduan. Silakan periksa kembali data Anda.');
+            }
+
+            const ticket = data.ticketNumber || data.data?.ticketNumber || `#PKD-${String(data.id || data.data?.id || Date.now()).slice(-5)}`;
+            setTicketId(ticket);
             setStatus('success');
             setFormData({ name: '', email: '', subject: '', message: '', type: 'umum' });
             setAttachments([]);

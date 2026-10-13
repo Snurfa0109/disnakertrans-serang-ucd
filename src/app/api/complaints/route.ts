@@ -144,16 +144,31 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      successResponse({
-        id,
+      {
+        success: true,
+        status: 'success',
+        data: {
+          id,
+          ticketNumber,
+          message: 'Pengaduan berhasil dikirim',
+        },
         ticketNumber,
+        id,
         message: 'Pengaduan berhasil dikirim',
-      }),
+      },
       { status: 201 }
     );
   } catch (error) {
     console.error('[API] POST /api/complaints error:', error);
-    return NextResponse.json(errorResponse('Gagal mengirim pengaduan'), { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        status: 'error',
+        message: 'Gagal mengirim pengaduan. Silakan coba beberapa saat lagi.',
+        error: 'SERVER_ERROR',
+      },
+      { status: 500 }
+    );
   }
 }
 

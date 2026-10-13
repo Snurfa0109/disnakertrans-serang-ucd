@@ -144,8 +144,14 @@ export async function POST(request: Request) {
       console.error('Email sending failed:', emailError);
     }
 
-    return NextResponse.json({ id, ticketNumber, success: true }, { status: 201 });
+    return NextResponse.json(
+      { success: true, status: 'success', id, ticketNumber, data: { id, ticketNumber } },
+      { status: 201 }
+    );
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to submit feedback' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, status: 'error', message: 'Failed to submit feedback', error: 'Failed to submit feedback' },
+      { status: 500 }
+    );
   }
 }
