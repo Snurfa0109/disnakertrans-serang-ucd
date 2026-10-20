@@ -11,11 +11,11 @@ import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
  */
 export async function POST(request: Request) {
   try {
-    // Rate Limiting: max 5 login attempts per 15 minutes per IP
+    // Rate Limiting: max attempts per window (relaxed in development for testing)
     const rateLimit = checkRateLimit(request, {
       prefix: 'admin_login',
-      limit: 5,
-      windowSeconds: 900,
+      limit: process.env.NODE_ENV === 'development' ? 100 : 10,
+      windowSeconds: process.env.NODE_ENV === 'development' ? 60 : 900,
     });
 
     if (!rateLimit.success) {

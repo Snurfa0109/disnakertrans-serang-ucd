@@ -73,7 +73,10 @@ async function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any
   }
   // Wrap result object as array-like so it's iterable and supports both result.insertId and result[0].id
   const insertId = (result as any)?.insertId || 0;
-  const wrapper: any = [{ id: insertId, insertId }];
+  const count = Number((result as any)?.affectedRows ?? 0);
+  const wrapper: any = [{ id: insertId, insertId, count }];
+  wrapper.count = count;
+  wrapper.affectedRows = count;
   Object.assign(wrapper, result);
   return wrapper;
 }
@@ -96,7 +99,10 @@ const sqlTag: SqlTag = Object.assign(sql, {
       return result as any[];
     }
     const insertId = (result as any)?.insertId || 0;
-    const wrapper: any = [{ id: insertId, insertId }];
+    const count = Number((result as any)?.affectedRows ?? 0);
+    const wrapper: any = [{ id: insertId, insertId, count }];
+    wrapper.count = count;
+    wrapper.affectedRows = count;
     Object.assign(wrapper, result);
     return wrapper;
   },
@@ -155,6 +161,8 @@ export async function initDb(): Promise<void> {
       id              INT AUTO_INCREMENT PRIMARY KEY,
       name            TEXT NOT NULL,
       email           TEXT NOT NULL,
+      phone           VARCHAR(50) DEFAULT '',
+      nik             VARCHAR(50) DEFAULT '',
       message         TEXT NOT NULL,
       date            TEXT NOT NULL,
       subject         TEXT DEFAULT '',
@@ -165,10 +173,26 @@ export async function initDb(): Promise<void> {
       internal_notes  TEXT DEFAULT '',
       attachments     TEXT DEFAULT '[]',
       is_spam         TINYINT(1) DEFAULT 0,
+      admin_reply     LONGTEXT DEFAULT NULL,
+      admin_reply_title TEXT DEFAULT '',
+      admin_reply_at  DATETIME DEFAULT NULL,
+      admin_reply_by  TEXT DEFAULT '',
+      timeline        LONGTEXT DEFAULT NULL,
       created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `;
+
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN phone VARCHAR(50) DEFAULT ''`; } catch {}
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN nik VARCHAR(50) DEFAULT ''`; } catch {}
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN is_confidential TINYINT(1) DEFAULT 0`; } catch {}
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN admin_reply LONGTEXT DEFAULT NULL`; } catch {}
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN admin_reply_title TEXT DEFAULT ''`; } catch {}
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN admin_reply_at DATETIME DEFAULT NULL`; } catch {}
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN admin_reply_by TEXT DEFAULT ''`; } catch {}
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN timeline LONGTEXT DEFAULT NULL`; } catch {}
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN disposisi_bidang VARCHAR(100) DEFAULT ''`; } catch {}
+  try { await sql`ALTER TABLE pengaduan ADD COLUMN disposisi_at DATETIME DEFAULT NULL`; } catch {}
 
   // ── JADWAL PELATIHAN TABLE ───────────────────────────────────
   await sql`
@@ -561,6 +585,36 @@ export async function initDb(): Promise<void> {
     }
     console.log('[DB] Seeded 6 demo admin accounts');
   }
+
+  // ── LIVECHAT TABLES ──────────────────────────────────────────────
+  await sql`
+    CREATE TABLE IF NOT EXISTS livechat_sessions (
+      id               INT AUTO_INCREMENT PRIMARY KEY,
+      session_id       VARCHAR(64) NOT NULL UNIQUE,
+      citizen_name     VARCHAR(120) NOT NULL,
+      citizen_contact  VARCHAR(120) DEFAULT '',
+      topic            VARCHAR(100) DEFAULT 'Umum',
+      status           VARCHAR(30) DEFAULT 'waiting',
+      assigned_petugas VARCHAR(120) DEFAULT NULL,
+      rating           INT DEFAULT NULL,
+      feedback         TEXT DEFAULT NULL,
+      created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      closed_at        DATETIME DEFAULT NULL
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS livechat_messages (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      session_id  VARCHAR(64) NOT NULL,
+      sender_type VARCHAR(20) NOT NULL,
+      sender_name VARCHAR(120) NOT NULL,
+      message     LONGTEXT NOT NULL,
+      is_read     TINYINT(1) DEFAULT 0,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
 
   console.log('[DB] initDb complete');
 }

@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { 
     Search, Menu, X, ArrowRight, FileText, Briefcase, MapPin, 
     Users, Scale, GraduationCap, Building2, Megaphone,
-    Calendar, Sparkles, Newspaper, ExternalLink, Loader2 
+    Calendar, Sparkles, Newspaper, ExternalLink, Loader2,
+    Mic, MicOff, HelpCircle, Phone, MessageSquare
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import clsx from "clsx";
@@ -30,6 +31,15 @@ interface SearchItem {
 }
 
 const searchableItems: SearchItem[] = [
+    // Lacak Status Pengaduan
+    { 
+        title: "Lacak Status Pengaduan & Surat", 
+        description: "Pantau perkembangan dan balasan resmi pengaduan Anda menggunakan Nomor Tiket, No HP/WhatsApp, atau NIK", 
+        href: "/tracking", 
+        category: "Layanan", 
+        icon: Search, 
+        tags: ["lacak", "tracking", "status", "cek status", "pengaduan", "surat", "tiket", "nomor tiket", "nomor telepon", "nik", "balasan", "pantau"] 
+    },
     // Peluang & Agenda (Utama)
     { 
         title: "Peluang & Agenda Ketenagakerjaan", 
@@ -197,7 +207,68 @@ export default function Header() {
     const [activeFilter, setActiveFilter] = useState("all");
     const [apiResults, setApiResults] = useState<SearchItem[]>([]);
     const [isLoadingApi, setIsLoadingApi] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const [speechError, setSpeechError] = useState<string | null>(null);
+    const [selectedIndex, setSelectedIndex] = useState(0);
+
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const recognitionRef = useRef<any>(null);
+
+    // Voice search (Web Speech API)
+    const toggleListening = () => {
+        setSpeechError(null);
+        if (typeof window === "undefined") return;
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            setSpeechError("Pencarian suara belum didukung di peramban ini. Silakan ketik kata kunci Anda.");
+            setTimeout(() => setSpeechError(null), 4000);
+            return;
+        }
+
+        if (isListening && recognitionRef.current) {
+            recognitionRef.current.stop();
+            setIsListening(false);
+            return;
+        }
+
+        try {
+            const recognition = new SpeechRecognition();
+            recognition.lang = "id-ID";
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                setIsListening(true);
+            };
+
+            recognition.onresult = (event: any) => {
+                const transcript = event.results?.[0]?.[0]?.transcript;
+                if (transcript) {
+                    setSearchQuery(transcript);
+                }
+                setIsListening(false);
+            };
+
+            recognition.onerror = (event: any) => {
+                if (event.error !== "no-speech") {
+                    setSpeechError("Suara tidak terdengar jelas, silakan klik lagi dan bicara lebih dekat.");
+                    setTimeout(() => setSpeechError(null), 3500);
+                }
+                setIsListening(false);
+            };
+
+            recognition.onend = () => {
+                setIsListening(false);
+            };
+
+            recognitionRef.current = recognition;
+            recognition.start();
+        } catch (err) {
+            console.warn("[Voice Search Exception]:", err);
+            setIsListening(false);
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -224,10 +295,15 @@ export default function Header() {
     useEffect(() => {
         if (isSearchOpen) {
             setTimeout(() => searchInputRef.current?.focus(), 100);
+            setSelectedIndex(0);
         } else {
             setSearchQuery("");
             setActiveFilter("all");
             setApiResults([]);
+            setIsListening(false);
+            if (recognitionRef.current) {
+                try { recognitionRef.current.stop(); } catch {}
+            }
         }
     }, [isSearchOpen]);
 
@@ -351,6 +427,26 @@ export default function Header() {
             router.push(href);
         }
     }, [router]);
+
+    useEffect(() => {
+        setSelectedIndex(0);
+    }, [searchQuery, activeFilter]);
+
+    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (combinedResults.length === 0) return;
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setSelectedIndex((prev) => (prev + 1) % combinedResults.length);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setSelectedIndex((prev) => (prev - 1 + combinedResults.length) % combinedResults.length);
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (combinedResults[selectedIndex]) {
+                handleResultClick(combinedResults[selectedIndex].href);
+            }
+        }
+    };
 
     const getCategoryColor = (category: string) => {
         switch (category) {
@@ -494,7 +590,7 @@ export default function Header() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] px-4"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
                         onClick={() => setIsSearchOpen(false)}
                     >
                         {/* Backdrop */}
@@ -507,47 +603,182 @@ export default function Header() {
                             exit={{ opacity: 0, scale: 0.95, y: -20 }}
                             transition={{ duration: 0.2, ease: "easeOut" }}
                             onClick={(e) => e.stopPropagation()}
-                            className="relative w-full max-w-2xl bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                            className="relative w-full max-w-2xl bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col max-h-[92vh] my-auto"
                         >
-                            {/* Search Input */}
-                            <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+                            {/* Search Input Bar */}
+                            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 shrink-0">
                                 {isLoadingApi ? (
                                     <Loader2 className="w-5 h-5 text-[#1E3A8A] dark:text-[#93C5FD] animate-spin shrink-0" />
                                 ) : (
-                                    <Search className="w-5 h-5 text-gray-400 shrink-0" />
+                                    <Search className="w-5 h-5 text-gray-500 dark:text-gray-400 shrink-0" />
                                 )}
                                 <input
                                     ref={searchInputRef}
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={handleInputKeyDown}
                                     placeholder="Cari layanan, peluang karir, agenda, berita, dokumen..."
-                                    className="flex-1 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none bg-transparent"
+                                    className="flex-1 text-sm sm:text-base text-gray-900 dark:text-white placeholder:text-gray-400 font-medium focus:outline-none bg-transparent"
                                 />
                                 {searchQuery && (
-                                    <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setSearchQuery("")} 
+                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
+                                        title="Hapus pencarian"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
                                 )}
+                                {/* Voice Search Button */}
                                 <button
+                                    type="button"
+                                    onClick={toggleListening}
+                                    className={clsx(
+                                        "p-2 rounded-xl transition-all relative flex items-center justify-center shrink-0",
+                                        isListening
+                                            ? "bg-red-500 text-white animate-pulse ring-4 ring-red-300 dark:ring-red-900"
+                                            : "text-gray-500 dark:text-gray-400 hover:text-[#1E3A8A] dark:hover:text-[#FBBF24] hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    )}
+                                    title={isListening ? "Sedang mendengarkan... Bicara sekarang" : "Pencarian Suara (Bicara)"}
+                                    aria-label="Pencarian Suara"
+                                >
+                                    {isListening ? <Mic className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4" />}
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={() => setIsSearchOpen(false)}
-                                    className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700"
+                                    className="text-[10px] font-bold text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded border border-gray-200 dark:border-gray-700"
                                 >
                                     ESC
                                 </button>
                             </div>
 
+                            {/* Voice Search Listening / Error Banner */}
+                            {isListening && (
+                                <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-200 dark:border-red-900/60 px-5 py-2.5 flex items-center gap-3">
+                                    <span className="relative flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                    </span>
+                                    <p className="text-xs font-semibold text-red-700 dark:text-red-300 flex-1">
+                                        Mendengarkan suara Anda... Silakan sebutkan kata kunci (contoh: <em>&quot;Kartu Kuning&quot;</em> atau <em>&quot;Pelatihan BLK&quot;</em>)
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={toggleListening}
+                                        className="text-xs font-bold text-red-700 dark:text-red-300 underline hover:no-underline"
+                                    >
+                                        Batal
+                                    </button>
+                                </div>
+                            )}
+
+                            {speechError && (
+                                <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/60 px-5 py-2.5 flex items-center justify-between text-xs text-amber-800 dark:text-amber-200">
+                                    <div className="flex items-center gap-2">
+                                        <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                        <span>{speechError}</span>
+                                    </div>
+                                    <button type="button" onClick={() => setSpeechError(null)} className="font-bold text-amber-700 ml-2">×</button>
+                                </div>
+                            )}
+
+                            {/* Goal-Oriented Quick Task Shortcuts (Empty State UCD) */}
+                            {!searchQuery.trim() && activeFilter === "all" && (
+                                <div className="px-5 pt-3.5 pb-4 border-b border-gray-100 dark:border-gray-700/60 bg-blue-50/30 dark:bg-blue-950/20 shrink-0">
+                                    <div className="flex items-center justify-between mb-2.5">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-[#1E3A8A] dark:text-[#93C5FD] flex items-center gap-1.5">
+                                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                            Kebutuhan Cepat Warga (Paling Sering Dicari)
+                                        </span>
+                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 hidden sm:inline">Pilih langsung tanpa mengetik</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleResultClick('/layanan-publik#tutorial-ak1')}
+                                            className="p-3 rounded-xl border border-blue-200/80 dark:border-blue-900/50 bg-white dark:bg-[#0F172A] hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 transition-all text-left flex items-start gap-3 group shadow-xs"
+                                        >
+                                            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-[#1E3A8A] dark:text-[#93C5FD] flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                                                <FileText className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD]">Buat Kartu Kuning (AK-1)</span>
+                                                    <span className="text-[9px] font-semibold px-1.5 py-0.2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded">Utama</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug mt-0.5">Syarat & daftar online via Serang Bahagia</p>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleResultClick('/peluang#lowongan')}
+                                            className="p-3 rounded-xl border border-emerald-200/80 dark:border-emerald-900/50 bg-white dark:bg-[#0F172A] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:border-emerald-300 transition-all text-left flex items-start gap-3 group shadow-xs"
+                                        >
+                                            <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                                                <Briefcase className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300">Cari Loker Pabrik / Industri</span>
+                                                    <span className="text-[9px] font-semibold px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-200 rounded">Terbaru</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug mt-0.5">Loker terverifikasi kawasan industri Serang</p>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleResultClick('/pelatihan')}
+                                            className="p-3 rounded-xl border border-teal-200/80 dark:border-teal-900/50 bg-white dark:bg-[#0F172A] hover:bg-teal-50 dark:hover:bg-teal-950/40 hover:border-teal-300 transition-all text-left flex items-start gap-3 group shadow-xs"
+                                        >
+                                            <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                                                <GraduationCap className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300">Daftar Pelatihan BLK Gratis</span>
+                                                    <span className="text-[9px] font-semibold px-1.5 py-0.2 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-200 rounded">100% Gratis</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug mt-0.5">Kursus las, otomotif, jahit bersertifikat BNSP</p>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleResultClick('/pengaduan')}
+                                            className="p-3 rounded-xl border border-rose-200/80 dark:border-rose-900/50 bg-white dark:bg-[#0F172A] hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-300 transition-all text-left flex items-start gap-3 group shadow-xs"
+                                        >
+                                            <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                                                <Scale className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-rose-700 dark:group-hover:text-rose-300">Lapor Sengketa Gaji / PHK</span>
+                                                    <span className="text-[9px] font-semibold px-1.5 py-0.2 bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-200 rounded">Rahasia</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug mt-0.5">Mediasi hubungan industrial & hak pesangon</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Filter Tabs */}
-                            <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-700 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                            <div className="flex items-center gap-2 px-5 py-2.5 border-b border-gray-100 dark:border-gray-700 overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
                                 {filterCategories.map(f => (
                                     <button
                                         key={f.value}
+                                        type="button"
                                         onClick={() => setActiveFilter(f.value)}
                                         className={clsx(
                                             "text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap border",
                                             activeFilter === f.value
-                                                ? "bg-[#0A192F] dark:bg-[#FBBF24] text-white dark:text-[#0A192F] border-[#0A192F] dark:border-[#FBBF24] shadow-sm"
-                                                : "bg-white dark:bg-[#0F172A] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300"
+                                                ? "bg-[#0A192F] dark:bg-[#FBBF24] text-white dark:text-[#0A192F] border-[#0A192F] dark:border-[#FBBF24] shadow-xs"
+                                                : "bg-white dark:bg-[#0F172A] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300"
                                         )}
                                     >
                                         {f.label}
@@ -556,50 +787,93 @@ export default function Header() {
                             </div>
 
                             {/* Results */}
-                            <div className="max-h-[50vh] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                            <div className="flex-1 min-h-[120px] max-h-[32vh] sm:max-h-[38vh] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
                                 {combinedResults.length > 0 ? (
                                     <div className="py-2">
                                         {combinedResults.map((item, idx) => (
                                             <button
                                                 key={idx}
+                                                type="button"
                                                 onClick={() => handleResultClick(item.href)}
-                                                className="w-full flex items-start gap-4 px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-[#0F172A] transition-colors text-left group"
+                                                className={clsx(
+                                                    "w-full flex items-start gap-4 px-5 py-3 transition-colors text-left group border-l-4",
+                                                    selectedIndex === idx
+                                                        ? "bg-blue-50/90 dark:bg-[#0F172A] border-l-[#1E3A8A] dark:border-l-[#FBBF24]"
+                                                        : "hover:bg-gray-50 dark:hover:bg-[#0F172A]/70 border-l-transparent"
+                                                )}
                                             >
                                                 <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-[#0F172A] group-hover:bg-[#EFF6FF] dark:group-hover:bg-[#1E3A8A]/20 flex items-center justify-center shrink-0 transition-colors mt-0.5">
-                                                    <item.icon className="w-4 h-4 text-gray-500 group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] transition-colors" />
+                                                    <item.icon className="w-4 h-4 text-gray-600 dark:text-gray-300 group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] transition-colors" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-0.5">
-                                                        <span className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] transition-colors truncate">
+                                                        <span className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] transition-colors truncate">
                                                             {item.title}
                                                         </span>
                                                         <span className={clsx("text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0", getCategoryColor(item.category))}>
                                                             {item.category}
                                                         </span>
                                                     </div>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{item.description}</p>
+                                                    <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-1">{item.description}</p>
                                                 </div>
-                                                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] shrink-0 mt-2.5 opacity-0 group-hover:opacity-100 transition-all" />
+                                                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#1E3A8A] dark:group-hover:text-[#93C5FD] shrink-0 mt-2.5 opacity-60 group-hover:opacity-100 transition-all" />
                                             </button>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="py-12 text-center">
-                                        <Search className="w-10 h-10 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-                                        <p className="text-sm font-semibold text-gray-400 dark:text-gray-500">Tidak ada hasil ditemukan</p>
-                                        <p className="text-xs text-gray-400/80 dark:text-gray-600 mt-1">Coba kata kunci seperti &quot;peluang&quot;, &quot;agenda&quot;, &quot;pelatihan&quot;, atau &quot;loker&quot;</p>
+                                    <div className="py-12 text-center px-4">
+                                        <Search className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                                        <p className="text-base font-bold text-gray-800 dark:text-gray-200">Tidak ada hasil ditemukan</p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Coba gunakan kata kunci umum seperti &quot;loker&quot;, &quot;kartu kuning&quot;, &quot;pelatihan&quot;, atau klik tombol mikrofon untuk bicara.</p>
                                     </div>
                                 )}
                             </div>
 
+                            {/* Safety Net Helpdesk Banner */}
+                            <div className="px-5 py-2.5 bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-full bg-[#1E3A8A] dark:bg-[#FBBF24] text-white dark:text-[#0A192F] flex items-center justify-center shrink-0 shadow-xs">
+                                        <Phone className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-900 dark:text-white">Masih bingung mencari layanan?</p>
+                                        <p className="text-[11px] text-gray-600 dark:text-gray-300">Konsultasi interaktif via Live Chat Petugas (Jam Kerja) atau buat pengaduan resmi</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                    <Link
+                                        href="/livechat"
+                                        onClick={() => setIsSearchOpen(false)}
+                                        className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563EB] text-white text-xs font-bold hover:bg-[#1D4ED8] transition-colors shadow-xs"
+                                    >
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                        Live Chat Petugas
+                                    </Link>
+                                    <Link
+                                        href="/pengaduan"
+                                        onClick={() => setIsSearchOpen(false)}
+                                        className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-bold hover:bg-[#1e40af] transition-colors shadow-xs"
+                                    >
+                                        <HelpCircle className="w-3.5 h-3.5" />
+                                        Pusat Pengaduan
+                                    </Link>
+                                </div>
+                            </div>
+
                             {/* Footer */}
-                            <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-3 flex items-center justify-between bg-gray-50/50 dark:bg-[#0F172A]">
-                                <span className="text-[10px] text-gray-400 font-medium">
-                                    {combinedResults.length} hasil ditemukan {isLoadingApi && "(memuat data terkini...)"}
+                            <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-2.5 flex items-center justify-between bg-gray-50/70 dark:bg-[#0F172A] text-[11px] text-gray-500 dark:text-gray-400 shrink-0">
+                                <span>
+                                    {combinedResults.length} pilihan tersedia {isLoadingApi && "(memuat data terkini...)"}
                                 </span>
-                                <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium">
-                                    <span className="flex items-center gap-1">
-                                        <kbd className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-1 py-0.5 font-mono shadow-sm">Esc</kbd> tutup
+                                <div className="flex items-center gap-3">
+                                    <span className="hidden sm:inline-flex items-center gap-1">
+                                        <kbd className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 font-mono shadow-xs text-[10px]">↑↓</kbd> geser
+                                    </span>
+                                    <span className="hidden sm:inline-flex items-center gap-1">
+                                        <kbd className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 font-mono shadow-xs text-[10px]">Enter</kbd> buka
+                                    </span>
+                                    <span className="inline-flex items-center gap-1">
+                                        <kbd className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 font-mono shadow-xs text-[10px]">Esc</kbd> tutup
                                     </span>
                                 </div>
                             </div>

@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
   const result = await getComplaints({
     status: (searchParams.get('status') as any) || undefined,
     type: (typeFilter as any) || undefined,
+    disposisi_bidang: searchParams.get('disposisi_bidang') || undefined,
+    is_confidential: searchParams.get('is_confidential') || undefined,
     search: searchParams.get('search') || undefined,
     page: parseInt(searchParams.get('page') || '1'),
     perPage: parseInt(searchParams.get('perPage') || '10'),
@@ -55,7 +57,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { id, status, assigned_to, internal_notes, is_spam } = body;
+    const { id, status, assigned_to, internal_notes, is_spam, disposisi_bidang, admin_reply, admin_reply_title } = body;
 
     if (!id) {
       return NextResponse.json(errorResponse('ID diperlukan'), { status: 400 });
@@ -66,6 +68,13 @@ export async function PATCH(request: NextRequest) {
       ...(assigned_to !== undefined && { assigned_to }),
       ...(internal_notes !== undefined && { internal_notes }),
       ...(is_spam !== undefined && { is_spam }),
+      ...(disposisi_bidang !== undefined && { disposisi_bidang }),
+      ...(admin_reply !== undefined && {
+        admin_reply,
+        admin_reply_title: admin_reply_title || 'Tanggapan Resmi Disnakertrans',
+        admin_reply_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        admin_reply_by: session.user.name,
+      }),
     });
 
     if (!updated) {

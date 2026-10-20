@@ -7,7 +7,7 @@ import {
   Newspaper, MessageSquareWarning, BarChart3, RefreshCw, LogOut, Shield,
   Menu, X, ChevronRight, Home, Database, TrendingUp, Users, HelpCircle,
   BookOpen, Layout, Image, FileText, Bot, ClipboardList, Settings,
-  ChevronDown, Building2, Briefcase, CalendarDays,
+  ChevronDown, Building2, Briefcase, CalendarDays, MessageSquare,
 } from "lucide-react";
 
 type AdminRole = "superadmin" | "website" | "sekretariat" | "lattas" | "binapenta" | "hijamsostek";
@@ -64,6 +64,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Operasional",
     items: [
       { label: "Pengaduan", href: "/admin/complaints", icon: MessageSquareWarning, roles: ["superadmin", "sekretariat", "hijamsostek"] },
+      { label: "Live Chat Petugas", href: "/admin/livechat", icon: MessageSquare, roles: "all" },
       { label: "Kelola Data", href: "/admin/data", icon: Database, roles: ["superadmin", "lattas", "binapenta"] },
     ],
   },

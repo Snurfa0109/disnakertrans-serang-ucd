@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, email, subject, message, type, attachments, captchaInput, captchaToken } = body;
+    const { name, email, phone, nik, subject, message, type, attachments, is_confidential, captchaInput, captchaToken } = body;
 
     // Validation
     if (!name || !name.trim()) {
@@ -128,10 +128,13 @@ export async function POST(request: Request) {
     const { id, ticketNumber } = await createComplaint({
       name: name.trim(),
       email: email.trim(),
+      phone: (phone || '').trim(),
+      nik: (nik || '').trim(),
       subject: (subject || '').trim(),
       message: message.trim(),
       type: complaintType,
       attachments: attachments ? JSON.stringify(attachments) : '[]',
+      is_confidential: Boolean(is_confidential),
     });
 
     // Send email notifications (non-blocking — don't fail the request)

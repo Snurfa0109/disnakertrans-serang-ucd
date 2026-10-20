@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, email, subject, message, type } = body;
+    const { name, email, phone, nik, subject, message, type } = body;
 
     if (!name || !email || !message) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -73,6 +73,8 @@ export async function POST(request: Request) {
     const { id, ticketNumber } = await createComplaint({
       name,
       email,
+      phone: phone || '',
+      nik: nik || '',
       subject: subject || '',
       message,
       type: complaintType,

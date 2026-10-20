@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, User } from "lucide-react";
+import { X, Send, User, MessageSquare } from "lucide-react";
 
 type Message = {
     id: number;
@@ -20,14 +21,19 @@ const initialMessages: Message[] = [
 
 const quickReplies = [
     "Cara buat Kartu AK-1",
+    "Hubungi Petugas (Live Chat)",
     "Jam operasional kantor",
-    "Alamat kantor Disnakertrans",
     "Informasi lowongan kerja",
     "Cara pengaduan online",
 ];
 
 function getBotReply(userMessage: string): string {
     const msg = userMessage.toLowerCase().trim();
+
+    // ── Live Chat Petugas ─────────────────────────────────────────────
+    if (/petugas|orang|manusia|cs\b|customer service|bicara dengan petugas|hubungi petugas|live chat|livechat|bicara langsung|ngomong sama orang/.test(msg)) {
+        return "💬 Untuk berbicara atau berkonsultasi langsung dengan Petugas Piket Disnakertrans Kabupaten Serang (tersedia pada jam kerja 08.00 - 16.00 WIB):\n\n👉 Buka Live Chat Petugas:\n/livechat\n\nPetugas kami akan langsung merespons percakapan Anda secara interaktif!";
+    }
 
     // ── Salam / Greeting ─────────────────────────────────────────────
     if (/halo|hai|hi\b|hey|assalamu|selamat (pagi|siang|sore|malam|datang)|permisi|hei|alo/.test(msg)) {
@@ -352,6 +358,21 @@ export default function Chatbot() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Live Chat Petugas Quick Link */}
+                        <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-[#0F172A] dark:to-slate-800 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-[11px] shrink-0">
+                            <span className="text-gray-600 dark:text-gray-300 font-medium flex items-center gap-1.5">
+                                <MessageSquare className="w-3.5 h-3.5 text-[#1E3A8A] dark:text-[#93C5FD]" />
+                                Butuh bicara dengan petugas asli?
+                            </span>
+                            <Link 
+                                href="/livechat"
+                                onClick={() => setIsOpen(false)}
+                                className="font-bold text-[#1E3A8A] dark:text-[#93C5FD] hover:underline"
+                            >
+                                Live Chat &rarr;
+                            </Link>
+                        </div>
 
                         {/* Input */}
                         <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1E293B] flex items-center gap-2 shrink-0">

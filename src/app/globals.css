@@ -33,4 +33,90 @@
     color: var(--foreground);
     @apply antialiased transition-colors duration-300;
   }
+
+  /* High Contrast Accessibility Mode (WCAG 2.1 Level AAA) */
+  html.high-contrast,
+  html.high-contrast body {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
+  }
+  html.high-contrast a,
+  html.high-contrast button {
+    outline-color: #FFDE00 !important;
+  }
+}
+
+/* Print Optimization for Tanda Terima Digital (Strict 1-Page Output) */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  html, body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* When printing the receipt modal, HIDE ALL other elements in body (Navbar, Main 3500px, Footer, Toolbar, Chatbot) */
+  body.printing-receipt-mode > *:not(#receipt-portal-root) {
+    display: none !important;
+  }
+
+  /* Modern CSS :has fallback */
+  body:has(#receipt-portal-root) > *:not(#receipt-portal-root) {
+    display: none !important;
+  }
+
+  #receipt-portal-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  #receipt-portal-root > div,
+  #receipt-portal-root .fixed {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  #printable-receipt {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  #printable-receipt * {
+    overflow: visible !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
 }

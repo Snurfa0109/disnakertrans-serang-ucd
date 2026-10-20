@@ -13,15 +13,25 @@ export interface Complaint {
   id: number;
   name: string;
   email: string;
+  phone?: string;
+  nik?: string;
   subject: string;
   message: string;
-  type: 'umum' | 'hubungan_industrial';
+  type: 'umum' | 'hubungan_industrial' | string;
   status: ComplaintStatus;
   ticket_number: string;
   assigned_to: number | null;
   internal_notes: string;
   attachments: string;
   is_spam: boolean;
+  is_confidential?: boolean | number;
+  disposisi_bidang?: string | null;
+  disposisi_at?: string | null;
+  admin_reply?: string | null;
+  admin_reply_title?: string | null;
+  admin_reply_at?: string | null;
+  admin_reply_by?: string | null;
+  timeline?: string | null;
   date: string;
   created_at: string | null;
   updated_at: string | null;
@@ -30,10 +40,13 @@ export interface Complaint {
 export interface ComplaintInput {
   name: string;
   email: string;
+  phone?: string;
+  nik?: string;
   subject?: string;
   message: string;
-  type?: 'umum' | 'hubungan_industrial';
+  type?: string;
   attachments?: string;
+  is_confidential?: boolean | number;
 }
 
 export interface ComplaintStats {
@@ -47,20 +60,44 @@ export interface ComplaintStats {
   ditolak: number;
 }
 
+export interface TimelineEvent {
+  status: string;
+  title: string;
+  note: string;
+  time: string;
+}
+
 /**
  * Submit a new complaint. Returns the created complaint's ID and ticket number.
  */
 export async function createComplaint(data: ComplaintInput): Promise<{ id: number; ticketNumber: string }> {
-  const { name, email, subject, message, type, attachments } = data;
+  const { name, email, phone, nik, subject, message, type, attachments, is_confidential } = data;
   const date = new Date().toISOString();
   const complaintType = type || 'umum';
+  const cleanPhone = (phone || '').trim();
+  const cleanNik = (nik || '').trim();
+  const confidentialFlag = is_confidential ? 1 : 0;
+
+  const initialTimeline: TimelineEvent[] = [
+    {
+      status: 'Baru',
+      title: 'Pengaduan Berhasil Diajukan',
+      note: confidentialFlag
+        ? 'Laporan berhasil dicatat dalam Mode Rahasia (Whistleblower). Identitas Anda dilindungi dan hanya dapat diakses oleh tim mediator berwenang.'
+        : 'Laporan telah diterima oleh sistem Disnakertrans Kab. Serang dan dalam antrean verifikasi petugas.',
+      time: date,
+    }
+  ];
 
   try {
     const result = await sql`
-      INSERT INTO pengaduan (name, email, subject, message, type, status, attachments, date, created_at, updated_at)
+      INSERT INTO pengaduan (
+        name, email, phone, nik, subject, message, type, status, attachments,
+        is_confidential, timeline, date, created_at, updated_at
+      )
       VALUES (
-        ${name}, ${email}, ${subject || ''}, ${message}, ${complaintType},
-        'Baru', ${attachments || '[]'}, ${date}, NOW(), NOW()
+        ${name}, ${email}, ${cleanPhone}, ${cleanNik}, ${subject || ''}, ${message}, ${complaintType},
+        'Baru', ${attachments || '[]'}, ${confidentialFlag}, ${JSON.stringify(initialTimeline)}, ${date}, NOW(), NOW()
       )
       RETURNING id
     `;
@@ -86,14 +123,16 @@ export async function createComplaint(data: ComplaintInput): Promise<{ id: numbe
  */
 export async function getComplaints(params: {
   status?: ComplaintStatus | 'pending' | 'processed';
-  type?: 'umum' | 'hubungan_industrial';
+  type?: 'umum' | 'hubungan_industrial' | string;
   search?: string;
   assignedTo?: number;
+  disposisi_bidang?: string;
+  is_confidential?: boolean | number | string;
   page?: number;
   perPage?: number;
 } = {}) {
   const page = Math.max(1, params.page || 1);
-  const perPage = Math.min(50, Math.max(1, params.perPage || 10));
+  const perPage = Math.min(200, Math.max(1, params.perPage || 10));
   const offset = (page - 1) * perPage;
 
   const conditions: string[] = [];
@@ -115,10 +154,21 @@ export async function getComplaints(params: {
     qp.push(params.type);
   }
 
+  if (params.disposisi_bidang) {
+    conditions.push(`disposisi_bidang = $${qp.length + 1}`);
+    qp.push(params.disposisi_bidang);
+  }
+
+  if (params.is_confidential !== undefined && params.is_confidential !== '') {
+    const isConf = params.is_confidential === true || params.is_confidential === 1 || params.is_confidential === '1' || params.is_confidential === 'true';
+    conditions.push(`is_confidential = $${qp.length + 1}`);
+    qp.push(isConf ? 1 : 0);
+  }
+
   if (params.search) {
-    conditions.push(`(name ILIKE $${qp.length + 1} OR email ILIKE $${qp.length + 2} OR subject ILIKE $${qp.length + 3} OR ticket_number ILIKE $${qp.length + 4})`);
+    conditions.push(`(name ILIKE $${qp.length + 1} OR email ILIKE $${qp.length + 2} OR subject ILIKE $${qp.length + 3} OR ticket_number ILIKE $${qp.length + 4} OR phone ILIKE $${qp.length + 5} OR nik ILIKE $${qp.length + 6})`);
     const s = `%${params.search}%`;
-    qp.push(s, s, s, s);
+    qp.push(s, s, s, s, s, s);
   }
 
   if (params.assignedTo) {
@@ -141,6 +191,25 @@ export async function getComplaints(params: {
 }
 
 /**
+ * Get complaints for CSV / Excel export (up to 1,000 records).
+ */
+export async function getComplaintsForExport(filters: {
+  status?: ComplaintStatus | 'pending' | 'processed' | string;
+  type?: string;
+  disposisi_bidang?: string;
+  is_confidential?: boolean | number | string;
+  search?: string;
+} = {}): Promise<Complaint[]> {
+  const result = await getComplaints({
+    ...filters,
+    status: filters.status as ComplaintStatus | 'pending' | 'processed' | undefined,
+    page: 1,
+    perPage: 500,
+  });
+  return result.items;
+}
+
+/**
  * Get a single complaint by ID.
  */
 export async function getComplaintById(id: number): Promise<Complaint | null> {
@@ -149,21 +218,109 @@ export async function getComplaintById(id: number): Promise<Complaint | null> {
 }
 
 /**
- * Update a complaint (status, assigned_to, internal_notes).
+ * Update a complaint (status, assigned_to, internal_notes, admin_reply, timeline, etc.).
  */
 export async function updateComplaint(id: number, data: Partial<{
   status: ComplaintStatus | string;
   assigned_to: number | null;
   internal_notes: string;
   is_spam: boolean;
+  phone: string;
+  nik: string;
+  disposisi_bidang: string | null;
+  admin_reply: string | null;
+  admin_reply_title: string;
+  admin_reply_at: string | null;
+  admin_reply_by: string;
+  timeline: string | null;
 }>): Promise<boolean> {
+  // Fetch existing complaint to compute timeline updates if needed
+  let updatedTimelineStr = data.timeline;
+  if (updatedTimelineStr === undefined && (data.status !== undefined || data.admin_reply !== undefined || data.disposisi_bidang !== undefined)) {
+    try {
+      const existing = await getComplaintById(id);
+      if (existing) {
+        let events: TimelineEvent[] = [];
+        try {
+          events = existing.timeline ? JSON.parse(existing.timeline) : [];
+        } catch {
+          events = [];
+        }
+
+        if (events.length === 0) {
+          events.push({
+            status: 'Baru',
+            title: 'Pengaduan Diterima',
+            note: 'Pengaduan masuk ke sistem Disnakertrans Kab. Serang.',
+            time: existing.date || existing.created_at || new Date().toISOString(),
+          });
+        }
+
+        const now = new Date().toISOString();
+
+        if (data.admin_reply) {
+          events.push({
+            status: (data.status as string) || existing.status || 'Selesai',
+            title: data.admin_reply_title || 'Tanggapan Resmi Disnakertrans',
+            note: data.admin_reply.length > 250 ? data.admin_reply.slice(0, 250) + '...' : data.admin_reply,
+            time: now,
+          });
+        } else if (data.disposisi_bidang && data.disposisi_bidang !== existing.disposisi_bidang) {
+          events.push({
+            status: (data.status as string) || existing.status || 'Diproses',
+            title: `Didisposisikan ke ${data.disposisi_bidang}`,
+            note: `Laporan pengaduan diteruskan ke ${data.disposisi_bidang} untuk penelaahan teknis dan tindak lanjut.`,
+            time: now,
+          });
+        } else if (data.status && data.status !== existing.status) {
+          let title = `Status: ${data.status}`;
+          let note = 'Status pengaduan diperbarui oleh petugas.';
+          if (data.status === 'Diproses') {
+            title = 'Sedang Ditinjau Petugas';
+            note = 'Pengaduan Anda sedang ditinjau dan diverifikasi oleh tim teknis Disnakertrans Kab. Serang.';
+          } else if (data.status === 'Menunggu Tindak Lanjut') {
+            title = 'Menunggu Tindak Lanjut';
+            note = 'Laporan memerlukan koordinasi lapangan atau kelengkapan dokumen pendukung.';
+          } else if (data.status === 'Selesai') {
+            title = 'Pengaduan Selesai Ditindaklanjuti';
+            note = 'Laporan telah selesai ditindaklanjuti secara resmi oleh Disnakertrans Kab. Serang.';
+          } else if (data.status === 'Ditolak') {
+            title = 'Pengaduan Ditolak';
+            note = 'Pengaduan tidak dapat diproses lebih lanjut atau di luar kewenangan dinas.';
+          }
+          events.push({
+            status: data.status as string,
+            title,
+            note,
+            time: now,
+          });
+        }
+        updatedTimelineStr = JSON.stringify(events);
+      }
+    } catch (tlErr) {
+      console.warn('[updateComplaint] Timeline generation warning:', tlErr);
+    }
+  }
+
   const fields: string[] = [];
   const params: (string | number | boolean | null)[] = [];
 
-  if (data.status !== undefined)         { fields.push(`status = $${params.length + 1}`);         params.push(data.status); }
-  if (data.assigned_to !== undefined)    { fields.push(`assigned_to = $${params.length + 1}`);    params.push(data.assigned_to); }
-  if (data.internal_notes !== undefined) { fields.push(`internal_notes = $${params.length + 1}`); params.push(data.internal_notes); }
-  if (data.is_spam !== undefined)        { fields.push(`is_spam = $${params.length + 1}`);        params.push(data.is_spam); }
+  if (data.status !== undefined)            { fields.push(`status = $${params.length + 1}`);            params.push(data.status); }
+  if (data.assigned_to !== undefined)       { fields.push(`assigned_to = $${params.length + 1}`);       params.push(data.assigned_to); }
+  if (data.internal_notes !== undefined)    { fields.push(`internal_notes = $${params.length + 1}`);    params.push(data.internal_notes); }
+  if (data.is_spam !== undefined)           { fields.push(`is_spam = $${params.length + 1}`);           params.push(data.is_spam); }
+  if (data.phone !== undefined)             { fields.push(`phone = $${params.length + 1}`);             params.push(data.phone); }
+  if (data.nik !== undefined)               { fields.push(`nik = $${params.length + 1}`);               params.push(data.nik); }
+  if (data.disposisi_bidang !== undefined) {
+    fields.push(`disposisi_bidang = $${params.length + 1}`);
+    params.push(data.disposisi_bidang);
+    fields.push('disposisi_at = NOW()');
+  }
+  if (data.admin_reply !== undefined)       { fields.push(`admin_reply = $${params.length + 1}`);       params.push(data.admin_reply); }
+  if (data.admin_reply_title !== undefined) { fields.push(`admin_reply_title = $${params.length + 1}`); params.push(data.admin_reply_title); }
+  if (data.admin_reply_at !== undefined)    { fields.push(`admin_reply_at = $${params.length + 1}`);    params.push(data.admin_reply_at); }
+  if (data.admin_reply_by !== undefined)    { fields.push(`admin_reply_by = $${params.length + 1}`);    params.push(data.admin_reply_by); }
+  if (updatedTimelineStr !== undefined)     { fields.push(`timeline = $${params.length + 1}`);          params.push(updatedTimelineStr); }
 
   if (fields.length === 0) return false;
 
@@ -174,8 +331,9 @@ export async function updateComplaint(id: number, data: Partial<{
     `UPDATE pengaduan SET ${fields.join(', ')} WHERE id = $${params.length}`,
     params
   );
-  if (result.count > 0) cache.invalidateByPrefix('complaints:');
-  return result.count > 0;
+  const affected = Number((result as any)?.count ?? (result as any)?.affectedRows ?? 1);
+  cache.invalidateByPrefix('complaints:');
+  return true;
 }
 
 /**
@@ -183,6 +341,47 @@ export async function updateComplaint(id: number, data: Partial<{
  */
 export async function updateComplaintStatus(id: number, status: ComplaintStatus | string): Promise<boolean> {
   return updateComplaint(id, { status });
+}
+
+/**
+ * Track complaints by ticket number, phone number, NIK, or email.
+ */
+export async function trackComplaints(keyword: string): Promise<Complaint[]> {
+  const clean = (keyword || '').trim();
+  if (!clean) return [];
+
+  const cleanNumOnly = clean.replace(/[^0-9]/g, '');
+  const cleanTicket = clean.replace(/^#/, '');
+
+  const conditions: string[] = [
+    `ticket_number LIKE $1`,
+    `phone LIKE $2`,
+    `nik LIKE $3`,
+    `email LIKE $4`,
+  ];
+  const params: any[] = [`%${cleanTicket}%`, `%${clean}%`, `%${clean}%`, `%${clean}%`];
+
+  if (cleanNumOnly.length >= 1) {
+    conditions.push(`id = $${params.length + 1}`);
+    params.push(Number(cleanNumOnly));
+    conditions.push(`ticket_number LIKE $${params.length + 1}`);
+    params.push(`%${cleanNumOnly}%`);
+  }
+
+  const query = `
+    SELECT * FROM pengaduan
+    WHERE (is_spam = 0 OR is_spam IS NULL) AND (${conditions.join(' OR ')})
+    ORDER BY date DESC
+    LIMIT 20
+  `;
+
+  try {
+    const rows = await sql.unsafe(query, params);
+    return rows as Complaint[];
+  } catch (err) {
+    console.error('[trackComplaints] Query error:', err);
+    return [];
+  }
 }
 
 /**

@@ -3,8 +3,9 @@
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, CheckCircle2, AlertCircle, Mail, Shield, Clock, ChevronDown, ChevronUp, Paperclip, X, FileImage, FileVideo, FileText } from 'lucide-react';
+import { Send, CheckCircle2, AlertCircle, Mail, Shield, Clock, ChevronDown, ChevronUp, Paperclip, X, FileImage, FileVideo, FileText, Search, Phone, UserCheck, Sparkles } from 'lucide-react';
 import VisualCaptcha from '@/components/VisualCaptcha';
+import ComplaintTracker from '@/components/ComplaintTracker';
 
 const PENGADUAN_TYPES = [
   { group: 'Layanan Ketenagakerjaan', items: [
@@ -37,10 +38,18 @@ const PENGADUAN_TYPES = [
 function PengaduanForm() {
     const searchParams = useSearchParams();
     const typeParam = searchParams.get('type');
+    const tabParam = searchParams.get('tab');
+    const ticketParam = searchParams.get('ticket');
+    const qParam = searchParams.get('q');
+
+    const [activeTab, setActiveTab] = useState<'form' | 'tracking'>(
+        tabParam === 'tracking' || Boolean(ticketParam) || Boolean(qParam) ? 'tracking' : 'form'
+    );
 
     const [formData, setFormData] = useState({
-        name: '', email: '', subject: '', message: '',
+        name: '', email: '', phone: '', nik: '', subject: '', message: '',
         type: '' as string,
+        is_confidential: false,
     });
     const [attachments, setAttachments] = useState<{ name: string; type: string; data: string }[]>([]);
     const [captchaInput, setCaptchaInput] = useState<string>('');
@@ -55,6 +64,12 @@ function PengaduanForm() {
         setCaptchaInput(val);
         setCaptchaToken(token);
     }, []);
+
+    useEffect(() => {
+        if (tabParam === 'tracking' || ticketParam || qParam) {
+            setActiveTab('tracking');
+        }
+    }, [tabParam, ticketParam, qParam]);
 
     useEffect(() => {
         if (typeParam) {
@@ -116,9 +131,12 @@ function PengaduanForm() {
                 body: JSON.stringify({
                     name: formData.name,
                     email: formData.email,
+                    phone: formData.phone,
+                    nik: formData.nik,
                     subject: formData.subject,
                     message: formData.message,
                     type: formData.type,
+                    is_confidential: formData.is_confidential,
                     attachments: attachments.map(a => ({ name: a.name, type: a.type, data: a.data })),
                     captchaInput: captchaInput.trim(),
                     captchaToken,
@@ -151,7 +169,7 @@ function PengaduanForm() {
             const ticket = data.ticketNumber || data.data?.ticketNumber || `#PKD-${String(data.id || data.data?.id || Date.now()).slice(-5)}`;
             setTicketId(ticket);
             setStatus('success');
-            setFormData({ name: '', email: '', subject: '', message: '', type: 'umum' });
+            setFormData({ name: '', email: '', phone: '', nik: '', subject: '', message: '', type: 'umum', is_confidential: false });
             setAttachments([]);
             setCaptchaInput('');
             setResetCaptchaSignal(prev => prev + 1);
@@ -206,147 +224,235 @@ function PengaduanForm() {
                 </div>
             </section>
 
-            {/* Formulir Section */}
+            {/* Formulir & Tracking Section */}
             <section className="relative z-20 container mx-auto px-4 xl:px-12 -mt-32 max-w-4xl pb-24">
-                <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8 lg:p-12">
-                    <div className="text-center mb-10">
-                        <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">Formulir Pengaduan Online</h2>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">Pengaduan Anda akan dikirim langsung ke email resmi Disnakertrans Kab. Serang</p>
-                    </div>
-
-                    {status === 'success' ? (
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            transition={{ type: 'spring', duration: 0.5 }}
-                            className="py-6"
+                {/* Tab Switcher */}
+                <div className="flex items-center justify-center mb-6">
+                    <div className="bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-md p-1.5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl inline-flex gap-1.5">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('form')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                                activeTab === 'form'
+                                    ? 'bg-[#0A192F] text-white shadow-md'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white'
+                            }`}
                         >
-                            {/* Success icon with ring animation */}
-                            <div className="flex justify-center mb-6">
-                                <div className="relative">
-                                    <div className="w-24 h-24 rounded-full bg-green-50 flex items-center justify-center ring-8 ring-green-100">
-                                        <CheckCircle2 className="w-12 h-12 text-green-500" />
+                            <Send className="w-4 h-4" />
+                            <span>Ajukan Pengaduan</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('tracking')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                                activeTab === 'tracking'
+                                    ? 'bg-[#0A192F] text-white shadow-md'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white'
+                            }`}
+                        >
+                            <Search className="w-4 h-4 text-[#FBBF24]" />
+                            <span>Lacak Status Pengaduan</span>
+                            <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-full text-[10px] bg-[#FBBF24] text-[#0A192F] font-extrabold uppercase">
+                                Realtime
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                {activeTab === 'tracking' ? (
+                    <ComplaintTracker
+                        initialQuery={ticketId}
+                        onSwitchToForm={() => setActiveTab('form')}
+                    />
+                ) : (
+                    <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8 lg:p-12">
+                        <div className="text-center mb-10">
+                            <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">Formulir Pengaduan Online</h2>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">Pengaduan Anda akan dikirim langsung ke sistem resmi Disnakertrans Kab. Serang</p>
+                        </div>
+
+                        {status === 'success' ? (
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                transition={{ type: 'spring', duration: 0.5 }}
+                                className="py-6"
+                            >
+                                {/* Success icon with ring animation */}
+                                <div className="flex justify-center mb-6">
+                                    <div className="relative">
+                                        <div className="w-24 h-24 rounded-full bg-green-50 flex items-center justify-center ring-8 ring-green-100">
+                                            <CheckCircle2 className="w-12 h-12 text-green-500" />
+                                        </div>
+                                        <motion.div
+                                            animate={{ scale: [1, 1.4, 1] }}
+                                            transition={{ repeat: 2, duration: 0.5 }}
+                                            className="absolute inset-0 rounded-full border-2 border-green-400 opacity-50"
+                                        />
                                     </div>
-                                    <motion.div
-                                        animate={{ scale: [1, 1.4, 1] }}
-                                        transition={{ repeat: 2, duration: 0.5 }}
-                                        className="absolute inset-0 rounded-full border-2 border-green-400 opacity-50"
-                                    />
                                 </div>
-                            </div>
 
-                            <div className="text-center mb-6">
-                                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">Pengaduan Berhasil Dikirim! 🎉</h3>
-                                <p className="text-gray-500 text-sm max-w-sm mx-auto">
-                                    Terima kasih. Pengaduan Anda telah kami terima dan akan diproses dalam <strong>3×24 jam kerja</strong>.
-                                </p>
-                            </div>
+                                <div className="text-center mb-6">
+                                    <h3 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">Pengaduan Berhasil Dikirim! 🎉</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto">
+                                        Terima kasih. Pengaduan Anda telah kami terima dan akan diproses dalam <strong>3×24 jam kerja</strong>.
+                                    </p>
+                                </div>
 
-                            {/* Ticket number - PROMINENT */}
-                            {ticketId && (
-                                <div className="bg-[#0A192F] rounded-2xl p-6 mb-6 max-w-md mx-auto text-center">
-                                    <p className="text-white/50 text-xs uppercase tracking-widest font-bold mb-2">Nomor Tiket Pengaduan Anda</p>
-                                    <p className="text-3xl font-extrabold text-[#FBBF24] tracking-wider mb-3 font-mono">{ticketId}</p>
-                                    <p className="text-white/60 text-xs mb-4">Simpan nomor ini sebagai referensi untuk menanyakan status pengaduan</p>
+                                {/* Ticket number - PROMINENT */}
+                                {ticketId && (
+                                    <div className="bg-[#0A192F] rounded-2xl p-6 mb-6 max-w-md mx-auto text-center">
+                                        <p className="text-white/50 text-xs uppercase tracking-widest font-bold mb-2">Nomor Tiket Pengaduan Anda</p>
+                                        <p className="text-3xl font-extrabold text-[#FBBF24] tracking-wider mb-3 font-mono">{ticketId}</p>
+                                        <p className="text-white/60 text-xs mb-4">Simpan nomor ini, atau gunakan nomor HP / NIK Anda untuk melacak status</p>
+                                        <div className="flex flex-wrap gap-2 justify-center">
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(ticketId)}
+                                                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+                                            >
+                                                📋 Salin Nomor Tiket
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Steps info */}
+                                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-800 rounded-xl p-5 mb-6 max-w-md mx-auto">
+                                    <p className="text-amber-800 dark:text-amber-300 font-bold text-sm mb-3">📧 Apa yang terjadi selanjutnya?</p>
+                                    <ol className="space-y-2">
+                                        {[
+                                            'Email konfirmasi dikirim ke alamat email Anda',
+                                            'Tim kami memverifikasi laporan dalam 1×24 jam',
+                                            'Balasan resmi dikirim dan terhubung langsung di pelacak online',
+                                        ].map((step, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400">
+                                                <span className="w-5 h-5 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 font-bold flex items-center justify-center shrink-0 mt-0.5 text-[10px]">{i + 1}</span>
+                                                {step}
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
                                     <button
-                                        onClick={() => navigator.clipboard.writeText(ticketId)}
-                                        className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+                                        onClick={() => {
+                                            setActiveTab('tracking');
+                                        }}
+                                        className="flex-1 bg-[#1E3A8A] hover:bg-blue-900 text-white px-5 py-3 rounded-xl font-bold transition-colors text-sm flex items-center justify-center gap-2 shadow-sm"
                                     >
-                                        📋 Salin Nomor Tiket
+                                        <Search className="w-4 h-4" />
+                                        Lacak Status Laporan Ini
+                                    </button>
+                                    <button
+                                        onClick={() => { setStatus('idle'); setTicketId(''); }}
+                                        className="border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 px-5 py-3 rounded-xl font-semibold transition-colors text-sm text-center"
+                                    >
+                                        Kirim Laporan Lain
                                     </button>
                                 </div>
-                            )}
+                            </motion.div>
 
-                            {/* Steps info */}
-                            <div className="bg-amber-50 border border-amber-100 rounded-xl p-5 mb-6 max-w-md mx-auto">
-                                <p className="text-amber-800 font-bold text-sm mb-3">📧 Apa yang terjadi selanjutnya?</p>
-                                <ol className="space-y-2">
-                                    {[
-                                        'Email konfirmasi dikirim ke alamat email Anda',
-                                        'Tim kami memverifikasi laporan dalam 1×24 jam',
-                                        'Balasan resmi dikirim dalam maksimal 3×24 jam kerja',
-                                    ].map((step, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-xs text-amber-700">
-                                            <span className="w-5 h-5 rounded-full bg-amber-200 text-amber-800 font-bold flex items-center justify-center shrink-0 mt-0.5 text-[10px]">{i + 1}</span>
-                                            {step}
-                                        </li>
-                                    ))}
-                                </ol>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-                                <button
-                                    onClick={() => { setStatus('idle'); setTicketId(''); }}
-                                    className="flex-1 bg-[#0A192F] hover:bg-black text-white px-6 py-3 rounded-xl font-bold transition-colors text-sm"
-                                >
-                                    Kirim Laporan Lain
-                                </button>
-                                <a href="/" className="flex-1 border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-colors text-sm text-center">
-                                    Kembali ke Beranda
-                                </a>
-                            </div>
-                        </motion.div>
-
-                    ) : (
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {(status === 'error' || errorMsg) && (
-                                <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-3 border border-red-100">
-                                    <AlertCircle className="w-4 h-4 shrink-0" />
-                                    <p className="text-xs font-semibold">{errorMsg || 'Gagal mengirim pengaduan.'}</p>
-                                </div>
-                            )}
-
-                            {/* Jenis Pengaduan - Dropdown */}
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
-                                    Jenis Pengaduan <span className="text-red-400">*</span>
-                                </label>
-                                <div className="relative">
-                                    <select
-                                        required
-                                        value={formData.type}
-                                        onChange={e => setFormData({ ...formData, type: e.target.value })}
-                                        className={`w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border rounded-lg px-4 py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white appearance-none pr-10 ${
-                                            formData.type ? 'border-gray-200 dark:border-gray-600 text-gray-900' : 'border-gray-200 dark:border-gray-600 text-gray-400'
-                                        }`}
-                                    >
-                                        <option value="" disabled>-- Pilih kategori pengaduan --</option>
-                                        {PENGADUAN_TYPES.map(group => (
-                                            <optgroup key={group.group} label={`── ${group.group}`}>
-                                                {group.items.map(item => (
-                                                    <option key={item.value} value={item.value}>{item.label}</option>
-                                                ))}
-                                            </optgroup>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                </div>
-                                {formData.type && (
-                                    <p className="text-[10px] text-[#1E3A8A] dark:text-[#93C5FD] font-medium flex items-center gap-1">
-                                        ✓ Kategori dipilih: <span className="font-bold">{PENGADUAN_TYPES.flatMap(g => g.items).find(i => i.value === formData.type)?.label}</span>
-                                    </p>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {(status === 'error' || errorMsg) && (
+                                    <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-3 border border-red-100">
+                                        <AlertCircle className="w-4 h-4 shrink-0" />
+                                        <p className="text-xs font-semibold">{errorMsg || 'Gagal mengirim pengaduan.'}</p>
+                                    </div>
                                 )}
-                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                {/* Jenis Pengaduan - Dropdown */}
                                 <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Nama Lengkap <span className="text-red-400">*</span></label>
-                                    <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 sm:py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white" placeholder="Masukkan nama sesuai KTP" />
+                                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                                        Jenis Pengaduan <span className="text-red-400">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            required
+                                            value={formData.type}
+                                            onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                            className={`w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border rounded-lg px-4 py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white appearance-none pr-10 ${
+                                                formData.type ? 'border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white' : 'border-gray-200 dark:border-gray-600 text-gray-400'
+                                            }`}
+                                        >
+                                            <option value="" disabled>-- Pilih kategori pengaduan --</option>
+                                            {PENGADUAN_TYPES.map(group => (
+                                                <optgroup key={group.group} label={`── ${group.group}`}>
+                                                    {group.items.map(item => (
+                                                        <option key={item.value} value={item.value}>{item.label}</option>
+                                                    ))}
+                                                </optgroup>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    </div>
+                                    {formData.type && (
+                                        <p className="text-[10px] text-[#1E3A8A] dark:text-[#93C5FD] font-medium flex items-center gap-1">
+                                            ✓ Kategori dipilih: <span className="font-bold">{PENGADUAN_TYPES.flatMap(g => g.items).find(i => i.value === formData.type)?.label}</span>
+                                        </p>
+                                    )}
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-gray-700">Alamat Email <span className="text-red-400">*</span></label>
-                                    <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 sm:py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white" placeholder="contoh@gmail.com" />
-                                    <p className="text-[10px] text-gray-400">Balasan pengaduan akan dikirim ke email ini</p>
-                                </div>
-                            </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-gray-700">Subjek Pengaduan <span className="text-red-400">*</span></label>
-                                <input type="text" required value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                    className="w-full bg-[#E2E8F0]/30 border border-gray-200 rounded-lg px-4 py-3 sm:py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm" placeholder="Judul singkat laporan Anda" />
-                            </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Nama Lengkap <span className="text-red-400">*</span></label>
+                                        <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        className="w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 sm:py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white" placeholder="Masukkan nama sesuai KTP" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Alamat Email <span className="text-red-400">*</span></label>
+                                        <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        className="w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 sm:py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white" placeholder="contoh@gmail.com" />
+                                        <p className="text-[10px] text-gray-400">Balasan pengaduan akan dikirim ke email ini</p>
+                                    </div>
+                                </div>
+
+                                {/* Phone & NIK Fields for Tracking */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                                            <span>No. WhatsApp / Telepon <span className="text-red-400">*</span></span>
+                                            <span className="text-[10px] text-[#1E3A8A] dark:text-[#93C5FD] font-semibold">Bisa dipakai lacak status</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="tel"
+                                                required
+                                                value={formData.phone}
+                                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                                className="w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 sm:py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white font-mono"
+                                                placeholder="Contoh: 08123456789"
+                                            />
+                                            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        </div>
+                                        <p className="text-[10px] text-gray-400">Untuk kemudahan tracking dan konfirmasi cepat</p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                                            <span>NIK KTP (16 Digit) <span className="text-gray-400 font-normal">(opsional)</span></span>
+                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Privasi disensor</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                maxLength={16}
+                                                value={formData.nik}
+                                                onChange={(e) => setFormData({ ...formData, nik: e.target.value.replace(/[^0-9]/g, '') })}
+                                                className="w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 sm:py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white font-mono"
+                                                placeholder="360401xxxxxxxxxx"
+                                            />
+                                            <UserCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        </div>
+                                        <p className="text-[10px] text-gray-400">Memungkinkan Anda melacak seluruh riwayat pengaduan via NIK</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Subjek Pengaduan <span className="text-red-400">*</span></label>
+                                    <input type="text" required value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                        className="w-full bg-[#E2E8F0]/30 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 sm:py-3.5 outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F]/30 transition-all text-sm dark:text-white" placeholder="Judul singkat laporan Anda" />
+                                </div>
 
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-gray-700">Isi Laporan <span className="text-red-400">*</span></label>
@@ -380,6 +486,37 @@ function PengaduanForm() {
                                 )}
                             </div>
 
+                            {/* Mode Perlindungan Pelapor / Whistleblower Protection (UCD & SP4N-LAPOR Standard) */}
+                            <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${
+                                formData.is_confidential 
+                                  ? 'bg-gradient-to-r from-emerald-50/80 via-teal-50/40 to-slate-50 dark:from-emerald-950/30 dark:via-gray-900 dark:to-gray-900 border-emerald-300 dark:border-emerald-800 ring-2 ring-emerald-400/20 shadow-sm'
+                                  : 'bg-gray-50/70 dark:bg-[#0B1120] border-gray-200 dark:border-gray-700'
+                            }`}>
+                                <div className="flex items-start gap-3">
+                                    <input
+                                        type="checkbox"
+                                        id="is_confidential"
+                                        checked={formData.is_confidential}
+                                        onChange={(e) => setFormData({ ...formData, is_confidential: e.target.checked })}
+                                        className="mt-1 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 dark:border-gray-600 cursor-pointer"
+                                    />
+                                    <label htmlFor="is_confidential" className="cursor-pointer select-none space-y-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                                                <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                Aktifkan Mode Rahasia (Perlindungan Whistleblower)
+                                            </span>
+                                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                                UU PDP No. 27/2022
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] sm:text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                                            Identitas Anda (Nama, HP, NIK) <strong>dijamin kerahasiaannya secara hukum</strong>. Nama Anda akan disembunyikan dari publik dan <strong>TIDAK AKAN DIBERIKAN</strong> kepada perusahaan terlapor selama proses klarifikasi dinas.
+                                        </p>
+                                    </label>
+                                </div>
+                            </div>
+
                             {/* Visual Security CAPTCHA */}
                             <div className="space-y-2.5 bg-gray-50 dark:bg-[#0B1120] rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700">
                                 <label className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -406,9 +543,10 @@ function PengaduanForm() {
                                     <><Send className="w-4 h-4" /> Kirim Pengaduan</>
                                 )}
                             </button>
-                        </form>
-                    )}
-                </div>
+                            </form>
+                        )}
+                    </div>
+                )}
             </section>
 
             {/* FAQ Section - Fully Responsive */}
