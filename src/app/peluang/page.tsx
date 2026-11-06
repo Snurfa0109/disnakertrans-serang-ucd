@@ -44,7 +44,7 @@ export default async function PeluangPage() {
   if (!allEvents || allEvents.length === 0) allEvents = eventsBackup;
 
   return (
-    <div className="min-h-screen pb-16 bg-gray-50/60 dark:bg-[#0B1120]">
+    <div className="min-h-screen pb-16 bg-[#F8FAFC] dark:bg-[#0B1120]">
       {/* ── Clean Hero / Header ── */}
       <section className="bg-[#0A192F] pt-[104px] pb-8 sm:pt-28 sm:pb-10 lg:pt-30 lg:pb-12 text-white relative border-b border-white/10">
         <div className="container mx-auto px-4 xl:px-12 relative z-10">
