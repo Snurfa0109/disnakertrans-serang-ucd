@@ -1,21 +1,32 @@
 "use client";
 
-import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, User, MessageSquare } from "lucide-react";
+import { 
+    X, Send, User, RotateCcw, Headphones, Bot, 
+    Clock, CheckCircle2, AlertCircle, ArrowLeft, RefreshCw 
+} from "lucide-react";
 
-type Message = {
-    id: number;
-    role: "bot" | "user";
+type ChatRole = "bot" | "user" | "petugas" | "system";
+
+interface Message {
+    id: number | string;
+    role: ChatRole;
     text: string;
-};
+    senderName?: string;
+    time?: string;
+}
 
-const initialMessages: Message[] = [
+const STORAGE_KEY_MESSAGES = "disnaker_chat_history_v2";
+const STORAGE_KEY_MODE = "disnaker_chat_mode_v2";
+const STORAGE_KEY_SESSION = "disnaker_livechat_session_v2";
+
+const initialBotMessages: Message[] = [
     {
-        id: 1,
+        id: "init-1",
         role: "bot",
         text: "Selamat datang di Layanan Informasi Terpadu Disnakertrans Kabupaten Serang! 👋\n\nSaya Kang SATRIA (Serang Assistant for Training, Recruitment, & Information Access), asisten virtual resmi yang siap mendampingi wargi terkait pembuatan Kartu AK-1, lowongan kerja terverifikasi, pelatihan kerja BLK, hingga pengaduan ketenagakerjaan.\n\nAda yang dapat kami bantu hari ini?",
+        time: "Sekarang",
     },
 ];
 
@@ -30,9 +41,9 @@ const quickReplies = [
 function getBotReply(userMessage: string): string {
     const msg = userMessage.toLowerCase().trim();
 
-    // ── Live Chat Petugas ─────────────────────────────────────────────
+    // ── Live Chat Handover ─────────────────────────────────────────────
     if (/petugas|orang|manusia|cs\b|customer service|bicara dengan petugas|hubungi petugas|live chat|livechat|bicara langsung|ngomong sama orang/.test(msg)) {
-        return "💬 Untuk berbicara atau berkonsultasi langsung dengan Petugas Piket Disnakertrans Kabupaten Serang (tersedia pada jam kerja 08.00 - 16.00 WIB):\n\n👉 Buka Live Chat Petugas:\n/livechat\n\nPetugas kami akan langsung merespons percakapan Anda secara interaktif!";
+        return "HANDOVER_TO_PETUGAS";
     }
 
     // ── Salam / Greeting ─────────────────────────────────────────────
@@ -47,7 +58,7 @@ function getBotReply(userMessage: string): string {
 
     // ── AK-1 / Kartu Kuning ───────────────────────────────────────────
     if (/ak-?1|kartu kuning|kartu pencari kerja|ak\.1|buat kartu|daftar pencari kerja|kpk|pencaker/.test(msg)) {
-        return "📋 Kartu AK-1 (Kartu Kuning) adalah tanda pendaftaran resmi pencari kerja.\n\n🔗 Daftar online:\nhttps://bahagia.serangkab.go.id\n\nLangkah pendaftaran:\n1️⃣ Buka link di atas atau install app Serang Bahagia\n2️⃣ Buat akun dengan email aktif\n3️⃣ Pilih menu 'Kartu AK.1'\n4️⃣ Isi data & unggah dokumen\n5️⃣ Tunggu verifikasi petugas\n6️⃣ Unduh kartu AK-1 dalam format PDF\n\n📄 Syarat: KTP Kab. Serang + Ijazah terakhir\n\n👉 Lihat layanan lengkap: /layanan";
+        return "📋 Kartu AK-1 (Kartu Kuning) adalah tanda pendaftaran resmi pencari kerja.\n\n🔗 Daftar online:\nhttps://bahagia.serangkab.go.id\n\nLangkah pendaftaran:\n1️⃣ Buka link di atas atau install app Serang Bahagia\n2️⃣ Buat akun dengan email aktif\n3️⃣ Pilih menu 'Kartu AK.1'\n4️⃣ Isi data & unggah dokumen\n5️⃣ Tunggu verifikasi petugas\n6️⃣ Unduh kartu AK-1 dalam format PDF\n\n📄 Syarat: KTP Kab. Serang + Ijazah terakhir\n\n👉 Lihat layanan lengkap: /layanan-publik";
     }
 
     // ── Lowongan Kerja ────────────────────────────────────────────────
@@ -75,86 +86,47 @@ function getBotReply(userMessage: string): string {
         return "📍 Kantor Disnakertrans Kabupaten Serang:\n\nJl. Kawasan Puspemkab Serang No.B1\nKaserangan, Kec. Ciruas, Kab. Serang, Banten\n\n📞 (0254) 200234\n📧 disnakertrans@serangkab.go.id\n\n🗺️ Buka di Google Maps:\nhttps://maps.app.goo.gl/wTa7unGsbCJjCZdb8";
     }
 
-    // ── Perizinan / OSS / Wajib Lapor ────────────────────────────────
+    // ── Perizinan / OSS ───────────────────────────────────────────────
     if (/oss|perizinan|izin usaha|izin tempat|siup|nib|wajib lapor|laporan ketenagakerjaan|lkk/.test(msg)) {
         return "📋 Perizinan & Laporan Ketenagakerjaan:\n\n🔗 OSS – Online Single Submission:\nhttps://oss.go.id\n\n🔗 Wajib Lapor Ketenagakerjaan:\nhttps://wajiblapor.kemnaker.go.id\n\nUntuk konsultasi lebih lanjut, hubungi kami:\n📞 (0254) 200234\n📧 disnakertrans@serangkab.go.id";
     }
 
-    // ── Dokumen Publik / PPID ─────────────────────────────────────────
-    if (/dokumen|ppid|informasi publik|laporan (tahunan|kinerja)|data (ketenagakerjaan|naker)|transparansi|statistik/.test(msg)) {
-        return "📄 Dokumen & Informasi Publik:\n\n🔗 Halaman Informasi Publik:\n/informasi-publik\n\nTersedia laporan kinerja, data ketenagakerjaan, dan dokumen resmi Disnakertrans Kabupaten Serang yang dapat diunduh secara gratis.";
-    }
-
-    // ── Profil / Tentang Dinas ────────────────────────────────────────
-    if (/profil|tentang (kami|dinas|disnakertrans)|sejarah dinas|visi misi|struktur organisasi|kepala dinas/.test(msg)) {
-        return "🏛️ Profil Disnakertrans Kabupaten Serang:\n\n🔗 Halaman Profil:\n/profil\n\nDinas Tenaga Kerja dan Transmigrasi Kab. Serang menyelenggarakan urusan pemerintahan di bidang ketenagakerjaan & ketransmigrasian untuk kesejahteraan masyarakat Kabupaten Serang.\n\n📞 (0254) 200234\n📧 disnakertrans@serangkab.go.id";
-    }
-
-    // ── Berita / Informasi Terbaru ────────────────────────────────────
-    if (/berita|informasi terbaru|update|kabar|artikel|pengumuman|info terbaru|agenda/.test(msg)) {
-        return "📰 Berita & Informasi Terbaru:\n\n🔗 Halaman Berita:\n/berita\n\n🔗 Agenda & Event:\n/peluang\n\nTemukan pengumuman resmi, artikel ketenagakerjaan, dan agenda terkini seputar program Disnakertrans Kabupaten Serang.";
-    }
-
-    // ── Transmigrasi ──────────────────────────────────────────────────
-    if (/transmigrasi|transmigran|pindah (daerah|wilayah)|relokasi|daerah baru|program transmigrasi/.test(msg)) {
-        return "🏘️ Program Transmigrasi:\n\nDisnakertrans Kab. Serang juga menangani program ketransmigrasian.\n\n🔗 Info Program Transmigrasi Nasional:\nhttps://ketrans.kemnaker.go.id\n\nUntuk konsultasi lebih lanjut:\n📞 (0254) 200234\n📧 disnakertrans@serangkab.go.id\n📍 Kunjungi kantor di Kec. Ciruas, Kab. Serang";
-    }
-
-    // ── E-SAKIP ───────────────────────────────────────────────────────
-    if (/e-?sakip|kinerja (dinas|pemerintah)|akuntabilitas|lakip/.test(msg)) {
-        return "📊 E-SAKIP Kabupaten Serang:\n\n🔗 Akses E-SAKIP:\nhttps://e-sakip.serangkab.go.id\n\nSistem Akuntabilitas Kinerja Instansi Pemerintah untuk memantau kinerja dan transparansi birokrasi Kabupaten Serang.";
-    }
-
-    // ── Terima Kasih ──────────────────────────────────────────────────
-    if (/terima kasih|makasih|thanks|tq|trims|thx|ok terima|sudah cukup/.test(msg)) {
-        return "Sama-sama! 😊 Senang dapat membantu.\n\nJika ada pertanyaan lain seputar layanan Disnakertrans Kab. Serang, jangan ragu untuk bertanya kembali.\n\n📞 (0254) 200234\n📧 disnakertrans@serangkab.go.id";
-    }
-
-    // ── Fallback: Pertanyaan tak dikenal ─────────────────────────────
-    // Jika input terlihat seperti pertanyaan tapi tidak cocok topik manapun
+    // ── Fallback ──────────────────────────────────────────────────────
     const isQuestion = /apa|bagaimana|gimana|gmn|cara|dimana|kapan|berapa|siapa|kenapa|mengapa|boleh|bisa|\?/.test(msg);
-    const isLongEnough = msg.replace(/\s/g, "").length > 8;
-
-    if (isQuestion || isLongEnough) {
-        return "Mohon maaf, saya belum dapat menjawab pertanyaan tersebut. 🙏\n\nAdakah informasi lain yang ingin ditanyakan? Saya dapat membantu seputar:\n\n• 📋 Kartu AK-1 (Kartu Kuning)\n• 💼 Lowongan kerja\n• 🎓 Pelatihan kerja BLK\n• 📢 Pengaduan ketenagakerjaan\n• 📍 Alamat & jam operasional\n• 📰 Berita & informasi terbaru\n\nAtau hubungi kami:\n📞 (0254) 200234\n📧 disnakertrans@serangkab.go.id";
+    if (isQuestion || msg.length > 8) {
+        return "Mohon maaf, saya belum dapat menjawab pertanyaan tersebut secara otomatis. 🙏\n\nAnda dapat mengklik tombol **'Hubungi Petugas Piket'** di bawah untuk langsung berkonsultasi dengan petugas asli Disnakertrans!";
     }
 
-    // Input random / tidak bermakna
-    return "Mohon maaf, saya tidak dapat memahami pesan tersebut. 🙏\n\nAdakah informasi lain yang ingin ditanyakan?\n\nSaya siap membantu seputar layanan Disnakertrans Kabupaten Serang.";
+    return "Mohon maaf, saya belum memahami maksud pesan tersebut. Silakan pilih pertanyaan populer di bawah atau hubungi Petugas Piket kami.";
 }
 
-// Render pesan dengan link yang bisa diklik
 function renderText(text: string) {
-    // Regex: URL eksternal ATAU internal path (/xxx)
     const TOKEN = /(https?:\/\/[^\s]+|\/[a-z][a-z0-9\-/#]*)/g;
     const parts = text.split(TOKEN);
     return parts.map((part, i) => {
         if (/^https?:\/\//.test(part)) {
-            // External URL
             return (
                 <a
                     key={i}
                     href={part}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400 underline underline-offset-2 font-medium break-all hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                    className="inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400 underline underline-offset-2 font-medium break-all hover:text-blue-800 transition-colors"
                 >
                     {part}
                 </a>
             );
         } else if (/^\/[a-z]/.test(part)) {
-            // Internal path
             return (
                 <a
                     key={i}
                     href={part}
-                    className="inline-flex items-center gap-0.5 text-blue-700 dark:text-blue-400 underline underline-offset-2 font-semibold hover:text-blue-900 dark:hover:text-blue-300 transition-colors"
+                    className="inline-flex items-center gap-0.5 text-blue-700 dark:text-blue-400 underline underline-offset-2 font-semibold hover:text-blue-900 transition-colors"
                 >
                     {part}
                 </a>
             );
         } else {
-            // Plain text — split by newline untuk preserve line breaks
             return part.split("\n").map((line, j, arr) => (
                 <span key={`${i}-${j}`}>
                     {line}
@@ -167,45 +139,261 @@ function renderText(text: string) {
 
 export default function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<Message[]>(initialMessages);
+    const [mode, setMode] = useState<"bot" | "petugas">("bot");
+    const [messages, setMessages] = useState<Message[]>(initialBotMessages);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
+    const [isConnecting, setIsConnecting] = useState(false);
+
+    // Livechat Session State
+    const [liveSessionId, setLiveSessionId] = useState<string | null>(null);
+    const [citizenName, setCitizenName] = useState<string>("");
+    const [showRegisterForm, setShowRegisterForm] = useState(false);
+    const [regName, setRegName] = useState("");
+    const [regTopic, setRegTopic] = useState("Konsultasi Layanan Ketenagakerjaan");
+    const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const pollIntervalRef = useRef<any>(null);
 
+    // Load persisted chat from localStorage on mount
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        try {
+            const savedMsgs = localStorage.getItem(STORAGE_KEY_MESSAGES);
+            if (savedMsgs) {
+                const parsed = JSON.parse(savedMsgs);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setMessages(parsed);
+                }
+            }
+
+            const savedMode = localStorage.getItem(STORAGE_KEY_MODE) as "bot" | "petugas";
+            if (savedMode && ["bot", "petugas"].includes(savedMode)) {
+                setMode(savedMode);
+            }
+
+            const savedSession = localStorage.getItem(STORAGE_KEY_SESSION);
+            if (savedSession) {
+                setLiveSessionId(savedSession);
+            }
+        } catch {}
+    }, []);
+
+    // Save messages & mode to localStorage on update
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        try {
+            localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages));
+            localStorage.setItem(STORAGE_KEY_MODE, mode);
+            if (liveSessionId) {
+                localStorage.setItem(STORAGE_KEY_SESSION, liveSessionId);
+            }
+        } catch {}
+    }, [messages, mode, liveSessionId]);
+
+    // Auto-scroll on new message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+    }, [messages, isTyping, showRegisterForm]);
 
+    // Focus input on open
     useEffect(() => {
-        if (isOpen && inputRef.current) {
+        if (isOpen && inputRef.current && !showRegisterForm) {
             inputRef.current.focus();
         }
-    }, [isOpen]);
+    }, [isOpen, showRegisterForm, mode]);
 
-    const sendMessage = (text: string) => {
+    // Polling livechat messages if in petugas mode
+    const pollMessages = useCallback(async () => {
+        if (!liveSessionId || mode !== "petugas") return;
+        try {
+            const res = await fetch(`/api/livechat/messages?sessionId=${liveSessionId}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && Array.isArray(data.messages)) {
+                    // Convert livechat backend messages
+                    const formatted: Message[] = data.messages.map((m: any) => ({
+                        id: m.id,
+                        role: m.sender_type === "citizen" ? "user" : m.sender_type === "petugas" ? "petugas" : "system",
+                        text: m.message,
+                        senderName: m.sender_name,
+                        time: new Date(m.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+                    }));
+
+                    // Merge avoiding duplicates
+                    setMessages((prev) => {
+                        const existingIds = new Set(prev.map((p) => String(p.id)));
+                        const newMsgs = formatted.filter((f) => !existingIds.has(String(f.id)));
+                        if (newMsgs.length > 0) {
+                            return [...prev, ...newMsgs];
+                        }
+                        return prev;
+                    });
+                }
+            }
+        } catch {}
+    }, [liveSessionId, mode]);
+
+    useEffect(() => {
+        if (mode === "petugas" && liveSessionId) {
+            pollIntervalRef.current = setInterval(pollMessages, 3500);
+            pollMessages();
+        } else {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        }
+        return () => {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        };
+    }, [mode, liveSessionId, pollMessages]);
+
+    // Toast helper
+    const showToast = (msg: string) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 3000);
+    };
+
+    // Confirm Reset Chat (Custom Notification, Tanpa Browser Alert/Confirm Bawaan)
+    const handleConfirmReset = () => {
+        setMessages(initialBotMessages);
+        setMode("bot");
+        setLiveSessionId(null);
+        setShowRegisterForm(false);
+        setShowResetConfirm(false);
+        if (typeof window !== "undefined") {
+            try {
+                localStorage.removeItem(STORAGE_KEY_MESSAGES);
+                localStorage.removeItem(STORAGE_KEY_MODE);
+                localStorage.removeItem(STORAGE_KEY_SESSION);
+            } catch {}
+        }
+        showToast("Riwayat obrolan berhasil dibersihkan");
+    };
+
+    // Handover to Petugas
+    const handleStartLiveAgent = () => {
+        if (liveSessionId) {
+            // Sudah punya sesi livechat aktif
+            setMode("petugas");
+            const sysMsg: Message = {
+                id: Date.now(),
+                role: "system",
+                text: "🎧 Mode obrolan beralih ke Petugas Piket Disnakertrans. Pesan Anda akan langsung diterima oleh petugas kami.",
+                time: "Sekarang",
+            };
+            setMessages((prev) => [...prev, sysMsg]);
+        } else {
+            // Tampilkan form nama singkat
+            setShowRegisterForm(true);
+        }
+    };
+
+    // Submit form registrasi sesi live chat
+    const handleRegisterSession = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const name = regName.trim() || "Warga Serang";
+        setCitizenName(name);
+        setIsConnecting(true);
+
+        try {
+            const res = await fetch("/api/livechat/session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    citizen_name: name,
+                    citizen_contact: "Online Web Citizen",
+                    topic: regTopic,
+                    initial_message: `Halo, saya ${name} ingin berkonsultasi mengenai ${regTopic}.`,
+                }),
+            });
+
+            const data = await res.json();
+            if (data.success && data.session) {
+                setLiveSessionId(data.session.session_id);
+                setMode("petugas");
+                setShowRegisterForm(false);
+
+                const welcomeMsg: Message = {
+                    id: Date.now(),
+                    role: "system",
+                    text: `✅ Terhubung dengan Petugas Piket Disnakertrans.\nTopik: ${regTopic}\nAtas Nama: ${name}\n\nSilakan sampaikan pertanyaan atau keluhan Anda di bawah ini.`,
+                    time: "Sekarang",
+                };
+                setMessages((prev) => [...prev, welcomeMsg]);
+            }
+        } catch {
+            alert("Gagal menghubungkan ke petugas. Pastikan koneksi stabil.");
+        } finally {
+            setIsConnecting(false);
+        }
+    };
+
+    // Switch back to Kang Satria AI
+    const handleSwitchToBot = () => {
+        setMode("bot");
+        const sysMsg: Message = {
+            id: Date.now(),
+            role: "system",
+            text: "🤖 Anda kembali ke mode asisten virtual Kang SATRIA (AI).",
+            time: "Sekarang",
+        };
+        setMessages((prev) => [...prev, sysMsg]);
+    };
+
+    // Send Message
+    const sendMessage = async (text: string) => {
         if (!text.trim()) return;
+        const trimmed = text.trim();
 
         const userMsg: Message = {
             id: Date.now(),
             role: "user",
-            text: text.trim(),
+            text: trimmed,
+            time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
         };
 
         setMessages((prev) => [...prev, userMsg]);
         setInput("");
-        setIsTyping(true);
 
-        setTimeout(() => {
-            const botReply = getBotReply(text);
-            const botMsg: Message = {
-                id: Date.now() + 1,
-                role: "bot",
-                text: botReply,
-            };
-            setMessages((prev) => [...prev, botMsg]);
-            setIsTyping(false);
-        }, 600);
+        if (mode === "petugas" && liveSessionId) {
+            // Kirim pesan ke API LiveChat Petugas
+            try {
+                await fetch("/api/livechat/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        sessionId: liveSessionId,
+                        senderType: "citizen",
+                        senderName: citizenName || "Warga",
+                        message: trimmed,
+                    }),
+                });
+                pollMessages();
+            } catch (err) {
+                console.error("Gagal mengirim pesan livechat:", err);
+            }
+        } else {
+            // Mode AI Bot Kang Satria
+            setIsTyping(true);
+            setTimeout(() => {
+                const reply = getBotReply(trimmed);
+                if (reply === "HANDOVER_TO_PETUGAS") {
+                    setIsTyping(false);
+                    handleStartLiveAgent();
+                } else {
+                    const botMsg: Message = {
+                        id: Date.now() + 1,
+                        role: "bot",
+                        text: reply,
+                        time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+                    };
+                    setMessages((prev) => [...prev, botMsg]);
+                    setIsTyping(false);
+                }
+            }, 600);
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -215,7 +403,7 @@ export default function Chatbot() {
 
     return (
         <>
-            {/* Floating Button — Kang SATRIA */}
+            {/* FLOATING TRIGGER BUTTON — KANG SATRIA */}
             <AnimatePresence>
                 {!isOpen && (
                     <motion.button
@@ -226,11 +414,13 @@ export default function Chatbot() {
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setIsOpen(true)}
                         className="fixed bottom-5 right-5 z-50 flex items-center text-white rounded-2xl shadow-2xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/60 transition-all cursor-pointer overflow-hidden"
-                        style={{ background: "linear-gradient(135deg, #1E3A8A 0%, #1e40af 100%)", boxShadow: "0 8px 32px rgba(30,58,138,0.4), 0 2px 8px rgba(0,0,0,0.25)" }}
-                        aria-label="Tanya Kang SATRIA - Asisten Virtual Disnakertrans"
-                        title="Tanya Kang SATRIA - Asisten Virtual Disnakertrans"
+                        style={{
+                            background: "linear-gradient(135deg, #1E3A8A 0%, #1e40af 100%)",
+                            boxShadow: "0 8px 32px rgba(30,58,138,0.4), 0 2px 8px rgba(0,0,0,0.25)",
+                        }}
+                        aria-label="Butuh Bantuan? Tanya Kang SATRIA - Asisten Virtual & Live Chat"
+                        title="Butuh Bantuan? Tanya Kang SATRIA - Asisten Virtual & Live Chat"
                     >
-                        {/* Avatar */}
                         <div className="relative w-14 h-14 shrink-0 flex items-center justify-center bg-[#1a3270]">
                             <img
                                 src="/images/kang-satria.png"
@@ -239,118 +429,365 @@ export default function Chatbot() {
                             />
                             <span className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse border-2 border-[#1E3A8A]" />
                         </div>
-                        {/* Label */}
-                        <div className="text-left px-3 pr-4 hidden sm:block">
-                            <p className="text-[11px] font-extrabold tracking-widest text-[#D4AF37] uppercase mb-0.5">KANG SATRIA</p>
-                            <p className="text-[10px] text-white/70 font-medium leading-tight whitespace-nowrap">Asisten Virtual Disnakertrans</p>
-                            <p className="text-[9px] text-white/40 leading-tight whitespace-nowrap">Kabupaten Serang</p>
+                        <div className="text-left px-3.5 pr-4 hidden sm:block">
+                            <p className="text-[12px] font-extrabold text-[#FBBF24] leading-tight mb-0.5">
+                                Butuh Bantuan?
+                            </p>
+                            <p className="text-[10px] text-white/80 font-medium leading-tight whitespace-nowrap">
+                                Tanya Kang SATRIA
+                            </p>
                         </div>
                     </motion.button>
                 )}
             </AnimatePresence>
 
-            {/* Chat Window */}
+            {/* UNIFIED CHAT WINDOW (Shopee-Style Hybrid: AI Bot + Live Agent) */}
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed bottom-6 right-6 z-50 w-[390px] max-w-[calc(100vw-2rem)] bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
-                        style={{ height: "530px" }}
-                    >
-                        {/* Header */}
-                        <div className="shrink-0 px-4 py-3 flex items-center justify-between bg-[#1E3A8A] border-b border-white/10">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center bg-[#1a3270] border border-[#D4AF37]/30">
-                                    <img
-                                        src="/images/kang-satria.png"
-                                        alt="Kang SATRIA"
-                                        className="w-[85%] h-[85%] object-contain"
-                                    />
+                    <>
+                        {/* Backdrop khusus Mobile agar fokus & bisa klik luar untuk tutup */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsOpen(false)}
+                            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 sm:hidden"
+                        />
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 24, scale: 0.97 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-x-3 bottom-3 sm:inset-auto sm:bottom-6 sm:right-6 z-50 sm:w-[390px] h-[calc(100dvh-5.5rem)] max-h-[580px] sm:h-[550px] bg-white dark:bg-[#1E293B] rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+                        >
+                        {/* ─── DYNAMIC HEADER ─── */}
+                        <div
+                            className={`shrink-0 px-4 py-3 flex items-center justify-between text-white transition-colors ${
+                                mode === "petugas"
+                                    ? "bg-gradient-to-r from-[#0A192F] via-[#1E3A8A] to-[#2563EB]"
+                                    : "bg-gradient-to-r from-[#1E3A8A] to-[#1e40af]"
+                            } border-b border-white/10`}
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center bg-[#1a3270] border border-white/20">
+                                    {mode === "petugas" ? (
+                                        <Headphones className="w-5 h-5 text-amber-300" />
+                                    ) : (
+                                        <img
+                                            src="/images/kang-satria.png"
+                                            alt="Kang SATRIA"
+                                            className="w-[85%] h-[85%] object-contain"
+                                        />
+                                    )}
                                 </div>
                                 <div>
-                                    <div className="flex items-center gap-2 mb-0.5">
-                                        <h4 className="text-white font-semibold text-sm leading-tight">Kang SATRIA</h4>
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                        <h4 className="text-white font-bold text-sm leading-tight">
+                                            {mode === "petugas" ? "Petugas Piket Disnaker" : "Kang SATRIA"}
+                                        </h4>
                                         <span className="inline-flex items-center gap-1 text-[8px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-medium px-1.5 py-0.5 rounded-full">
                                             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                                            Online
+                                            {mode === "petugas" ? "Petugas Siaga" : "Online"}
                                         </span>
                                     </div>
-                                    <p className="text-white/45 text-[10px] leading-tight">Asisten Virtual • Disnakertrans Kab. Serang</p>
+                                    <p className="text-white/60 text-[10px] leading-tight">
+                                        {mode === "petugas"
+                                            ? "Layanan Live Chat Resmi (08.00–16.00 WIB)"
+                                            : "Asisten AI • Siaga 24 Jam"}
+                                    </p>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="w-7 h-7 flex items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all"
-                                aria-label="Tutup"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
+
+                            {/* Actions: Reset & Close */}
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setShowResetConfirm(true)}
+                                    title="Hapus riwayat obrolan & mulai baru"
+                                    className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                    aria-label="Reset Chat"
+                                >
+                                    <RotateCcw className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => setIsOpen(false)}
+                                    className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                    aria-label="Tutup Obrolan"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Messages */}
-                        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50/80 dark:bg-[#0F172A]">
-                            {messages.map((msg) => (
+                        {/* ─── CUSTOM IN-APP CONFIRMATION NOTIFICATION (Pengganti alert/confirm browser) ─── */}
+                        <AnimatePresence>
+                            {showResetConfirm && (
                                 <motion.div
-                                    key={msg.id}
-                                    initial={{ opacity: 0, y: 8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="bg-amber-50 dark:bg-amber-950/80 border-b border-amber-200 dark:border-amber-800/80 px-4 py-3 shrink-0 shadow-xs overflow-hidden"
                                 >
-                                    <div className={`shrink-0 mt-0.5 w-7 h-7 rounded-full flex items-center justify-center ${
-                                        msg.role === "bot"
-                                            ? "bg-[#EEF2FF] border border-blue-100"
-                                            : "bg-[#1E3A8A] text-white"
-                                    }`}>
-                                        {msg.role === "bot" ? (
-                                            <img src="/images/kang-satria.png" alt="" className="w-[85%] h-[85%] object-contain" />
-                                        ) : (
-                                            <User className="w-3.5 h-3.5" />
-                                        )}
-                                    </div>
-                                    <div className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
-                                        msg.role === "bot"
-                                            ? "bg-white dark:bg-[#1E293B] text-gray-800 dark:text-gray-200 shadow-sm border border-gray-100 dark:border-gray-700 rounded-tl-md"
-                                            : "bg-[#0A192F] text-white rounded-tr-md whitespace-pre-wrap"
-                                    }`}>
-                                        {msg.role === "bot" ? renderText(msg.text) : msg.text}
-                                    </div>
-                                </motion.div>
-                            ))}
-                            
-                            {isTyping && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="flex gap-2.5"
-                                >
-                                    <div className="w-7 h-7 rounded-full bg-[#EEF2FF] border border-blue-100 shrink-0 mt-0.5 flex items-center justify-center">
-                                        <img src="/images/kang-satria.png" alt="" className="w-[85%] h-[85%] object-contain" />
-                                    </div>
-                                    <div className="bg-white dark:bg-[#1E293B] px-4 py-3 rounded-2xl rounded-tl-md shadow-sm border border-gray-100 dark:border-gray-700">
-                                        <div className="flex gap-1">
-                                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                                    <div className="flex items-start gap-2.5">
+                                        <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                                            <RotateCcw className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                                                Mulai Obrolan Baru?
+                                            </p>
+                                            <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-tight mt-0.5">
+                                                Riwayat percakapan sebelumnya akan dibersihkan dari perangkat ini.
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-2.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleConfirmReset}
+                                                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                                                >
+                                                    Hapus &amp; Mulai Baru
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowResetConfirm(false)}
+                                                    className="px-3 py-1.5 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
+                                                >
+                                                    Batal
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </motion.div>
                             )}
+                        </AnimatePresence>
+
+                        {/* ─── TOAST NOTIFICATION ─── */}
+                        <AnimatePresence>
+                            {toastMessage && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    className="px-3 py-1.5 bg-emerald-600 text-white text-[11px] font-bold text-center shrink-0 shadow-sm flex items-center justify-center gap-1.5"
+                                >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>{toastMessage}</span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* ─── LIVE AGENT SWITCH BAR (Ala Shopee) ─── */}
+                        <div className="px-3.5 py-2 bg-blue-50/90 dark:bg-[#0F172A] border-b border-blue-100 dark:border-gray-800 flex items-center justify-between text-[11px] shrink-0">
+                            {mode === "bot" ? (
+                                <>
+                                    <span className="text-gray-600 dark:text-gray-300 font-medium flex items-center gap-1.5">
+                                        <Headphones className="w-3.5 h-3.5 text-[#1E3A8A] dark:text-[#93C5FD]" />
+                                        Butuh bicara dengan orang asli?
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleStartLiveAgent}
+                                        className="font-bold text-[#1E3A8A] dark:text-[#93C5FD] hover:underline flex items-center gap-1 cursor-pointer"
+                                    >
+                                        Hubungi Petugas &rarr;
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        Mode Live Chat Petugas Aktif
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleSwitchToBot}
+                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white font-medium flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <Bot className="w-3.5 h-3.5" />
+                                        Kembali ke AI
+                                    </button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* ─── MESSAGES CONTAINER ─── */}
+                        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50/70 dark:bg-[#0B1120]">
+                            {messages.map((msg) => (
+                                <motion.div
+                                    key={msg.id}
+                                    initial={{ opacity: 0, y: 6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className={`flex gap-2.5 ${
+                                        msg.role === "user"
+                                            ? "flex-row-reverse"
+                                            : msg.role === "system"
+                                            ? "justify-center"
+                                            : ""
+                                    }`}
+                                >
+                                    {/* System Banner Message */}
+                                    {msg.role === "system" ? (
+                                        <div className="max-w-[90%] px-3.5 py-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/80 rounded-xl text-[11px] text-amber-800 dark:text-amber-200 text-center leading-relaxed">
+                                            {renderText(msg.text)}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* Avatar */}
+                                            <div
+                                                className={`shrink-0 mt-0.5 w-7 h-7 rounded-full flex items-center justify-center text-xs ${
+                                                    msg.role === "bot"
+                                                        ? "bg-[#EEF2FF] border border-blue-100"
+                                                        : msg.role === "petugas"
+                                                        ? "bg-amber-100 text-amber-800 border border-amber-300"
+                                                        : "bg-[#1E3A8A] text-white"
+                                                }`}
+                                            >
+                                                {msg.role === "bot" ? (
+                                                    <img
+                                                        src="/images/kang-satria.png"
+                                                        alt="Kang SATRIA"
+                                                        className="w-[85%] h-[85%] object-contain"
+                                                    />
+                                                ) : msg.role === "petugas" ? (
+                                                    <Headphones className="w-3.5 h-3.5" />
+                                                ) : (
+                                                    <User className="w-3.5 h-3.5" />
+                                                )}
+                                            </div>
+
+                                            {/* Bubble */}
+                                            <div
+                                                className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-2xs ${
+                                                    msg.role === "user"
+                                                        ? "bg-[#1E3A8A] text-white rounded-tr-xs"
+                                                        : msg.role === "petugas"
+                                                        ? "bg-amber-50 dark:bg-amber-950/30 text-gray-900 dark:text-gray-100 border border-amber-200 dark:border-amber-800/60 rounded-tl-xs"
+                                                        : "bg-white dark:bg-[#1E293B] text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-tl-xs"
+                                                }`}
+                                            >
+                                                {msg.role === "petugas" && (
+                                                    <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mb-0.5">
+                                                        {msg.senderName || "Petugas Piket"} (Petugas)
+                                                    </p>
+                                                )}
+                                                {renderText(msg.text)}
+                                                {msg.time && (
+                                                    <span className="block text-[9px] text-right mt-1 opacity-60">
+                                                        {msg.time}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                </motion.div>
+                            ))}
+
+                            {/* Typing Indicator */}
+                            {isTyping && (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2.5">
+                                    <div className="w-7 h-7 rounded-full bg-[#EEF2FF] border border-blue-100 shrink-0 mt-0.5 flex items-center justify-center">
+                                        <img
+                                            src="/images/kang-satria.png"
+                                            alt=""
+                                            className="w-[85%] h-[85%] object-contain"
+                                        />
+                                    </div>
+                                    <div className="bg-white dark:bg-[#1E293B] px-4 py-3 rounded-2xl rounded-tl-md shadow-xs border border-gray-100 dark:border-gray-700">
+                                        <div className="flex gap-1">
+                                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+                                            <span
+                                                className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                                                style={{ animationDelay: "150ms" }}
+                                            />
+                                            <span
+                                                className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                                                style={{ animationDelay: "300ms" }}
+                                            />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* In-Chat Mini Form to Connect to Petugas */}
+                            {showRegisterForm && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="p-4 bg-white dark:bg-[#1E293B] rounded-2xl border-2 border-blue-200 dark:border-blue-800 shadow-md space-y-3"
+                                >
+                                    <div className="flex items-center gap-2 text-xs font-bold text-[#1E3A8A] dark:text-[#93C5FD]">
+                                        <Headphones className="w-4 h-4" />
+                                        <span>Mulai Obrolan dengan Petugas Piket</span>
+                                    </div>
+                                    <form onSubmit={handleRegisterSession} className="space-y-2.5 text-xs">
+                                        <div>
+                                            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                                Nama Lengkap Anda:
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={regName}
+                                                onChange={(e) => setRegName(e.target.value)}
+                                                placeholder="Contoh: Ahmad Fauzi"
+                                                className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                                Topik Pertanyaan:
+                                            </label>
+                                            <select
+                                                value={regTopic}
+                                                onChange={(e) => setRegTopic(e.target.value)}
+                                                className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                                            >
+                                                <option value="Pembuatan Kartu AK-1 (Kartu Kuning)">Pembuatan Kartu AK-1 (Kartu Kuning)</option>
+                                                <option value="Info Lowongan Kerja & Rekrutmen">Info Lowongan Kerja & Rekrutmen</option>
+                                                <option value="Pendaftaran Pelatihan Kerja BLK">Pendaftaran Pelatihan Kerja BLK</option>
+                                                <option value="Pengaduan Sengketa / Hak Ketenagakerjaan">Pengaduan Sengketa / Hak Kerja</option>
+                                                <option value="Konsultasi Umum Ketenagakerjaan">Konsultasi Umum Ketenagakerjaan</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center gap-2 pt-1">
+                                            <button
+                                                type="submit"
+                                                disabled={isConnecting}
+                                                className="flex-1 py-2 bg-[#1E3A8A] hover:bg-[#1e40af] text-white font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                            >
+                                                {isConnecting ? (
+                                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                    <span>Hubungkan Sekarang</span>
+                                                )}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowRegisterForm(false)}
+                                                className="py-2 px-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-200 cursor-pointer"
+                                            >
+                                                Batal
+                                            </button>
+                                        </div>
+                                    </form>
+                                </motion.div>
+                            )}
+
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Quick Replies */}
-                        {messages.length <= 2 && (
-                            <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1E293B] shrink-0">
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">Pertanyaan populer:</p>
+                        {/* ─── QUICK REPLIES (Hanya di mode bot jika pesan masih sedikit) ─── */}
+                        {mode === "bot" && messages.length <= 3 && !showRegisterForm && (
+                            <div className="px-3.5 py-2 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1E293B] shrink-0">
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5">
+                                    Pertanyaan Populer:
+                                </p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {quickReplies.map((qr, i) => (
                                         <button
                                             key={i}
                                             onClick={() => sendMessage(qr)}
-                                            className="text-[11px] px-3 py-1.5 bg-gray-100 dark:bg-[#0F172A] hover:bg-[#0A192F] hover:text-white text-gray-700 dark:text-gray-300 rounded-full font-medium transition-colors"
+                                            className="text-[11px] px-3 py-1 bg-gray-100 dark:bg-[#0F172A] hover:bg-[#1E3A8A] hover:text-white text-gray-700 dark:text-gray-300 rounded-full font-medium transition-colors cursor-pointer"
                                         >
                                             {qr}
                                         </button>
@@ -359,40 +796,34 @@ export default function Chatbot() {
                             </div>
                         )}
 
-                        {/* Live Chat Petugas Quick Link */}
-                        <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-[#0F172A] dark:to-slate-800 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-[11px] shrink-0">
-                            <span className="text-gray-600 dark:text-gray-300 font-medium flex items-center gap-1.5">
-                                <MessageSquare className="w-3.5 h-3.5 text-[#1E3A8A] dark:text-[#93C5FD]" />
-                                Butuh bicara dengan petugas asli?
-                            </span>
-                            <Link 
-                                href="/livechat"
-                                onClick={() => setIsOpen(false)}
-                                className="font-bold text-[#1E3A8A] dark:text-[#93C5FD] hover:underline"
-                            >
-                                Live Chat &rarr;
-                            </Link>
-                        </div>
-
-                        {/* Input */}
-                        <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1E293B] flex items-center gap-2 shrink-0">
+                        {/* ─── INPUT FORM ─── */}
+                        <form
+                            onSubmit={handleSubmit}
+                            className="px-3.5 py-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1E293B] flex items-center gap-2 shrink-0"
+                        >
                             <input
                                 ref={inputRef}
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder="Ketik pertanyaan Anda..."
-                                className="flex-1 bg-gray-100 dark:bg-[#0F172A] rounded-full px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#0A192F]/20 transition-all dark:text-white dark:placeholder:text-gray-500"
+                                placeholder={
+                                    mode === "petugas"
+                                        ? "Ketik pesan ke petugas piket..."
+                                        : "Tanya Kang SATRIA seputar layanan..."
+                                }
+                                className="flex-1 bg-gray-100 dark:bg-[#0F172A] rounded-full px-4 py-2.5 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 transition-all dark:text-white dark:placeholder:text-gray-500"
                             />
                             <button
                                 type="submit"
                                 disabled={!input.trim()}
-                                className="w-9 h-9 bg-[#0A192F] text-white rounded-full flex items-center justify-center hover:bg-[#1E3A8A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                className="w-9 h-9 bg-[#1E3A8A] hover:bg-[#1e40af] text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer shadow-xs"
+                                aria-label="Kirim Pesan"
                             >
                                 <Send className="w-4 h-4" />
                             </button>
                         </form>
                     </motion.div>
+                    </>
                 )}
             </AnimatePresence>
         </>

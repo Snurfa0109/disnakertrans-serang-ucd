@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 function getTodayDate() {
   return new Date().toISOString().split('T')[0];
 }
@@ -16,29 +18,33 @@ function isPublicPage(path: string): boolean {
   return true;
 }
 
-const BASELINE_TOTAL = 1428;
-const BASELINE_TODAY = 38;
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
 
-// GET — return total and today's visitor count (for public footer)
+// GET — return actual total and today's visitor count directly from database
 export async function GET() {
   try {
     const today = getTodayDate();
     const [totalRow] = await sql`SELECT COALESCE(SUM(count), 0) AS total FROM visitors`;
     const [todayRow] = await sql`SELECT COALESCE(count, 0) AS count FROM visitors WHERE date = ${today}`;
 
-    const dbTotal = Number(totalRow?.total) || 0;
-    const dbToday = Number(todayRow?.count) || 0;
+    const total = Number(totalRow?.total) || 0;
+    const todayCount = Number(todayRow?.count) || 0;
 
-    return NextResponse.json({
-      total: BASELINE_TOTAL + dbTotal,
-      today: BASELINE_TODAY + dbToday,
-    });
-  } catch {
-    return NextResponse.json({ total: BASELINE_TOTAL, today: BASELINE_TODAY });
+    return NextResponse.json(
+      { total, today: todayCount },
+      { headers: NO_CACHE_HEADERS }
+    );
+  } catch (err) {
+    console.error('Error fetching visitor stats:', err);
+    return NextResponse.json({ total: 0, today: 0 }, { headers: NO_CACHE_HEADERS });
   }
 }
 
-// POST — log a public visitor event with detailed info
+// POST — log a public visitor event with detailed info & return actual stats
 export async function POST(request: NextRequest) {
   try {
     let body: any = {};
@@ -61,20 +67,24 @@ export async function POST(request: NextRequest) {
     const today = getTodayDate();
     const sessionId = body.session_id;
 
-    // Check duplicate visit in current session
+    // Check duplicate visit within the last 15 seconds (prevents rapid multi-click/burst spam)
+    const fifteenSecondsAgo = new Date(Date.now() - 15 * 1000).toISOString().replace('T', ' ').substring(0, 19);
     const existing = await sql`
       SELECT id FROM visitor_logs 
-      WHERE visitor_id = ${sessionId} AND page_path = ${pagePath} AND created_at >= ${today + ' 00:00:00'}
+      WHERE visitor_id = ${sessionId} AND page_path = ${pagePath} AND created_at >= ${fifteenSecondsAgo}
       LIMIT 1
     `;
 
     if (existing.length > 0) {
       const [totalRow] = await sql`SELECT COALESCE(SUM(count), 0) AS total FROM visitors`;
-      const [todayRow] = await sql`SELECT count FROM visitors WHERE date = ${today}`;
-      return NextResponse.json({
-        total: BASELINE_TOTAL + (Number(totalRow?.total) || 0),
-        today: BASELINE_TODAY + (Number(todayRow?.count) || 0),
-      });
+      const [todayRow] = await sql`SELECT COALESCE(count, 0) AS count FROM visitors WHERE date = ${today}`;
+      return NextResponse.json(
+        {
+          total: Number(totalRow?.total) || 0,
+          today: Number(todayRow?.count) || 0,
+        },
+        { headers: NO_CACHE_HEADERS }
+      );
     }
 
     // Increment daily counter (MySQL syntax)
@@ -83,7 +93,9 @@ export async function POST(request: NextRequest) {
         INSERT INTO visitors (date, count) VALUES (${today}, 1)
         ON DUPLICATE KEY UPDATE count = count + 1
       `;
-    } catch {}
+    } catch (e) {
+      console.error('Error incrementing visitors table:', e);
+    }
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || request.headers.get('x-real-ip')
@@ -102,17 +114,23 @@ export async function POST(request: NextRequest) {
           ${pagePath}, ${body.referrer || 'Direct'}, ${body.city || ''}
         )
       `;
-    } catch {}
+    } catch (e) {
+      console.error('Error inserting visitor_logs:', e);
+    }
 
-    // Return current stats with baseline
+    // Return actual current stats from DB
     const [totalRow] = await sql`SELECT COALESCE(SUM(count), 0) AS total FROM visitors`;
-    const [todayRow] = await sql`SELECT count FROM visitors WHERE date = ${today}`;
+    const [todayRow] = await sql`SELECT COALESCE(count, 0) AS count FROM visitors WHERE date = ${today}`;
 
-    return NextResponse.json({
-      total: BASELINE_TOTAL + (Number(totalRow?.total) || 0),
-      today: BASELINE_TODAY + (Number(todayRow?.count) || 0),
-    });
-  } catch {
-    return NextResponse.json({ total: BASELINE_TOTAL, today: BASELINE_TODAY });
+    return NextResponse.json(
+      {
+        total: Number(totalRow?.total) || 0,
+        today: Number(todayRow?.count) || 0,
+      },
+      { headers: NO_CACHE_HEADERS }
+    );
+  } catch (err) {
+    console.error('POST /api/visitors error:', err);
+    return NextResponse.json({ total: 0, today: 0 }, { headers: NO_CACHE_HEADERS });
   }
 }

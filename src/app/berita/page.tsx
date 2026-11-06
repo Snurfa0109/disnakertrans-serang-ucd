@@ -72,20 +72,20 @@ export default function BeritaPage() {
     return (
         <div className="min-h-screen pb-0 bg-[#F8FAFC] dark:bg-[#0B1120]">
             {/* Hero Section */}
-            <section className="bg-[#0A192F] pt-32 pb-24 lg:pt-40 lg:pb-32 text-white relative overflow-hidden">
+            <section className="bg-[#0A192F] pt-[104px] pb-8 sm:pt-28 sm:pb-10 lg:pt-30 lg:pb-12 text-white relative overflow-hidden border-b border-white/10">
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-20 right-20 w-80 h-80 bg-[#FBBF24] rounded-full blur-[140px]" />
                     <div className="absolute bottom-10 left-10 w-64 h-64 bg-blue-500 rounded-full blur-[120px]" />
                 </div>
                 <div className="container mx-auto px-4 xl:px-12 relative z-10">
                     <div className="max-w-3xl">
-                        <div className="inline-flex items-center rounded-full border border-[#FBBF24] px-4 py-1.5 text-xs font-bold text-[#FBBF24] tracking-widest uppercase mb-6">
+                        <div className="inline-flex items-center rounded-full border border-[#FBBF24] px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-bold text-[#FBBF24] tracking-widest uppercase mb-2 sm:mb-3 whitespace-nowrap">
                             Pusat Informasi
                         </div>
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+                        <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-1.5 sm:mb-2 leading-tight">
                             Berita & <span className="text-[#FBBF24]">Publikasi</span>
                         </h1>
-                        <p className="text-base md:text-xl text-white/80 max-w-2xl leading-relaxed">
+                        <p className="text-[11px] sm:text-xs md:text-sm text-white/80 max-w-2xl leading-relaxed line-clamp-2 sm:line-clamp-none">
                             Kumpulan berita, pengumuman, dan artikel terbaru dari kegiatan Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang.
                         </p>
                     </div>

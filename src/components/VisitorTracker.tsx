@@ -107,13 +107,28 @@ export default function VisitorTracker() {
                         page_path: pathname,
                         referrer,
                     }),
-                }).catch(() => {});
+                })
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data && typeof data.total === 'number') {
+                            window.dispatchEvent(new CustomEvent('visitor-stats-updated', { detail: data }));
+                        }
+                    })
+                    .catch(() => {});
             } catch {
                 // Silent fail
             }
-        }, 500);
+        }, 400);
 
-        return () => clearTimeout(timer);
+        // Allow re-tracking same page after 15 seconds
+        const expireTimer = setTimeout(() => {
+            trackedPages.current.delete(dedupKey);
+        }, 15000);
+
+        return () => {
+            clearTimeout(timer);
+            clearTimeout(expireTimer);
+        };
     }, [pathname]);
 
     return null;

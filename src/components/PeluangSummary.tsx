@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Briefcase, GraduationCap, MapPin, ArrowRight, ExternalLink, Clock, Building2, Layers } from 'lucide-react';
+import { Calendar, Briefcase, GraduationCap, MapPin, ArrowRight, ExternalLink, Clock, Building2, Layers, TrendingUp } from 'lucide-react';
 import { PelatihanItem, LowonganItem, EventItem } from '@/components/AgendaHub';
 
 interface PeluangSummaryProps {
@@ -221,6 +221,38 @@ export default function PeluangSummary({ pelatihanList = [], lowonganList = [], 
             </Link>
           </div>
         )}
+      </div>
+
+      {/* ── Acuan Resmi UMK Serang 2026 (Integrated UCD Contextual Banner) ── */}
+      <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-[#FBBF24]/10 border border-[#FBBF24]/20 text-[#FBBF24] flex items-center justify-center shrink-0">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-white text-xs sm:text-sm">
+                Upah Minimum Kabupaten (UMK) Serang 2026:
+              </span>
+              <span className="text-[#FBBF24] font-extrabold text-sm sm:text-base">
+                Rp 5.178.521 <span className="text-[10px] font-normal text-white/70">/ bulan</span>
+              </span>
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                Naik 6,6%
+              </span>
+            </div>
+            <p className="text-[11px] text-white/60 mt-1 leading-relaxed">
+              SK Gubernur Banten • Acuan upah resmi bagi pelamar kerja dan perusahaan di wilayah Kabupaten Serang.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/informasi-publik#statistik-daerah"
+          className="shrink-0 text-xs font-bold text-[#FBBF24] hover:text-[#FCD34D] hover:underline flex items-center gap-1.5 self-start sm:self-auto bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors"
+        >
+          <span>Statistik Daerah</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {/* ── Main Action Button: Lihat Semua Peluang ── */}

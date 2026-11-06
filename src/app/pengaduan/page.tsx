@@ -182,50 +182,45 @@ function PengaduanForm() {
 
     return (
         <div className="min-h-screen pb-0 w-full flex flex-col bg-[#F8FAFC] dark:bg-[#0B1120]">
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-48 lg:pt-40 lg:pb-56 bg-[#0A192F] overflow-hidden text-white">
-                <div className="absolute inset-0 z-0">
+            {/* Hero Section - Ringkas & Berorientasi Tugas Pengguna (UCD) */}
+            <section className="relative pt-[104px] pb-10 sm:pt-28 sm:pb-12 lg:pt-30 lg:pb-14 bg-[#0A192F] overflow-hidden text-white border-b border-white/10">
+                <div className="absolute inset-0 z-0 pointer-events-none">
                     <img
                         src="/images/banner-pengaduan.jpg"
                         alt="Gerbang Pelindung dan Integritas Pengaduan"
-                        className="w-full h-full object-cover opacity-30 mix-blend-luminosity"
+                        className="w-full h-full object-cover opacity-25 mix-blend-luminosity"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/85 to-transparent"></div>
-                    <div className="absolute top-20 right-20 w-72 h-72 bg-[#FBBF24] rounded-full blur-[140px] opacity-15" />
-                    <div className="absolute bottom-10 left-10 w-56 h-56 bg-blue-500 rounded-full blur-[120px] opacity-15" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/90 to-[#0A192F]/60"></div>
                 </div>
                 <div className="container mx-auto px-4 xl:px-12 relative z-10">
                     <div className="max-w-3xl">
-                        <div className="inline-flex items-center rounded-full bg-[#FBBF24] px-4 py-1.5 text-xs font-extrabold text-[#0A192F] tracking-widest uppercase mb-8 shadow-sm">
-                            {PENGADUAN_TYPES.flatMap(g => g.items).find(i => i.value === formData.type)?.label || 'Layanan Pengaduan & Aspirasi'}
+                        <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-white/15 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-[11px] font-semibold text-white/85 tracking-wide uppercase mb-2 sm:mb-3 bg-white/5 backdrop-blur-xs whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF24]"></span>
+                            <span>{PENGADUAN_TYPES.flatMap(g => g.items).find(i => i.value === formData.type)?.label || 'Pemkab Serang • Layanan Pengaduan'}</span>
                         </div>
-                        <h1 className="text-4xl md:text-5xl lg:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
-                            Sampaikan Pengaduan <br/> Anda dengan Aman
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight mb-1.5 sm:mb-2 leading-tight">
+                            Layanan Pengaduan & Aspirasi Ketenagakerjaan
                         </h1>
-                        <p className="text-white/80 max-w-xl text-sm md:text-base leading-relaxed mb-10">
-                            Kami berkomitmen untuk memberikan pelayanan publik yang transparan dan akuntabel.
+                        <p className="text-white/75 max-w-2xl text-[11px] sm:text-xs md:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none">
+                            Saluran resmi pelaporan perselisihan hubungan industrial, PHK, sengketa upah UMK, dan norma kerja dengan jaminan kerahasiaan identitas pelapor.
                         </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                            {[
-                                { icon: Mail, title: "Kirim via Email", desc: "Pengaduan langsung dikirim ke email resmi Disnakertrans." },
-                                { icon: Shield, title: "Data Terlindungi", desc: "Identitas dan data Anda dijamin kerahasiaannya." },
-                                { icon: Clock, title: "Respon 3×24 Jam", desc: "Balasan resmi dikirim ke email Anda dalam 3 hari kerja." },
-                            ].map((item, i) => (
-                                <div key={i} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-5">
-                                    <div className="w-10 h-10 bg-[#FBBF24]/20 rounded-lg flex items-center justify-center mb-3">
-                                        <item.icon className="w-5 h-5 text-[#FBBF24]" />
-                                    </div>
-                                    <h4 className="font-bold text-white text-sm mb-1">{item.title}</h4>
-                                    <p className="text-white/60 text-[11px] leading-relaxed">{item.desc}</p>
-                                </div>
-                            ))}
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-0.5 text-[10px] sm:text-xs text-white/80">
+                            <span className="inline-flex items-center gap-1 sm:gap-1.5 bg-white/10 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 whitespace-nowrap">
+                                <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FBBF24]" /> Mode Rahasia
+                            </span>
+                            <span className="inline-flex items-center gap-1 sm:gap-1.5 bg-white/10 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 whitespace-nowrap">
+                                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FBBF24]" /> Respon 3×24 Jam
+                            </span>
+                            <span className="inline-flex items-center gap-1 sm:gap-1.5 bg-white/10 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 whitespace-nowrap">
+                                <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FBBF24]" /> Tiket Resmi
+                            </span>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Formulir & Tracking Section */}
-            <section className="relative z-20 container mx-auto px-4 xl:px-12 -mt-32 max-w-4xl pb-24">
+            <section className="relative z-20 container mx-auto px-4 xl:px-12 -mt-6 sm:-mt-8 max-w-4xl pb-24">
                 {/* Tab Switcher */}
                 <div className="flex items-center justify-center mb-6">
                     <div className="bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-md p-1.5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl inline-flex gap-1.5">

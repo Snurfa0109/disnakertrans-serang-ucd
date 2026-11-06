@@ -46,6 +46,23 @@
   }
 }
 
+/* Custom Indeterminate Loading Bar Animation */
+@keyframes indeterminate-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(50%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-indeterminate-bar {
+  animation: indeterminate-bar 1.5s ease-in-out infinite;
+}
+
 /* Print Optimization for Tanda Terima Digital (Strict 1-Page Output) */
 @media print {
   @page {

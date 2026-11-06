@@ -40,11 +40,19 @@ export default function AccessibilityToolbar() {
       }
     } catch {}
 
-    // Cleanup speech on unmount
+    // Listen for custom trigger events from Navbar / Header
+    const handleToggle = () => setIsOpen((prev) => !prev);
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener("toggle-accessibility-modal", handleToggle);
+    window.addEventListener("open-accessibility-modal", handleOpen);
+
+    // Cleanup speech and listeners on unmount
     return () => {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
+      window.removeEventListener("toggle-accessibility-modal", handleToggle);
+      window.removeEventListener("open-accessibility-modal", handleOpen);
     };
   }, []);
 
@@ -180,46 +188,47 @@ export default function AccessibilityToolbar() {
 
   return (
     <>
-      {/* FLOATING ACCESSIBILITY PILL (Bottom-Left to avoid chatbot on bottom-right) */}
-      <div className="fixed bottom-6 left-6 z-40 print:hidden font-sans">
-        <motion.button
-          onClick={() => setIsOpen(!isOpen)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-full shadow-lg border text-xs font-bold transition-all ${
-            isOpen || highContrast || fontScale !== "normal" || isSpeaking
-              ? "bg-[#1E3A8A] text-white border-blue-400 ring-4 ring-blue-500/20"
-              : "bg-white dark:bg-[#1E293B] text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-          }`}
-          aria-label="Menu Aksesibilitas Disabilitas & Lansia"
-          title="Buka Alat Aksesibilitas (Ukuran Huruf, Kontras, Pembaca Suara)"
-        >
-          {/* Official Universal Accessibility Symbol */}
-          <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-[11px] shrink-0">
-            ♿
-          </span>
-          <span className="hidden sm:inline">Aksesibilitas</span>
+      {/* FLOATING ACCESSIBILITY BUTTON (Tepat di Atas Chatbot Kang SATRIA: bottom-[84px] right-5) */}
+      <motion.button
+        type="button"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        whileHover={{ scale: 1.08, y: -2 }}
+        whileTap={{ scale: 0.94 }}
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-[84px] right-5 sm:bottom-[88px] sm:right-5 z-40 flex items-center justify-center w-12 h-12 sm:w-13 sm:h-13 rounded-2xl sm:rounded-full text-white shadow-xl border border-white/25 hover:border-yellow-400/80 transition-all cursor-pointer group bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] focus:outline-hidden focus:ring-2 focus:ring-yellow-400 print:hidden"
+        style={{
+          boxShadow: "0 6px 20px rgba(30, 58, 138, 0.45), 0 2px 6px rgba(0,0,0,0.25)"
+        }}
+        title="Alat Aksesibilitas Web (Ukuran Huruf, Kontras, Pembaca Suara)"
+        aria-label="Buka Alat Aksesibilitas Web"
+      >
+        <span className="text-xl sm:text-2xl leading-none select-none group-hover:scale-110 transition-transform">
+          ♿
+        </span>
 
-          {isSpeaking && (
-            <span className="flex items-center gap-0.5 ml-1">
-              <span className="w-1 h-3 bg-emerald-400 animate-pulse rounded-full" />
-              <span className="w-1 h-4 bg-emerald-300 animate-pulse rounded-full delay-75" />
-              <span className="w-1 h-2 bg-emerald-400 animate-pulse rounded-full delay-150" />
-            </span>
-          )}
-        </motion.button>
-      </div>
+        {/* Hover Tooltip (Desktop) */}
+        <span className="absolute right-full mr-2.5 px-2.5 py-1 bg-[#0A192F] text-white text-[11px] font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md border border-white/10 hidden sm:inline-block">
+          Aksesibilitas
+        </span>
+      </motion.button>
 
-      {/* ACCESSIBILITY POPOVER MODAL */}
+      {/* ACCESSIBILITY MODAL DIALOG */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-start p-4 sm:p-6 bg-black/40 backdrop-blur-xs print:hidden">
+          <div
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-xs print:hidden"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsOpen(false);
+            }}
+          >
             <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.95 }}
-              transition={{ type: "spring", duration: 0.35 }}
-              className="bg-white dark:bg-[#0F172A] text-gray-900 dark:text-white rounded-3xl max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden sm:ml-4 sm:mb-16"
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="bg-white dark:bg-[#0F172A] text-gray-900 dark:text-white rounded-3xl max-w-sm sm:max-w-md w-full shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="p-4 sm:p-5 bg-gradient-to-r from-[#1E3A8A] to-blue-900 text-white flex items-center justify-between">
@@ -228,8 +237,8 @@ export default function AccessibilityToolbar() {
                     ♿
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm sm:text-base leading-tight">Alat Aksesibilitas Web</h3>
-                    <p className="text-[10px] text-blue-200">Standar Inklusivitas WCAG 2.1 & UCD</p>
+                    <h3 className="font-extrabold text-sm sm:text-base leading-tight">Aksesibilitas Web</h3>
+                    <p className="text-[10px] text-blue-200">Sesuaikan tampilan & kenyamanan membaca Anda</p>
                   </div>
                 </div>
                 <button
@@ -313,7 +322,7 @@ export default function AccessibilityToolbar() {
                         : "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100"
                     }`}
                   >
-                    <span>Mode Kontras Tinggi (Lansia / Low-Vision)</span>
+                    <span>Mode Kontras Tinggi</span>
                     <span
                       className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
                         highContrast ? "bg-yellow-400 text-black border-yellow-400" : "border-gray-400"
@@ -329,7 +338,7 @@ export default function AccessibilityToolbar() {
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                       <Volume2 className="w-3.5 h-3.5 text-[#1E3A8A] dark:text-[#93C5FD]" />
-                      Pembaca Suara Layar (Bahasa Indonesia)
+                      Dengarkan Halaman Ini (Audio)
                     </span>
                     {isSpeaking && (
                       <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 animate-pulse">
@@ -340,7 +349,7 @@ export default function AccessibilityToolbar() {
 
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700 space-y-2.5">
                     <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                      Sistem akan membacakan teks halaman secara bersuara. Anda juga dapat menyorot (*blok*) teks tertentu untuk membacanya.
+                      Dengarkan isi website secara otomatis, atau pilih kalimat tertentu yang ingin dibacakan.
                     </p>
 
                     <div className="flex items-center gap-2">

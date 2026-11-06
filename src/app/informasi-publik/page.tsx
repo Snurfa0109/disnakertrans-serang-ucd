@@ -3,12 +3,8 @@ import sql from "@/lib/db";
 import { ArrowRight, Briefcase, Users, FileCheck, FileText, CalendarDays, MapPin } from "lucide-react";
 import { getCategoryFallbackImage } from "@/lib/utils";
 import KecamatanMap from "@/components/KecamatanMap";
-import PeluangSummary from "@/components/PeluangSummary";
 import DokumenPublikSection from "@/components/DokumenPublikSection";
 import newsBackup from "@/data/news-backup.json";
-import lowonganBackup from "@/data/lowongan-backup.json";
-import pelatihanBackup from "@/data/pelatihan-backup.json";
-import eventsBackup from "@/data/events-backup.json";
 
 export const revalidate = 60;
 
@@ -33,69 +29,19 @@ const FALLBACK_STATS = [
     { id: 5, key: 'lowongan_tersedia', label: 'Lowongan Tersedia (2025)', value: '3.150', description: 'Lowongan', sort_order: 5 },
 ];
 
-const FALLBACK_LOWONGAN = [
-    {
-        id: 999,
-        title: 'Operator Produksi & Teknisi Mesin Industri',
-        company: 'Kawasan Industri Modern Cikande / Serang',
-        location: 'Cikande, Kab. Serang',
-        job_type: 'Full time',
-        education: 'SMA/SMK/D3/S1',
-        deadline: '2026-12-31',
-        category: 'Dalam Negeri',
-        salary: 'Sesuai UMK Kab. Serang 2026',
-        source_url: 'https://karirhub.kemnaker.go.id',
-    }
-];
-
-const FALLBACK_JADWAL = [
-    {
-        id: 999,
-        title: 'Pelatihan Vokasi & Sertifikasi BNSP (Teknik Las & Otomasi)',
-        location: 'BBPVP Serang / BLK Disnakertrans Serang',
-        date: 'Tahun 2026',
-        time_start: '08:00',
-        time_end: '15:00',
-        color: 'bg-emerald-500',
-        source_url: 'https://skillhub.kemnaker.go.id',
-    }
-];
-
-const FALLBACK_EVENTS = [
-    {
-        id: 999,
-        title: 'Job Fair Terpadu Kabupaten Serang 2026',
-        location: 'Alun-alun Puspemkab Serang, Ciruas',
-        date: '2026-09-15',
-        time_start: '08:00',
-        time_end: '16:00',
-        organizer: 'Disnakertrans Kab. Serang',
-        link_url: '/peluang',
-    }
-];
-
 export default async function InformasiPublikPage() {
     let allNews: any[] = [];
     let allStats: any[] = [...FALLBACK_STATS];
-    let allJadwal: any[] = [...FALLBACK_JADWAL];
-    let allLowongan: any[] = [...FALLBACK_LOWONGAN];
-    let allEvents: any[] = [...FALLBACK_EVENTS];
     let allDocs: any[] = [];
 
     try {
         const [
             newsResult,
             statsResult,
-            jadwalResult,
-            lowonganResult,
-            eventsResult,
             docsResult
         ] = await Promise.allSettled([
             sql`SELECT * FROM news ORDER BY date DESC LIMIT 10`,
             sql`SELECT * FROM statistik ORDER BY sort_order ASC`,
-            sql`SELECT * FROM jadwal_pelatihan WHERE is_active = TRUE ORDER BY date ASC`,
-            sql`SELECT * FROM lowongan WHERE is_active = TRUE ORDER BY id DESC LIMIT 40`,
-            sql`SELECT * FROM events WHERE is_active = TRUE ORDER BY id DESC LIMIT 10`,
             sql`SELECT * FROM dokumen_publik WHERE is_active = TRUE ORDER BY sort_order ASC`,
         ]);
 
@@ -104,15 +50,6 @@ export default async function InformasiPublikPage() {
         }
         if (statsResult.status === 'fulfilled' && Array.isArray(statsResult.value) && statsResult.value.length > 0) {
             allStats = statsResult.value;
-        }
-        if (jadwalResult.status === 'fulfilled' && Array.isArray(jadwalResult.value) && jadwalResult.value.length > 0) {
-            allJadwal = jadwalResult.value;
-        }
-        if (lowonganResult.status === 'fulfilled' && Array.isArray(lowonganResult.value) && lowonganResult.value.length > 0) {
-            allLowongan = lowonganResult.value;
-        }
-        if (eventsResult.status === 'fulfilled' && Array.isArray(eventsResult.value) && eventsResult.value.length > 0) {
-            allEvents = eventsResult.value;
         }
         if (docsResult.status === 'fulfilled' && Array.isArray(docsResult.value) && docsResult.value.length > 0) {
             allDocs = docsResult.value;
@@ -128,18 +65,9 @@ export default async function InformasiPublikPage() {
         }
     });
 
-    // Fallback news, lowongan, pelatihan & events dari data backup jika kosong di Vercel
+    // Fallback news dari data backup jika kosong di Vercel
     if (!allNews || allNews.length === 0) {
         allNews = (newsBackup as any[]).slice(0, 10);
-    }
-    if (!allLowongan || allLowongan.length === 0) {
-        allLowongan = (lowonganBackup as any[]).slice(0, 40);
-    }
-    if (!allJadwal || allJadwal.length === 0) {
-        allJadwal = pelatihanBackup as any[];
-    }
-    if (!allEvents || allEvents.length === 0) {
-        allEvents = eventsBackup as any[];
     }
 
     const utama = allNews[0] || null;
@@ -154,35 +82,51 @@ export default async function InformasiPublikPage() {
 
     return (
         <div className="min-h-screen pb-0 w-full flex flex-col bg-[#F8FAFC] dark:bg-[#0B1120]">
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-24 lg:pt-40 lg:pb-32 bg-[#0A192F] overflow-hidden text-white">
-                <div className="absolute inset-0 z-0">
+            {/* Hero Section - Ringkas & To The Point (UCD) */}
+            <section className="relative pt-[104px] pb-8 sm:pt-28 sm:pb-10 lg:pt-30 lg:pb-10 bg-[#0A192F] overflow-hidden text-white border-b border-white/10">
+                <div className="absolute inset-0 z-0 pointer-events-none">
                     <img
                         src="/images/banner-cikoneng.jpg"
                         alt="Mercusuar Cikoneng Anyer Kabupaten Serang"
-                        className="w-full h-full object-cover opacity-35 mix-blend-luminosity"
+                        className="w-full h-full object-cover opacity-25 mix-blend-luminosity"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/85 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/90 to-[#0A192F]/60"></div>
                 </div>
 
                 <div className="container mx-auto px-4 xl:px-12 relative z-10">
                     <div className="max-w-4xl">
-                        <div className="inline-flex items-center rounded-full border border-[#FBBF24] px-4 py-1.5 text-xs font-bold text-[#FBBF24] tracking-widest uppercase mb-6">
-                            Transparansi Informasi
+                        <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-white/15 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-[11px] font-semibold text-white/85 tracking-wide uppercase mb-2 sm:mb-3 bg-white/5 backdrop-blur-xs whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF24]"></span>
+                            <span>Pemkab Serang • Informasi Publik</span>
                         </div>
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-                            Gerbang Informasi <br className="hidden md:block" />
-                            <span className="text-[#FBBF24]">Ketenagakerjaan</span> Serang.
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight mb-1.5 sm:mb-2 text-white leading-tight">
+                            Pusat Informasi & Publikasi Ketenagakerjaan
                         </h1>
-                        <p className="text-base md:text-xl text-white/80 max-w-2xl leading-relaxed">
-                            Akses data real-time, berita terbaru, dan dokumen publik resmi dari Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang dalam satu platform terpadu.
+                        <p className="text-[11px] sm:text-xs md:text-sm text-white/75 max-w-2xl leading-relaxed mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none">
+                            Akses berita terkini, data statistik UMK ketenagakerjaan daerah, agenda kegiatan dinas, serta arsip regulasi resmi dalam satu portal.
                         </p>
+
+                        {/* Quick Anchor Navigation (UCD Task Efficiency) */}
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-0.5 text-[11px] sm:text-xs">
+                            <a href="#warta-berita" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Berita Terkini
+                            </a>
+                            <a href="#dokumen-publik" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Dokumen & Regulasi
+                            </a>
+                            <a href="#statistik-daerah" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Statistik & UMK
+                            </a>
+                            <a href="#peta-kecamatan" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Peta Wilayah
+                            </a>
+                        </div>
                     </div>
                 </div>
             </section>
 
             {/* Warta Ketenagakerjaan */}
-            <section className="py-20 bg-[#F8FAFC] dark:bg-[#0B1120]">
+            <section id="warta-berita" className="py-14 sm:py-16 bg-[#F8FAFC] dark:bg-[#0B1120] scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="flex flex-col sm:flex-row justify-between items-end mb-10 gap-4">
                         <div>
@@ -265,7 +209,7 @@ export default async function InformasiPublikPage() {
             {allDocs.length > 0 && <DokumenPublikSection documents={allDocs} />}
 
             {/* Info Cepat Ketenagakerjaan + Jadwal Pelatihan */}
-            <section className="py-20 bg-[#0A192F]">
+            <section id="statistik-daerah" className="py-14 sm:py-16 bg-[#0A192F] scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="mb-10">
                         <h2 className="text-3xl font-bold text-white mb-2">Info Cepat Ketenagakerjaan</h2>
@@ -381,29 +325,12 @@ export default async function InformasiPublikPage() {
                             <p className="text-[9px] text-white/40 mt-0.5">Sumber Data: BPS & Disnakertrans →</p>
                         </div>
                     </div>
-
-                    {/* Agenda & Peluang Ketenagakerjaan Summary */}
-                    <div className="mt-16 pt-12 border-t border-white/10">
-                        <PeluangSummary pelatihanList={allJadwal} lowonganList={allLowongan} eventList={allEvents} />
-                    </div>
                 </div>
             </section>
 
-            {/* Peta Kecamatan */}
-            <section id="peta-kecamatan" className="py-20 bg-white dark:bg-[#111827] border-t border-gray-100 dark:border-gray-800">
+            {/* Peta Kecamatan Interaktif */}
+            <section id="peta-kecamatan" className="py-16 md:py-20 bg-slate-50/60 dark:bg-[#111827] border-t border-gray-100 dark:border-gray-800">
                 <div className="container mx-auto px-4 xl:px-12">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-4">
-                        <div>
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 bg-[#FEF3C7] dark:bg-[#92400E]/20 rounded-xl flex items-center justify-center text-[#92400E] dark:text-[#FBBF24]">
-                                    <MapPin className="w-5 h-5" />
-                                </div>
-                                <span className="text-[#B45309] dark:text-[#FBBF24] font-bold text-xs tracking-widest uppercase">Wilayah Administrasi</span>
-                            </div>
-                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2">Peta Kecamatan Kabupaten Serang</h2>
-                            <p className="text-gray-600 dark:text-gray-400 max-w-xl">Jelajahi 29 kecamatan dan 326 desa/kelurahan di Kabupaten Serang secara interaktif.</p>
-                        </div>
-                    </div>
                     <KecamatanMap />
                 </div>
             </section>

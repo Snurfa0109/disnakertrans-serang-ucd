@@ -287,8 +287,20 @@ export default function Header() {
                 setIsSearchOpen(false);
             }
         };
+
+        const handleOpenSearchModal = (e: any) => {
+            setIsSearchOpen(true);
+            if (e.detail?.query) {
+                setSearchQuery(e.detail.query);
+            }
+        };
+
         window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
+        window.addEventListener("open-search-modal", handleOpenSearchModal);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("open-search-modal", handleOpenSearchModal);
+        };
     }, []);
 
     // Focus input when search opens
@@ -516,7 +528,7 @@ export default function Header() {
                         </nav>
 
                         {/* RIGHT: Search + Dark Mode */}
-                        <div className="hidden xl:flex items-center gap-1">
+                        <div className="hidden xl:flex items-center gap-2">
                             <button
                                 onClick={() => setIsSearchOpen(true)}
                                 className="flex items-center gap-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg px-3 py-2 text-gray-500 dark:text-gray-400 transition-colors group"
@@ -530,7 +542,7 @@ export default function Header() {
                             <DarkModeToggle />
                         </div>
 
-                        {/* Mobile: Search + Dark Mode + Menu */}
+                        {/* Mobile: Search + Dark Mode + Menu (Aksesibilitas mengambang di atas chatbot agar mudah dijangkau jempol) */}
                         <div className="flex xl:hidden items-center gap-1">
                             <button
                                 onClick={() => setIsSearchOpen(true)}
@@ -576,6 +588,17 @@ export default function Header() {
                                         {link.name}
                                     </Link>
                                 ))}
+
+                                <button
+                                    onClick={() => {
+                                        setIsMobileMenuOpen(false);
+                                        window.dispatchEvent(new CustomEvent('toggle-accessibility-modal'));
+                                    }}
+                                    className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-bold text-[#1E3A8A] dark:text-[#93C5FD] bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 mt-2 text-left transition-colors cursor-pointer"
+                                >
+                                    <span className="w-5 h-5 rounded-full bg-[#1E3A8A] text-white flex items-center justify-center text-[10px] font-black shrink-0">♿</span>
+                                    <span>Aksesibilitas</span>
+                                </button>
                             </nav>
                         </motion.div>
                     )}

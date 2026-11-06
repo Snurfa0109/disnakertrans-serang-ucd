@@ -39,7 +39,7 @@ const faqItems = [
         a: "Tidak perlu! Kartu Kuning AK-1 yang dibuat secara online sudah berlaku secara resmi dan dapat digunakan untuk melamar pekerjaan. Anda cukup mengunduh kartu digital dari aplikasi Serang Bahagia tanpa perlu datang ke kantor Disnakertrans."
     },
     {
-        q: "Fupa email atau kata sandi akun Sisnaker?",
+        q: "Lupa email atau kata sandi akun Sisnaker?",
         a: "Gunakan fitur \"Lupa Password\" pada halaman login portal Sisnaker Kemnaker. Jika masih mengalami kendala, silakan datang ke pusat layanan Disnakertrans Kabupaten Serang dengan membawa KTP asli untuk bantuan pemulihan akun."
     },
 ];
@@ -49,46 +49,51 @@ export default async function LayananPublikPage() {
 
     return (
         <div className="min-h-screen pb-0 w-full flex flex-col bg-[#F8FAFC] dark:bg-[#0B1120]">
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-24 lg:pt-40 lg:pb-32 bg-[#0A192F] overflow-hidden text-white">
-                <div className="absolute inset-0 z-0">
+            {/* Hero Section - Ringkas & To The Point (UCD) */}
+            <section className="relative pt-[104px] pb-8 sm:pt-28 sm:pb-10 lg:pt-30 lg:pb-10 bg-[#0A192F] overflow-hidden text-white border-b border-white/10">
+                <div className="absolute inset-0 z-0 pointer-events-none">
                     <img
                         src="/images/banner-layanan.jpg"
                         alt="Hamparan Padi dan Kearifan Lokal Kabupaten Serang"
-                        className="w-full h-full object-cover opacity-30 mix-blend-luminosity"
+                        className="w-full h-full object-cover opacity-25 mix-blend-luminosity"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/85 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/90 to-[#0A192F]/60"></div>
                 </div>
 
                 <div className="container mx-auto px-4 xl:px-12 relative z-10">
-                    <div className="max-w-3xl">
-                        <div className="inline-flex items-center rounded-full border border-[#FBBF24]/40 px-4 py-1.5 text-xs font-bold text-[#FBBF24]/80 tracking-widest uppercase mb-6 bg-[#FBBF24]/5">
-                            Pilar Pelayanan Digital
+                    <div className="max-w-4xl">
+                        <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-white/15 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-[11px] font-semibold text-white/85 tracking-wide uppercase mb-2 sm:mb-3 bg-white/5 backdrop-blur-xs whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF24]"></span>
+                            <span>Pemkab Serang • Layanan Publik</span>
                         </div>
-                        <h1 className="text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight mb-6 leading-[1.15] text-white">
-                            Pilar Digital Pelayanan
-                            <span className="text-[#FBBF24]"> Ketenagakerjaan.</span>
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight mb-1.5 sm:mb-2 text-white leading-tight">
+                            Portal Pelayanan Ketenagakerjaan Terpadu
                         </h1>
-                        <p className="text-base md:text-lg text-white/65 mb-10 max-w-xl leading-relaxed">
-                            Akses transparan, cepat, dan modern untuk seluruh warga Kabupaten Serang dalam mengelola kebutuhan tenaga kerja dan transmigrasi.
+                        <p className="text-[11px] sm:text-xs md:text-sm text-white/75 max-w-2xl leading-relaxed mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none">
+                            Akses resmi pembuatan Kartu Kuning (AK-1), perizinan berusaha OSS, akuntabilitas E-SAKIP, dan konsultasi hubungan industrial bagi warga Kabupaten Serang.
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <a href="#layanan-unggulan" className="bg-[#FBBF24] text-[#0A192F] hover:bg-[#FCD34D] px-8 py-3.5 rounded-lg font-bold transition-colors text-center shadow-lg shadow-yellow-500/20">
-                                Jelajahi Layanan
+
+                        {/* Quick Anchor Navigation (UCD Task Efficiency) */}
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-0.5 text-[11px] sm:text-xs">
+                            <a href="#layanan-unggulan" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Layanan Unggulan
                             </a>
-                            <Link href="/layanan-publik/tutorial-ak1" className="bg-white/10 border border-white/20 hover:bg-white/20 text-white px-8 py-3.5 rounded-lg font-bold transition-all text-center backdrop-blur-sm">
-                                Tutorial AK-1 Online
+                            <a href="#ak1-online" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Kartu Kuning (AK-1)
+                            </a>
+                            <Link href="/layanan-publik/tutorial-ak1" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all flex items-center gap-1 sm:gap-1.5">
+                                Tutorial AK-1 Online <ArrowRight className="w-3 h-3 text-[#FBBF24]" />
                             </Link>
+                            <a href="#faq-layanan" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                FAQ Layanan
+                            </a>
                         </div>
                     </div>
                 </div>
-
-                {/* Bottom fade */}
-                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#F8FAFC] dark:from-[#0B1120] to-transparent" />
             </section>
 
             {/* Layanan Unggulan */}
-            <section id="layanan-unggulan" className="py-20 bg-[#F8FAFC] dark:bg-[#0B1120]">
+            <section id="layanan-unggulan" className="py-14 sm:py-16 bg-[#F8FAFC] dark:bg-[#0B1120] scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="flex flex-col mb-12">
                         <span className="text-[#B45309] dark:text-[#FBBF24] font-bold text-xs tracking-widest uppercase mb-2">Aksesibilitas Publik</span>
@@ -143,7 +148,7 @@ export default async function LayananPublikPage() {
                         </div>
 
                         {/* Kartu Kuning AK-1 (cols 8-12) */}
-                        <div className="lg:col-span-5 bg-white dark:bg-[#1E293B] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 lg:p-10 flex flex-col hover:shadow-md transition-shadow">
+                        <div id="ak1-online" className="lg:col-span-5 bg-white dark:bg-[#1E293B] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 lg:p-10 flex flex-col hover:shadow-md transition-shadow scroll-mt-24">
                             <div className="w-12 h-12 bg-[#FEF3C7] rounded-xl flex items-center justify-center text-[#92400E] mb-6">
                                 <Briefcase className="w-6 h-6" />
                             </div>
@@ -439,7 +444,7 @@ export default async function LayananPublikPage() {
             </section>
 
             {/* ═══ FAQ ═══ */}
-            <section className="py-20 bg-[#F8FAFC] dark:bg-[#0B1120] border-t border-gray-100 dark:border-gray-800">
+            <section id="faq-layanan" className="py-14 sm:py-16 bg-[#F8FAFC] dark:bg-[#0B1120] border-t border-gray-100 dark:border-gray-800 scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
 

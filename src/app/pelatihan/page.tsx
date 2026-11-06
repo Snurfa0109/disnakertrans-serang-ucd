@@ -42,13 +42,13 @@ export default async function PelatihanPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B1120]">
-      <section className="bg-[#0A192F] pt-32 pb-20 lg:pt-40 lg:pb-28 relative overflow-hidden">
+      <section className="bg-[#0A192F] pt-[104px] pb-8 sm:pt-28 sm:pb-10 lg:pt-30 lg:pb-12 relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 right-10 w-80 h-80 bg-[#FBBF24] rounded-full blur-[120px]" />
           <div className="absolute bottom-0 left-0 w-60 h-60 bg-blue-500 rounded-full blur-[100px]" />
         </div>
         <div className="container mx-auto px-4 xl:px-12 relative z-10">
-          <nav className="flex items-center gap-1.5 text-xs text-white/50 mb-6">
+          <nav className="flex items-center gap-1.5 text-[10px] sm:text-xs text-white/50 mb-3 sm:mb-4">
             <Link href="/" className="hover:text-white/80 flex items-center gap-1 transition-colors">
               <Home className="w-3 h-3" />Beranda
             </Link>
@@ -58,16 +58,16 @@ export default async function PelatihanPage() {
             <span className="text-white font-medium">Program Pelatihan</span>
           </nav>
           <div className="max-w-2xl">
-            <h1 className="text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
               Program <span className="text-[#FBBF24]">Pelatihan Kerja</span>
             </h1>
-            <p className="text-white/70 text-base mt-4 leading-relaxed">
+            <p className="text-white/70 text-[11px] sm:text-xs md:text-sm mt-1.5 sm:mt-2.5 leading-relaxed line-clamp-2 sm:line-clamp-none">
               Tingkatkan kompetensi dan keahlian Anda melalui program pelatihan kerja resmi, bersertifikasi, dan didukung oleh Balai Latihan Kerja (BLK) Disnakertrans Kabupaten Serang.
             </p>
             {activeCount > 0 && (
-              <div className="mt-5 inline-flex items-center gap-2 bg-[#FBBF24]/10 border border-[#FBBF24]/30 rounded-full px-4 py-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#FBBF24] animate-pulse" />
-                <span className="text-[#FBBF24] text-xs font-bold">{activeCount} Jadwal Aktif Saat Ini</span>
+              <div className="mt-3 sm:mt-4 inline-flex items-center gap-1.5 bg-[#FBBF24]/10 border border-[#FBBF24]/30 rounded-full px-3 py-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF24] animate-pulse" />
+                <span className="text-[#FBBF24] text-[10px] sm:text-xs font-bold">{activeCount} Jadwal Aktif Saat Ini</span>
               </div>
             )}
           </div>

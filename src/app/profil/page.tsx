@@ -75,29 +75,50 @@ export default async function ProfilPage() {
 
     return (
         <div className="min-h-screen pb-0 w-full flex flex-col bg-white dark:bg-[#0B1120]">
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-24 lg:pt-40 lg:pb-32 bg-[#0A192F] overflow-hidden">
-                <div className="absolute inset-0 z-0">
-                    <img src="/images/banner-pamarayan.jpg" alt="Bendung Pamarayan Lama Kabupaten Serang" className="w-full h-full object-cover opacity-35 mix-blend-luminosity" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/85 to-transparent"></div>
+            {/* Hero Section - Ringkas & Berpusat pada Kebutuhan Pengguna (UCD) */}
+            <section className="relative pt-[104px] pb-8 sm:pt-28 sm:pb-10 lg:pt-30 lg:pb-10 bg-[#0A192F] overflow-hidden text-white border-b border-white/10">
+                <div className="absolute inset-0 z-0 pointer-events-none">
+                    <img src="/images/banner-pamarayan.jpg" alt="Bendung Pamarayan Lama Kabupaten Serang" className="w-full h-full object-cover opacity-25 mix-blend-luminosity" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] via-[#0A192F]/90 to-[#0A192F]/60"></div>
                 </div>
                 
                 <div className="container mx-auto px-4 xl:px-12 relative z-10">
-                    <div className="max-w-3xl">
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight text-white">
-                            Membangun Pilar <br className="hidden md:block"/>
-                            Ketenagakerjaan yang <br className="hidden md:block"/>
-                            Mandiri
+                    <div className="max-w-4xl">
+                        <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-white/15 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-[11px] font-semibold text-white/85 tracking-wide uppercase mb-2 sm:mb-3 bg-white/5 backdrop-blur-xs whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF24]"></span>
+                            <span>Pemkab Serang • Profil Instansi</span>
+                        </div>
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight mb-1.5 sm:mb-2 text-white leading-tight">
+                            Profil & Struktur Organisasi Disnakertrans
                         </h1>
-                        <p className="text-base md:text-lg text-white/80 max-w-xl leading-relaxed">
-                           Mengenal visi, misi, struktur organisasi, dan peran Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang sebagai penggerak ekonomi daerah.
+                        <p className="text-[11px] sm:text-xs md:text-sm text-white/75 max-w-2xl leading-relaxed mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none">
+                            Mengenal visi, misi, tugas pokok, fungsi, serta struktur organisasi tata kerja Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang.
                         </p>
+
+                        {/* Quick Anchor Navigation (Pintasan Langsung - UCD Task Efficiency) */}
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-0.5 text-[11px] sm:text-xs">
+                            <a href="#sambutan" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Sambutan Kadis
+                            </a>
+                            <a href="#visi-misi" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Visi & Misi
+                            </a>
+                            <a href="#tupoksi" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Tugas & Fungsi (Tupoksi)
+                            </a>
+                            <a href="#bidang" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Struktur Bidang
+                            </a>
+                            <a href="#struktur" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-white/15 transition-all">
+                                Bagan Organisasi
+                            </a>
+                        </div>
                     </div>
                 </div>
             </section>
 
             {/* Sambutan Kepala Dinas */}
-            <section className="py-20 bg-white dark:bg-[#111827]">
+            <section id="sambutan" className="py-14 sm:py-16 bg-white dark:bg-[#111827] scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
                         {/* Image Side */}
@@ -124,7 +145,7 @@ export default async function ProfilPage() {
             </section>
 
             {/* Visi & Misi Section */}
-            <section className="py-20 bg-[#F8FAFC] dark:bg-[#0B1120]">
+            <section id="visi-misi" className="py-14 sm:py-16 bg-[#F8FAFC] dark:bg-[#0B1120] scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
                         
@@ -173,7 +194,7 @@ export default async function ProfilPage() {
             </section>
 
             {/* Tugas & Fungsi Pokok Section */}
-            <section className="py-24 bg-[#0A192F] text-white">
+            <section id="tupoksi" className="py-14 sm:py-16 bg-[#0A192F] text-white scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="max-w-2xl mb-4">
                         <p className="text-[#FBBF24] text-xs font-bold tracking-widest uppercase mb-3">Berdasarkan Perbup Kab. Serang No. 93 Tahun 2022</p>
@@ -236,7 +257,7 @@ export default async function ProfilPage() {
             </section>
 
             {/* Struktur Bidang */}
-            <section className="py-20 bg-[#F8FAFC] dark:bg-[#0B1120]">
+            <section id="bidang" className="py-14 sm:py-16 bg-[#F8FAFC] dark:bg-[#0B1120] scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12 text-center">
                     <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">Struktur Bidang</h2>
                     <p className="text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
@@ -262,7 +283,7 @@ export default async function ProfilPage() {
             </section>
 
             {/* Struktur Organisasi */}
-            <section className="py-20 bg-white dark:bg-[#111827] border-t border-gray-100 dark:border-gray-800">
+            <section id="struktur" className="py-14 sm:py-16 bg-white dark:bg-[#111827] border-t border-gray-100 dark:border-gray-800 scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12">
                     <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
                         <div className="max-w-xl">

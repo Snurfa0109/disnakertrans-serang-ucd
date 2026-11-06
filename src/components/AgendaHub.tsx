@@ -302,6 +302,28 @@ export default function AgendaHub({ pelatihanList = [], lowonganList = [], event
         </div>
       )}
 
+      {/* ── Info Acuan UMK Kabupaten Serang 2026 di Tab Lowongan (UCD Contextual Placement) ── */}
+      {activeTab === 'lowongan' && (
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800/80 border border-blue-200/80 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#1E3A8A] text-[#FBBF24] flex items-center justify-center shrink-0">
+              <Banknote className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm">
+                Acuan Upah Minimum (UMK) Kab. Serang 2026: <span className="text-[#1E3A8A] dark:text-[#FBBF24] font-extrabold">Rp 5.178.521 / bulan</span>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Standar perlindungan upah resmi (SK Gubernur Banten) bagi pelamar kerja pada perusahaan di wilayah Kabupaten Serang.
+              </p>
+            </div>
+          </div>
+          <Link href="/informasi-publik#statistik-daerah" className="shrink-0 text-[11px] font-bold text-[#1E3A8A] dark:text-[#93C5FD] hover:underline flex items-center gap-1">
+            Detail Regulasi →
+          </Link>
+        </div>
+      )}
+
       {/* ── Content Display Grid ── */}
 
       {/* 1. TAB SEMUA / MIXED */}

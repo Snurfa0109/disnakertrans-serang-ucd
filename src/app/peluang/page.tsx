@@ -46,26 +46,26 @@ export default async function PeluangPage() {
   return (
     <div className="min-h-screen pb-16 bg-gray-50/60 dark:bg-[#0B1120]">
       {/* ── Clean Hero / Header ── */}
-      <section className="bg-[#0A192F] pt-28 pb-16 lg:pt-36 lg:pb-20 text-white relative border-b border-white/10">
+      <section className="bg-[#0A192F] pt-[104px] pb-8 sm:pt-28 sm:pb-10 lg:pt-30 lg:pb-12 text-white relative border-b border-white/10">
         <div className="container mx-auto px-4 xl:px-12 relative z-10">
           <div className="max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2.5 mb-5">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2.5 sm:mb-3 text-[10px] sm:text-xs">
               <Link
                 href="/"
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1 font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1 rounded-md transition-colors"
               >
-                <ArrowLeft className="w-3.5 h-3.5" /> Beranda
+                <ArrowLeft className="w-3 h-3" /> Beranda
               </Link>
               <span className="text-white/20">/</span>
-              <span className="text-xs font-semibold text-[#D4AF37] tracking-wider uppercase">
-                Portal Peluang & Agenda
+              <span className="font-semibold text-[#D4AF37] tracking-wider uppercase">
+                Peluang & Agenda
               </span>
             </div>
             
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4 text-white leading-tight">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-1.5 sm:mb-2 text-white leading-tight">
               Agenda & Peluang Ketenagakerjaan
             </h1>
-            <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-2xl font-normal">
+            <p className="text-[11px] sm:text-xs md:text-sm text-slate-300 leading-relaxed max-w-2xl font-normal line-clamp-2 sm:line-clamp-none">
               Informasi terintegrasi program pelatihan vokasi kerja gratis, bursa lowongan kerja resmi Dalam & Luar Negeri, serta jadwal kegiatan ketenagakerjaan di Kabupaten Serang.
             </p>
           </div>
