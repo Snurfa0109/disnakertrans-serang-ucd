@@ -188,7 +188,7 @@ export default function AccessibilityToolbar() {
 
   return (
     <>
-      {/* FLOATING ACCESSIBILITY BUTTON (Tepat di Atas Chatbot Kang SATRIA: bottom-[84px] right-5) */}
+      {/* FLOATING ACCESSIBILITY BUTTON — Diberi Jarak Bersih di Atas Chatbot (bottom-[98px] / [104px]) */}
       <motion.button
         type="button"
         initial={{ scale: 0, opacity: 0 }}
@@ -196,14 +196,14 @@ export default function AccessibilityToolbar() {
         whileHover={{ scale: 1.08, y: -2 }}
         whileTap={{ scale: 0.94 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-[84px] right-5 sm:bottom-[88px] sm:right-5 z-40 flex items-center justify-center w-12 h-12 sm:w-13 sm:h-13 rounded-2xl sm:rounded-full text-white shadow-xl border border-white/25 hover:border-yellow-400/80 transition-all cursor-pointer group bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] focus:outline-hidden focus:ring-2 focus:ring-yellow-400 print:hidden"
+        className="fixed bottom-[98px] right-5 sm:bottom-[104px] sm:right-6 z-40 flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full text-white shadow-lg border border-white/25 hover:border-yellow-400/80 transition-all cursor-pointer group bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] focus:outline-hidden focus:ring-2 focus:ring-yellow-400 print:hidden"
         style={{
-          boxShadow: "0 6px 20px rgba(30, 58, 138, 0.45), 0 2px 6px rgba(0,0,0,0.25)"
+          boxShadow: "0 6px 18px rgba(30, 58, 138, 0.4), 0 2px 6px rgba(0,0,0,0.2)"
         }}
         title="Alat Aksesibilitas Web (Ukuran Huruf, Kontras, Pembaca Suara)"
         aria-label="Buka Alat Aksesibilitas Web"
       >
-        <span className="text-xl sm:text-2xl leading-none select-none group-hover:scale-110 transition-transform">
+        <span className="text-lg sm:text-xl leading-none select-none group-hover:scale-110 transition-transform">
           ♿
         </span>
 

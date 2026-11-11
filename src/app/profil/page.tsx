@@ -117,27 +117,55 @@ export default async function ProfilPage() {
                 </div>
             </section>
 
-            {/* Sambutan Kepala Dinas */}
-            <section id="sambutan" className="py-14 sm:py-16 bg-white dark:bg-[#111827] scroll-mt-20">
+            {/* Sambutan Kepala Dinas — Dibuat Proporsional & Elegan (Serasi dengan Komitmen Bupati di Beranda) */}
+            <section id="sambutan" className="py-10 md:py-14 bg-white dark:bg-[#111827] scroll-mt-20">
                 <div className="container mx-auto px-4 xl:px-12">
-                    <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-                        {/* Image Side */}
-                        <div className="relative w-full lg:w-5/12 max-w-sm mx-auto lg:max-w-none">
-                            <div className="bg-[#FDE68A] absolute inset-0 -ml-4 -mt-4 rounded-xl min-h-full aspect-[3/4]"></div>
-                            <div className="relative z-10 bg-white rounded-xl overflow-hidden shadow-xl aspect-[3/4]">
-                                <img src={sambutanFoto || "/images/kepala-dinas.png"} alt="Kepala Dinas" className="w-full h-full object-cover object-top" />
+                    <div className="bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#EFF6FF] dark:from-[#1E293B] dark:via-[#131F37] dark:to-[#0F172A] rounded-3xl p-6 sm:p-8 lg:p-10 border border-blue-100 dark:border-gray-700/80 shadow-md">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                            {/* Foto Kepala Dinas — Kompak & Terbingkai Rapi */}
+                            <div className="lg:col-span-4 flex justify-center">
+                                <div className="w-full max-w-[280px] sm:max-w-[300px] rounded-2xl overflow-hidden shadow-xl border-4 border-white dark:border-gray-700 bg-white dark:bg-[#1E293B]">
+                                    <div className="aspect-[4/5] overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                        <img
+                                            src={sambutanFoto || "/images/kepala-dinas.png"}
+                                            alt={sambutanNama || "Kepala Dinas Tenaga Kerja dan Transmigrasi Kab. Serang"}
+                                            className="w-full h-full object-cover object-top hover:scale-103 transition-transform duration-500"
+                                        />
+                                    </div>
+                                    <div className="p-3 bg-[#0A192F] text-center text-white border-t border-white/10">
+                                        <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#FBBF24]">
+                                            Kepala Dinas
+                                        </p>
+                                        <p className="text-[10px] text-white/70">Disnakertrans Kab. Serang</p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        {/* Text Side */}
-                        <div className="w-full lg:w-7/12">
-                            <div className="w-10 h-1 bg-[#FBBF24] mb-6 rounded-full"></div>
-                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6">Sambutan Kepala Dinas</h2>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg italic mb-8 leading-relaxed">
-                                &ldquo;{sambutanTeks || 'Selamat datang di portal resmi Disnakertrans Kabupaten Serang. Kami berkomitmen untuk terus berinovasi dalam memberikan layanan terbaik bagi seluruh pencari kerja dan pemberi kerja.'}&rdquo;
-                            </p>
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{sambutanNama || 'Kepala Dinas'}</h3>
-                                <p className="text-gray-600 dark:text-gray-400">{sambutanJabatan || 'Kepala Dinas Tenaga Kerja dan Transmigrasi Kab. Serang'}</p>
+
+                            {/* Teks Sambutan & Komitmen */}
+                            <div className="lg:col-span-8 text-left space-y-4">
+                                <div className="inline-flex items-center gap-1.5 rounded-full bg-[#1E3A8A]/10 dark:bg-white/10 px-3.5 py-1 text-[11px] font-bold text-[#1E3A8A] dark:text-[#93C5FD] tracking-wider uppercase">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#1E3A8A] dark:bg-[#93C5FD]" />
+                                    Sambutan Pimpinan Instansi
+                                </div>
+
+                                <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                                    Sambutan Kepala Dinas
+                                </h2>
+
+                                <blockquote className="border-l-4 border-[#FBBF24] pl-4 py-1.5 text-sm sm:text-base text-gray-700 dark:text-gray-100 italic leading-relaxed font-medium">
+                                    &ldquo;{sambutanTeks || 'Selamat datang di portal resmi Disnakertrans Kabupaten Serang. Kami berkomitmen untuk terus berinovasi dalam memberikan pelayanan ketenagakerjaan yang inklusif, transparan, dan efisien bagi seluruh pencari kerja, tenaga kerja, serta pelaku usaha di Kabupaten Serang.'}&rdquo;
+                                </blockquote>
+
+                                <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-gray-200 dark:border-gray-700/60">
+                                    <div className="text-xs text-gray-600 dark:text-gray-300">
+                                        <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">
+                                            {sambutanNama || 'Diana Ardhianty Utami, S.H., M.M.'}
+                                        </p>
+                                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                            {sambutanJabatan || 'Kepala Dinas Tenaga Kerja dan Transmigrasi Kabupaten Serang'}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
